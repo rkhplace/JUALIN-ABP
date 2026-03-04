@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper Functions ---
+    
+    // Cek apakah user sudah login
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Cek apakah User yang request adalah pemilik data
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Cek apakah user ada di dalam list 'participants' di dokumen chat
+    function isChatParticipant() {
+      return request.auth.uid in resource.data.participants;
+    }
+
+    // --- RULES ---
+
+    // 1. Collection Users
+    // Note: Project ini utamanya menggunakan API eksternal untuk user data,
+    // tapi rule ini disiapkan jika ada sinkronisasi ke Firestore di masa depan.
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isOwner(userId);
+    }
+
+    // 2. Collection Chats (Room Chat)
+    match /chats/{chatId} {
+      // Read: Hanya boleh baca jika user adalah participant
+      allow read: if isSignedIn() && isChatParticipant();
+      
+      // Create: Boleh buat chat baru asal sudah login dan user sendiri ada di participants
+      allow create: if isSignedIn() && 
+                    request.resource.data.participants.hasAll([request.auth.uid]);
+      
+      // Update: Boleh update jika participant (misal: update last_message)
+      allow update: if isSignedIn() && isChatParticipant();
+
+      // 3. Sub-collection Messages
+      match /messages/{messageId} {
+        // Read & List: Aman, cek apakah user adalah participant dari PARENT chat room
+        allow read, list: if isSignedIn() && 
+                          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        
+        // Create: Sender harus user yang sedang login
+        allow create: if isSignedIn() && 
+                      request.resource.data.senderId == request.auth.uid &&
+                      // Optional: Double check participant status via get() if needed, 
+                      // but typically client-side logic + parent read rule is sufficient coverage.
+                      // For strictness:
+                      request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+      }
+    }
+  }
+}
