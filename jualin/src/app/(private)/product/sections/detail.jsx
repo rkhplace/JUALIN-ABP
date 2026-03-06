@@ -8,6 +8,8 @@ import { ChatContext } from "@/context/ChatProvider";
 import { AuthContext } from "@/context/AuthProvider";
 import { getProductImageUrl, getProfilePictureUrl } from "@/utils/imageHelper";
 import { formatCurrency } from "@/utils/formatters/currency";
+import PaymentMethodModal from "@/components/payment/PaymentMethodModal";
+import { transactionService } from "@/services";
 
 export default function ProductDetailSection({ product, seller }) {
   const router = useRouter();
@@ -15,6 +17,39 @@ export default function ProductDetailSection({ product, seller }) {
   const { startChat } = useContext(ChatContext);
   const { pay, loading, toast, setToast } = useMidtransPayment();
   const [isStartingChat, setIsStartingChat] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isWalletLoading, setIsWalletLoading] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+
+  const handleConfirmPayment = async (method) => {
+    setIsModalOpen(false);
+
+    if (method === "gateway") {
+      pay(product, {
+        onSuccess: () => {
+          setIsSuccessModalOpen(true);
+        }
+      });
+    } else if (method === "wallet") {
+      setIsWalletLoading(true);
+      try {
+        await transactionService.payWallet({
+          seller_id: product.seller_id,
+          product_id: product.id,
+        });
+
+        // Show the success modal instead of a toast
+        setIsSuccessModalOpen(true);
+      } catch (err) {
+        setToast({
+          message: err.message || "Failed to process wallet payment",
+          type: "error",
+        });
+      } finally {
+        setIsWalletLoading(false);
+      }
+    }
+  };
 
   const handleChatSeller = async () => {
     if (!user) {
@@ -97,6 +132,42 @@ export default function ProductDetailSection({ product, seller }) {
           onClose={() => setToast(null)}
         />
       )}
+      <PaymentMethodModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleConfirmPayment}
+        walletBalance={user?.wallet_balance || 0}
+        productPrice={product.price}
+      />
+
+      {/* Success Modal */}
+      {isSuccessModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300 text-center p-8"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Pembayaran Berhasil!</h3>
+            <p className="text-gray-600 mb-6">
+              Terima kasih, pembayaran Anda telah berhasil diproses. Silakan cek riwayat pembelian Anda.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => setIsSuccessModalOpen(false)}
+                className="w-full text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-bold rounded-xl text-md px-5 py-3 transition-colors"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col md:flex-row gap-8 items-start bg-white rounded-2xl shadow p-6">
         <img
           src={getProductImageUrl(product.image)}
@@ -142,11 +213,21 @@ export default function ProductDetailSection({ product, seller }) {
           <div className="flex items-center gap-3">
             <button
               className="bg-red-500 text-white px-6 py-2 rounded-full font-semibold shadow hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-              onClick={() => pay(product)}
-              disabled={loading}
+              onClick={() => {
+                if (!user) {
+                  setToast({
+                    message: "Please login first to buy",
+                    type: "error",
+                  });
+                  setTimeout(() => router.push("/login"), 2000);
+                  return;
+                }
+                setIsModalOpen(true);
+              }}
+              disabled={loading || isWalletLoading}
             >
-              {loading && <Spinner size="sm" color="white" />}
-              {loading ? "Processing..." : "Buy Now"}
+              {(loading || isWalletLoading) && <Spinner size="sm" color="white" />}
+              {(loading || isWalletLoading) ? "Processing..." : "Buy Now"}
             </button>
             <button
               onClick={handleChatSeller}

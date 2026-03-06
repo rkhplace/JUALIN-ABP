@@ -6,3 +6,4 @@ export { passwordService } from "./auth/passwordService";
 export { profileService } from "./profile/profileService";
 export { paymentService } from "./payment/paymentService";
 export { transactionService } from "./payment/transactionService";
+export { escrowService } from "./escrow/escrowService";

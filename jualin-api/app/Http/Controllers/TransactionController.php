@@ -10,6 +10,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Models\WalletTransaction;
+use Illuminate\Support\Str;
 
 class TransactionController extends Controller
 {
@@ -99,11 +101,110 @@ class TransactionController extends Controller
         }
     }
 
+    public function payWallet(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!in_array($user->role, ['customer', 'admin'])) {
+            return ApiResponse::error(
+                'Only customers and admins can create transactions',
+                null,
+                403
+            );
+        }
+
+        $request->validate([
+            'seller_id' => 'required|integer|exists:users,id',
+            'product_id' => 'required|integer|exists:products,id',
+        ]);
+
+        try {
+            return DB::transaction(function () use ($user, $request) {
+                $buyer = \App\Models\User::where('id', $user->id)->lockForUpdate()->firstOrFail();
+                $product = \App\Models\Product::where('id', $request->product_id)->lockForUpdate()->firstOrFail();
+                $quantity = 1;
+
+                if ($product->stock_quantity < $quantity) {
+                    throw new \Exception('Insufficient stock for ' . $product->name . '. Available: ' . $product->stock_quantity);
+                }
+
+                if ($buyer->wallet_balance < $product->price) {
+                    throw new \Exception('Insufficient wallet balance');
+                }
+
+                $totalAmount = $product->price * $quantity;
+
+                // Deduct wallet balance
+                $buyer->wallet_balance -= $totalAmount;
+                $buyer->save();
+
+                // Create transaction
+                $transaction = Transaction::create([
+                    'customer_id' => $buyer->id,
+                    'seller_id' => $request->seller_id,
+                    'total_amount' => $totalAmount,
+                    'status' => 'waiting_cod',
+                    'auth_code' => strtoupper(Str::random(6)),
+                ]);
+
+                // Create transaction item
+                TransactionItem::create([
+                    'transaction_id' => $transaction->id,
+                    'product_id' => $product->id,
+                    'quantity' => $quantity,
+                    'price_at_purchase' => $product->price,
+                    'subtotal' => $totalAmount,
+                ]);
+
+                // Decrement product stock
+                $product->stock_quantity -= $quantity;
+                $product->save();
+
+                // Record wallet transaction
+                WalletTransaction::create([
+                    'user_id' => $buyer->id,
+                    'amount' => -$totalAmount,
+                    'type' => 'purchase',
+                    'reference_transaction_id' => $transaction->id,
+                ]);
+
+                // Create a Payment record so it appears in the purchase history API
+                $orderId = 'WALLET-' . $transaction->id . '-' . time();
+                \App\Models\Payment::create([
+                    'transaction_id' => $transaction->id,
+                    'order_id' => $orderId,
+                    'gross_amount' => $totalAmount,
+                    'payment_type' => 'jualin_wallet',
+                    'transaction_status' => 'settlement',
+                    'transaction_time' => now(),
+                ]);
+
+                $transaction->load(['items.product', 'customer', 'seller']);
+
+                return ApiResponse::success(
+                    'Wallet payment successful',
+                    $transaction,
+                    201
+                );
+            });
+        } catch (\Exception $e) {
+            $statusCode = $e->getMessage() === 'Insufficient wallet balance' || str_contains($e->getMessage(), 'Insufficient stock') ? 400 : 500;
+            return ApiResponse::error(
+                $e->getMessage() ?: 'Failed to process wallet payment',
+                null,
+                $statusCode
+            );
+        }
+    }
+
     public function index(Request $request): JsonResponse
     {
         $user = Auth::user();
 
-        $transactions = Transaction::with(['items.product', 'customer', 'seller', 'payment'])
+        $transactions = Transaction::with(['items.product', 'customer', 'seller', 'payment' => function($q) {
+                // Ensure we get the latest payment attempt if there are multiple
+                $q->latest();
+            }])
             ->where(function ($query) use ($user) {
                 $query->where('customer_id', $user->id)
                     ->orWhere('seller_id', $user->id);
@@ -246,5 +347,53 @@ class TransactionController extends Controller
         $chartData = array_slice($chartData, -$maxPeriods);
 
         return $chartData;
+    }
+    public function withdraw(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'seller') {
+            return ApiResponse::error('Only sellers can withdraw wallet balances', null, 403);
+        }
+
+        $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'bank_name' => 'required|string',
+            'account_number' => 'required|string',
+            'account_name' => 'required|string',
+        ]);
+
+        $amount = $request->amount;
+
+        try {
+            return DB::transaction(function () use ($user, $amount) {
+                // Lock the user row for update
+                $lockedUser = \App\Models\User::where('id', $user->id)->lockForUpdate()->first();
+
+                if ($amount > $lockedUser->wallet_balance) {
+                    return ApiResponse::error('Insufficient wallet balance', null, 400);
+                }
+
+                // Deduct balance
+                $lockedUser->wallet_balance -= $amount;
+                $lockedUser->save();
+
+                // Create wallet transaction record
+                WalletTransaction::create([
+                    'user_id' => $lockedUser->id,
+                    'amount' => -$amount,
+                    'type' => 'withdraw',
+                    'reference_transaction_id' => null,
+                ]);
+
+                return ApiResponse::success(
+                    'Withdrawal successful',
+                    ['remaining_balance' => $lockedUser->wallet_balance],
+                    200
+                );
+            });
+        } catch (\Exception $e) {
+            return ApiResponse::error('Withdrawal failed', ['error' => $e->getMessage()], 500);
+        }
     }
 }

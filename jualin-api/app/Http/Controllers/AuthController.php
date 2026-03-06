@@ -56,6 +56,7 @@ class AuthController extends Controller
             'access_token' => $result['access_token'],
             'refresh_token' => $result['refresh_token'],
             'role' => $result['user']->role,
+            'wallet_balance' => $result['user']->wallet_balance,
             'firebase_token' => $firebaseToken, // <--- Sent to frontend
         ]);
     }

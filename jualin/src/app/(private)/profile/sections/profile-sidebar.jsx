@@ -10,11 +10,25 @@ export function ProfileSidebarSection({
   onTabChange,
   onLogout,
   role,
+  user,
 }) {
   return (
-    <div className="w-64 bg-[#E83030] min-h-screen flex flex-col rounded-r-3xl">
+    <div className="w-64 bg-[#E83030] h-screen sticky top-0 flex flex-col rounded-r-3xl overflow-y-auto">
       <div className="p-6 flex-1">
         <div className="space-y-8">
+          {/* WALLET Section */}
+          <div className="bg-white/10 rounded-2xl p-4 shadow-inner border border-white/20">
+            <h3 className="text-xs font-bold text-white/90 uppercase tracking-wider mb-2">
+              SALDO DOMPET
+            </h3>
+            <div className="flex items-end gap-2 text-white">
+              <span className="text-sm font-medium opacity-80 mb-1">Rp</span>
+              <span className="text-2xl font-black tracking-tight">
+                {Number(user?.wallet_balance || 0).toLocaleString("id-ID")}
+              </span>
+            </div>
+          </div>
+
           {/* PROFILE Section */}
           <div>
             <h3 className="text-xs font-bold text-white/90 uppercase tracking-wider mb-4 px-1">
@@ -23,16 +37,14 @@ export function ProfileSidebarSection({
             <nav className="space-y-3">
               <button
                 onClick={() => onTabChange("edit")}
-                className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] ${
-                  activeTab === "edit"
-                    ? "bg-white text-[#E83030] font-bold ring-2 ring-white/20"
-                    : "bg-white text-gray-700 hover:bg-gray-50"
-                }`}
+                className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] ${activeTab === "edit"
+                  ? "bg-white text-[#E83030] font-bold ring-2 ring-white/20"
+                  : "bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
               >
                 <svg
-                  className={`mr-3 h-5 w-5 ${
-                    activeTab === "edit" ? "text-[#E83030]" : "text-gray-500"
-                  }`}
+                  className={`mr-3 h-5 w-5 ${activeTab === "edit" ? "text-[#E83030]" : "text-gray-500"
+                    }`}
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -47,18 +59,16 @@ export function ProfileSidebarSection({
               {role !== "admin" && (
                 <button
                   onClick={() => onTabChange("purchases")}
-                  className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] ${
-                    activeTab === "purchases"
-                      ? "bg-white text-[#E83030] font-bold ring-2 ring-white/20"
-                      : "bg-white text-gray-700 hover:bg-gray-50"
-                  }`}
+                  className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] ${activeTab === "purchases"
+                    ? "bg-white text-[#E83030] font-bold ring-2 ring-white/20"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
+                    }`}
                 >
                   <svg
-                    className={`mr-3 h-5 w-5 ${
-                      activeTab === "purchases"
-                        ? "text-[#E83030]"
-                        : "text-gray-500"
-                    }`}
+                    className={`mr-3 h-5 w-5 ${activeTab === "purchases"
+                      ? "text-[#E83030]"
+                      : "text-gray-500"
+                      }`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -79,7 +89,7 @@ export function ProfileSidebarSection({
       </div>
 
       {/* Logout Button */}
-      <div className="p-6 mt-auto">
+      <div className="px-6 py-4 mt-4">
         <button
           onClick={onLogout}
           className="w-full flex items-center justify-center px-4 py-3 bg-white hover:bg-gray-50 text-[#E83030] rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 text-sm font-bold"

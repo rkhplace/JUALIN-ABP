@@ -45,10 +45,12 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::post('/products', [ProductController::class, 'store']);
         Route::patch('/products/{product}', [ProductController::class, 'update']);
         Route::delete('/products/{product}/delete', [ProductController::class, 'destroy']);
+        Route::post('/transactions/withdraw', [TransactionController::class, 'withdraw']);
     });
 
     Route::middleware('role:customer,admin')->group(function () {
         Route::post('/transactions', [TransactionController::class, 'store']);
+        Route::post('/transactions/pay-wallet', [TransactionController::class, 'payWallet']);
         Route::get('/payments/history', [PaymentController::class, 'getPaymentsByUser']);
     });
 
@@ -58,6 +60,11 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
 
     Route::middleware('role:seller')->group(function () {
         Route::get('/transactions/income/statistics', [TransactionController::class, 'incomeStatistics']);
+        Route::post('/escrow/{id}/claim', [\App\Http\Controllers\EscrowController::class, 'claim']);
+    });
+
+    Route::middleware('role:customer')->group(function () {
+        Route::post('/escrow/{id}/refund', [\App\Http\Controllers\EscrowController::class, 'refund']);
     });
 
     Route::middleware('role:customer,admin')->group(function () {

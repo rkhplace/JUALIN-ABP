@@ -1,6 +1,8 @@
 "use client"
 
 import useMidtransPayment from "@/app/(private)/product/hooks/useMidtransPayment";
+import { useState } from "react";
+import { escrowService } from "@/services";
 
 /**
  * PurchaseHistorySection
@@ -17,6 +19,33 @@ export function PurchaseHistorySection({
   onRefresh
 }) {
   const { resumePayment, loading: isPaymentLoading, toast: paymentToast } = useMidtransPayment();
+  const [escrowLoading, setEscrowLoading] = useState(false);
+  const [escrowToast, setEscrowToast] = useState(null);
+  const [refundModalOpen, setRefundModalOpen] = useState(false);
+  const [refundOrderId, setRefundOrderId] = useState(null);
+
+  const initiateRefund = (transactionId, e) => {
+    e.stopPropagation(); // prevent row click
+    setRefundOrderId(transactionId);
+    setRefundModalOpen(true);
+  };
+
+  const confirmRefund = async () => {
+    if (!refundOrderId) return;
+
+    setEscrowLoading(true);
+    try {
+      await escrowService.refundPayment(refundOrderId);
+      setEscrowToast({ type: "success", message: "Refund successful. Funds added to your wallet." });
+      onRefresh();
+    } catch (err) {
+      setEscrowToast({ type: "error", message: err?.response?.data?.message || "Refund failed." });
+    } finally {
+      setEscrowLoading(false);
+      setRefundModalOpen(false);
+      setTimeout(() => setEscrowToast(null), 3000);
+    }
+  };
 
   if (isLoading) {
     return <div className="text-center py-12 text-gray-500">Loading purchases...</div>;
@@ -73,6 +102,18 @@ export function PurchaseHistorySection({
         </div>
       </div>
 
+      {/* Escrow Action Toast */}
+      {escrowToast && (
+        <div
+          className={`mb-6 rounded-lg p-4 shadow-sm text-sm border font-medium ${escrowToast.type === "success"
+            ? "bg-green-50 text-green-700 border-green-200"
+            : "bg-red-50 text-red-700 border-red-200"
+            }`}
+        >
+          {escrowToast.message}
+        </div>
+      )}
+
       {/* Total card */}
       <div className="bg-white border border-gray-300 rounded-xl p-6 mb-8 shadow-md">
         <p className="text-sm font-medium text-gray-500 mb-1">Total Amount</p>
@@ -87,19 +128,25 @@ export function PurchaseHistorySection({
           {purchases.map((p) => {
             const status = String(p?.transaction_status || "").toLowerCase();
             const isPending = status === "pending";
+            const isWaitingCOD = status === "waiting_cod";
+            const isCompleted = status === "completed";
+            const isRefunded = status === "refunded";
 
             // Status Badge Styles
             const statusStyles =
               status === "pending"
                 ? "bg-yellow-100 text-yellow-700 border-yellow-200"
-                : status === "settlement" ||
-                  status === "capture" ||
-                  status === "paid" ||
-                  status === "completed"
-                  ? "bg-green-100 text-green-700 border-green-200"
-                  : "bg-red-100 text-red-700 border-red-200";
+                : status === "waiting_cod"
+                  ? "bg-orange-100 text-orange-700 border-orange-200"
+                  : status === "settlement" ||
+                    status === "capture" ||
+                    status === "paid" ||
+                    status === "completed"
+                    ? "bg-green-100 text-green-700 border-green-200"
+                    : status === "refunded"
+                      ? "bg-purple-100 text-purple-700 border-purple-200"
+                      : "bg-red-100 text-red-700 border-red-200";
 
-            // Data extraction
             // Data extraction
             const orderLabel = `Order #${p?.order_id || "-"}`;
             const title = p?.first_item_name || orderLabel;
@@ -114,19 +161,25 @@ export function PurchaseHistorySection({
               })
               : "";
 
+            // Format status label
+            let displayStatus = status;
+            if (isWaitingCOD) displayStatus = "Waiting COD";
+            if (isCompleted) displayStatus = "Completed";
+            if (isRefunded) displayStatus = "Refunded";
+
             return (
-              <button
+              <div
                 key={p?.order_id}
-                onClick={() => {
-                  if (isPending) {
-                    resumePayment(p.snap_token, p.snap_url);
-                  }
-                }}
                 className={`w-full text-left group bg-white border border-gray-300 p-5 rounded-xl transition-all relative shadow-md
                   ${isPending
                     ? 'cursor-pointer hover:bg-[#F7F7F8] hover:shadow-lg hover:border-red-200 ring-1 ring-inset ring-transparent hover:ring-red-100'
-                    : 'cursor-default hover:bg-[#F7F7F8]'
+                    : ''
                   }`}
+                onClick={() => {
+                  if (isPending) {
+                    resumePayment(p.snap_token, p.snap_url, p.order_id);
+                  }
+                }}
               >
                 {/* Tooltip for pending items */}
                 {isPending && (
@@ -146,7 +199,6 @@ export function PurchaseHistorySection({
                     )}
 
                     <div className="flex items-center gap-2 text-gray-500 text-sm mt-2">
-                      {/* Date Icon */}
                       <svg
                         className="w-4 h-4"
                         fill="none"
@@ -166,9 +218,32 @@ export function PurchaseHistorySection({
                       <span
                         className={`ml-2 px-3 py-0.5 rounded-full text-[10px] font-medium border ${statusStyles}`}
                       >
-                        {status}
+                        {displayStatus}
                       </span>
                     </div>
+
+                    {/* Escrow COD Content */}
+                    {isWaitingCOD && (
+                      <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                        <p className="text-sm font-medium text-orange-800 mb-2">
+                          Show this authentication code to the seller after confirming the product matches your expectations.
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xl font-bold tracking-widest text-[#1F1F1F]">{p?.transaction?.auth_code || "N/A"}</span>
+                          <button
+                            onClick={(e) => initiateRefund(p?.transaction_id, e)}
+                            disabled={escrowLoading}
+                            className="px-4 py-2 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50 text-sm font-medium transition-colors disabled:opacity-50"
+                          >
+                            {escrowLoading ? 'Processing...' : 'Refund to Wallet'}
+                          </button>
+                        </div>
+                        <p className="text-xs text-orange-600 mt-2">
+                          Only click refund if the product is rejected.
+                        </p>
+                      </div>
+                    )}
+
                   </div>
 
                   <div className="text-right">
@@ -177,7 +252,7 @@ export function PurchaseHistorySection({
                     </span>
                   </div>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -260,6 +335,33 @@ export function PurchaseHistorySection({
               <option value={20}>20</option>
               <option value={50}>50</option>
             </select>
+          </div>
+        </div>
+      )}
+
+      {/* Refund Confirmation Modal */}
+      {refundModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Request Refund</h3>
+            <p className="text-sm text-gray-600 mb-6 font-medium">
+              Are you sure you want to refund this product? The total amount will be credited back instantly to your Virtual Wallet.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setRefundModalOpen(false)}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                No, Keep it
+              </button>
+              <button
+                onClick={confirmRefund}
+                disabled={escrowLoading}
+                className="flex-1 px-4 py-2 bg-[#E53935] text-white rounded-lg hover:bg-[#D32F2F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {escrowLoading ? "Processing..." : "Yes, Refund"}
+              </button>
+            </div>
           </div>
         </div>
       )}
