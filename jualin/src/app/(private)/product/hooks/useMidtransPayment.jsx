@@ -9,16 +9,37 @@ export default function useMidtransPayment() {
 
   const showToast = (message, type = "info") => setToast({ message, type });
 
-  const launchSnap = (snapToken, snapUrl) => {
+  const launchSnap = (snapToken, snapUrl, orderId, callbacks = {}) => {
+    const forceSync = () => {
+      if (orderId) {
+        paymentService.checkStatus(orderId).catch(console.error);
+      }
+    };
+
     openSnap(snapToken, snapUrl, {
-      onSuccess: () => showToast("Pembayaran berhasil", "success"),
-      onPending: () =>
+      onSuccess: () => {
+        forceSync();
+        if (callbacks.onSuccess) {
+          callbacks.onSuccess();
+        } else {
+          showToast("Pembayaran berhasil", "success");
+        }
+      },
+      onPending: () => {
+        forceSync();
         showToast(
           "Pembayaran tertunda. Cek riwayat untuk melanjutkan.",
           "info"
-        ),
-      onError: () => showToast("Pembayaran gagal", "error"),
-      onClose: () => showToast("Pembayaran dibatalkan", "info"),
+        );
+      },
+      onError: () => {
+        forceSync();
+        showToast("Pembayaran gagal", "error");
+      },
+      onClose: () => {
+        forceSync();
+        showToast("Pembayaran ditutup", "info");
+      },
     });
   };
 
@@ -32,7 +53,7 @@ export default function useMidtransPayment() {
     }
   };
 
-  const pay = async (product) => {
+  const pay = async (product, callbacks = {}) => {
     if (!product || loading) return;
     setLoading(true);
     try {
@@ -61,7 +82,7 @@ export default function useMidtransPayment() {
         throw new Error("Token pembayaran tidak tersedia");
 
       await waitForSnapIfNeeded();
-      launchSnap(snapToken, snapUrl);
+      launchSnap(snapToken, snapUrl, payPayload?.order_id, callbacks);
     } catch (err) {
       showToast(err.message || "Failed to process payment", "error");
     } finally {
@@ -69,7 +90,7 @@ export default function useMidtransPayment() {
     }
   };
 
-  const continuePayment = async (transactionId) => {
+  const continuePayment = async (transactionId, callbacks = {}) => {
     if (!transactionId || loading) return;
     setLoading(true);
     try {
@@ -90,7 +111,7 @@ export default function useMidtransPayment() {
         throw new Error("Token pembayaran tidak tersedia");
 
       await waitForSnapIfNeeded();
-      launchSnap(snapToken, snapUrl);
+      launchSnap(snapToken, snapUrl, payPayload?.order_id, callbacks);
     } catch (err) {
       showToast(err.message || "Gagal melanjutkan pembayaran", "error");
     } finally {
@@ -98,7 +119,7 @@ export default function useMidtransPayment() {
     }
   };
 
-  const resumePayment = async (snapToken, snapUrl) => {
+  const resumePayment = async (snapToken, snapUrl, orderId, callbacks = {}) => {
     if (loading) return;
     if (!snapToken && !snapUrl) {
       showToast("Token pembayaran tidak valid", "error");
@@ -108,7 +129,7 @@ export default function useMidtransPayment() {
     setLoading(true);
     try {
       await waitForSnapIfNeeded();
-      launchSnap(snapToken, snapUrl);
+      launchSnap(snapToken, snapUrl, orderId, callbacks);
     } catch (err) {
       showToast("Gagal memuat popup pembayaran", "error");
     } finally {

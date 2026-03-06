@@ -115,6 +115,7 @@ export default function EditProfilePage() {
           onTabChange={setActiveTab}
           onLogout={handleLogout}
           role={user?.role}
+          user={user}
         />
 
         {/* Main Content */}
@@ -143,11 +144,10 @@ export default function EditProfilePage() {
                 {/* Toast */}
                 {toast && (
                   <div
-                    className={`mb-6 rounded-lg p-4 shadow-md ${
-                      toast.type === "success"
+                    className={`mb-6 rounded-lg p-4 shadow-md ${toast.type === "success"
                         ? "bg-green-50 text-green-700 shadow-green-200"
                         : "bg-red-50 text-red-700 shadow-red-200"
-                    }`}
+                      }`}
                   >
                     {toast.message}
                   </div>

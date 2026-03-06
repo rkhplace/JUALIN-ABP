@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { ChatContext } from "@/context/ChatProvider";
 import { getProfilePictureUrl, getProductImageUrl } from "@/utils/imageHelper";
+import { escrowService } from "@/services";
 
 const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
   const router = useRouter();
@@ -18,22 +19,58 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(8);
 
+  // Escrow Claim State
+  const [claimModalOpen, setClaimModalOpen] = useState(false);
+  const [claimOrderId, setClaimOrderId] = useState(null);
+  const [authCode, setAuthCode] = useState("");
+  const [claimLoading, setClaimLoading] = useState(false);
+  const [claimToast, setClaimToast] = useState(null);
+
+  const handleClaimSubmit = async (e) => {
+    e.preventDefault();
+    if (!authCode.trim()) return;
+
+    setClaimLoading(true);
+    setClaimToast(null);
+    try {
+      await escrowService.claimPayment(claimOrderId, authCode.trim());
+      setClaimToast({ type: "success", message: "Payment successfully claimed to your wallet." });
+
+      // Give the user time to read the success message before closing and reloading
+      setTimeout(() => {
+        setClaimModalOpen(false);
+        setAuthCode("");
+        window.location.reload();
+      }, 1500);
+    } catch (err) {
+      setClaimToast({ type: "error", message: err?.response?.data?.message || "Failed to claim payment. Please check the authentication code." });
+    } finally {
+      setClaimLoading(false);
+    }
+  };
+
+  const openClaimModal = (orderId) => {
+    setClaimOrderId(orderId);
+    setAuthCode("");
+    setClaimModalOpen(true);
+  };
+
   const buyerActivities =
     orders.length > 0
       ? orders.map((order) => ({
-          id: order.id,
-          buyerId: order.customer?.id,
-          buyerName: order.customer?.username || "Unknown Buyer",
-          productName: order.items?.[0]?.product?.name || "Product",
-          productImage: getProductImageUrl(order.items?.[0]?.product?.image),
-          category: order.items?.[0]?.product?.category || "General",
-          amount: order.total_amount || 0,
-          status: order.status || "pending",
-          time: order.created_at
-            ? new Date(order.created_at).toLocaleString("id-ID")
-            : "Recently",
-          avatar: getProfilePictureUrl(order.customer?.profile_picture),
-        }))
+        id: order.id,
+        buyerId: order.customer?.id,
+        buyerName: order.customer?.username || "Unknown Buyer",
+        productName: order.items?.[0]?.product?.name || "Product",
+        productImage: getProductImageUrl(order.items?.[0]?.product?.image),
+        category: order.items?.[0]?.product?.category || "General",
+        amount: order.total_amount || 0,
+        status: order.status || "pending",
+        time: order.created_at
+          ? new Date(order.created_at).toLocaleString("id-ID")
+          : "Recently",
+        avatar: getProfilePictureUrl(order.customer?.profile_picture),
+      }))
       : [];
   const handleVerifyOrder = (orderId) =>
     router.push(`/seller/orders/${orderId}/verify`);
@@ -64,6 +101,10 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
         text: "Pending",
         class: "bg-red-100 text-red-700 border border-red-200",
       },
+      waiting_cod: {
+        text: "Waiting for COD verification",
+        class: "bg-orange-100 text-orange-700 border border-orange-200",
+      },
       verified: {
         text: "Verified",
         class: "bg-green-100 text-green-700 border border-green-200",
@@ -73,8 +114,12 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
         class: "bg-blue-100 text-blue-700 border border-blue-200",
       },
       completed: {
-        text: "Completed",
+        text: "Transaction completed",
         class: "bg-gray-100 text-gray-700 border border-gray-200",
+      },
+      refunded: {
+        text: "Refunded to wallet",
+        class: "bg-purple-100 text-purple-700 border border-purple-200",
       },
     };
     return badges[status] || badges.completed;
@@ -84,10 +129,10 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
     const q = searchQuery.trim().toLowerCase();
     const base = q
       ? buyerActivities.filter((b) =>
-          [b.buyerName, b.productName, b.status].some((t) =>
-            String(t).toLowerCase().includes(q)
-          )
+        [b.buyerName, b.productName, b.status].some((t) =>
+          String(t).toLowerCase().includes(q)
         )
+      )
       : buyerActivities;
     const start = (currentPage - 1) * perPage;
     return base.slice(start, start + perPage);
@@ -220,9 +265,8 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
                   </td>
                   <td className="py-3 px-2">
                     <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        getStatusBadge(activity.status).class
-                      }`}
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusBadge(activity.status).class
+                        }`}
                     >
                       {getStatusBadge(activity.status).text}
                     </span>
@@ -235,11 +279,19 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
                       items={[
                         ...(activity.status === "pending"
                           ? [
-                              {
-                                label: "Verifikasi Order",
-                                onClick: () => handleVerifyOrder(activity.id),
-                              },
-                            ]
+                            {
+                              label: "Verifikasi Order",
+                              onClick: () => handleVerifyOrder(activity.id),
+                            },
+                          ]
+                          : []),
+                        ...(activity.status === "waiting_cod"
+                          ? [
+                            {
+                              label: "Klaim Pembayaran COD",
+                              onClick: () => openClaimModal(activity.id),
+                            },
+                          ]
                           : []),
                         {
                           label: "Chat Pembeli",
@@ -279,11 +331,10 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
               return (
                 <button
                   key={page}
-                  className={`h-8 w-8 rounded-md border flex items-center justify-center ${
-                    active
-                      ? "bg-brand-red text-white border-brand-red"
-                      : "border-gray-300"
-                  }`}
+                  className={`h-8 w-8 rounded-md border flex items-center justify-center ${active
+                    ? "bg-brand-red text-white border-brand-red"
+                    : "border-gray-300"
+                    }`}
                   onClick={() => setCurrentPage(page)}
                 >
                   {page}
@@ -308,6 +359,61 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
               <option value={16}>16</option>
               <option value={24}>24</option>
             </select>
+          </div>
+        </div>
+      )}
+      {claimModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Claim Payment</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Enter the authentication code provided by the buyer to immediately claim the payment into your wallet.
+            </p>
+
+            {claimToast && (
+              <div
+                className={`mb-6 rounded-lg p-4 shadow-sm text-sm border font-medium ${claimToast.type === "success"
+                    ? "bg-green-50 text-green-700 border-green-200"
+                    : "bg-red-50 text-red-700 border-red-200"
+                  }`}
+              >
+                {claimToast.message}
+              </div>
+            )}
+
+            <form onSubmit={handleClaimSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Authentication Code
+                </label>
+                <input
+                  type="text"
+                  value={authCode}
+                  onChange={(e) => setAuthCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. A2B9X0"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-brand-red uppercase tracking-widest font-mono text-center text-lg"
+                  maxLength={6}
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3 mt-8">
+                <button
+                  type="button"
+                  onClick={() => setClaimModalOpen(false)}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg focus:outline-none hover:bg-gray-200 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={claimLoading || authCode.length < 6}
+                  className="flex-1 px-4 py-2 bg-brand-red text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {claimLoading ? "Verifying..." : "Claim"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

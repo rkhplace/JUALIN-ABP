@@ -67,6 +67,7 @@ export const useSellerIncomeQuery = (sellerId, period = "Month") => {
   return {
     balance: data?.balance || 0,
     transferred: data?.transferred || 0,
+    withdrawn: data?.withdrawn || 0,
     chartData: data?.chartData || [],
     isLoading,
     error,
