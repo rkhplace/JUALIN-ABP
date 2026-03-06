@@ -17,6 +17,7 @@ class Transaction extends Model
         'seller_id',
         'total_amount',
         'status',
+        'auth_code',
     ];
 
     protected $casts = [

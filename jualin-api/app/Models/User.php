@@ -32,6 +32,7 @@ class User extends Authenticatable implements JWTSubject
         'followers',
         'following',
         'refresh_token',
+        'wallet_balance',
     ];
 
     /**

@@ -139,7 +139,16 @@ class MidtransService
             return;
         }
 
-        $transaction->update(['status' => $newStatus]);
+        $updates = ['status' => $newStatus];
+
+        // Intercept paid status for Escrow System
+        if ($newStatus === 'paid' && !in_array($oldStatus, ['waiting_cod', 'completed'])) {
+            $updates['status'] = 'waiting_cod';
+            $updates['auth_code'] = strtoupper(\Illuminate\Support\Str::random(6)); // 6 alphanumeric characters
+        }
+
+        $transaction->update($updates);
+        $newStatus = $updates['status'];
 
         $failedStatuses = ['failed', 'expired', 'cancelled', 'refunded'];
         if (in_array($newStatus, $failedStatuses) && !in_array($oldStatus, $failedStatuses)) {
