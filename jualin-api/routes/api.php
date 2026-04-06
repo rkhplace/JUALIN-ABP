@@ -7,6 +7,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ChatController;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Http\Request;
 
@@ -57,6 +58,14 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
     Route::patch('/users/{id}/update', [UserController::class, 'update']);
     Route::get('/transactions', [TransactionController::class, 'index']);
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);
+
+    // ── Chat ─────────────────────────────────────────────────────────────
+    Route::prefix('chat')->group(function () {
+        Route::get('/rooms',                        [ChatController::class, 'rooms']);
+        Route::post('/rooms/start',                 [ChatController::class, 'startRoom']);
+        Route::get('/rooms/{roomId}/messages',      [ChatController::class, 'messages']);
+        Route::post('/rooms/{roomId}/messages',     [ChatController::class, 'sendMessage']);
+    });
 
     Route::middleware('role:seller')->group(function () {
         Route::get('/transactions/income/statistics', [TransactionController::class, 'incomeStatistics']);

@@ -51,6 +51,7 @@ class AuthController extends Controller
         $firebaseToken = $this->generateFirebaseToken($result['user']->id);
 
         return ApiResponse::success('Login success', [
+            'id' => $result['user']->id,
             'username' => $result['user']->username,
             'email' => $result['user']->email,
             'access_token' => $result['access_token'],
