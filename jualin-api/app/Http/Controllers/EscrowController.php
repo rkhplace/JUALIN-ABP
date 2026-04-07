@@ -42,7 +42,7 @@ class EscrowController extends Controller
             }
 
             // Update transaction
-            $transaction->status = 'completed';
+            $transaction->status = 'verified';
             $transaction->save();
 
             // Add amount to seller's wallet
