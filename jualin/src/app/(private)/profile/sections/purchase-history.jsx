@@ -129,6 +129,7 @@ export function PurchaseHistorySection({
             const status = String(p?.transaction_status || "").toLowerCase();
             const isPending = status === "pending";
             const isWaitingCOD = status === "waiting_cod";
+            const isVerified = status === "verified";
             const isCompleted = status === "completed";
             const isRefunded = status === "refunded";
 
@@ -138,6 +139,8 @@ export function PurchaseHistorySection({
                 ? "bg-yellow-100 text-yellow-700 border-yellow-200"
                 : status === "waiting_cod"
                   ? "bg-orange-100 text-orange-700 border-orange-200"
+                  : status === "verified"
+                    ? "bg-green-100 text-green-700 border-green-200"
                   : status === "settlement" ||
                     status === "capture" ||
                     status === "paid" ||
@@ -164,6 +167,7 @@ export function PurchaseHistorySection({
             // Format status label
             let displayStatus = status;
             if (isWaitingCOD) displayStatus = "Waiting COD";
+            if (isVerified) displayStatus = "Verified";
             if (isCompleted) displayStatus = "Completed";
             if (isRefunded) displayStatus = "Refunded";
 

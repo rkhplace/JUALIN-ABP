@@ -32,6 +32,8 @@ export default function PaymentHistoryList({
         const statusStyles =
           status === "pending"
             ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+            : status === "verified"
+            ? "bg-green-100 text-green-700 border-green-200"
             : status === "settlement" ||
               status === "capture" ||
               status === "paid" ||
