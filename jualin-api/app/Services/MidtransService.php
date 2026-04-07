@@ -112,12 +112,35 @@ class MidtransService
                     : now(),
             ]);
 
-            $this->updateTransactionStatus($payment, $transactionStatus, $fraudStatus);
+            $this->syncPaymentStatus($payment, $transactionStatus, [
+                'fraud_status' => $fraudStatus,
+            ]);
 
             return $payment->fresh();
         } catch (\Exception $e) {
             throw $e;
         }
+    }
+
+    public function syncPaymentStatus(Payment $payment, string $transactionStatus, array $attributes = []): Payment
+    {
+        $payment->update([
+            'midtrans_transaction_id' => $attributes['transaction_id'] ?? $payment->midtrans_transaction_id,
+            'payment_type' => $attributes['payment_type'] ?? $payment->payment_type,
+            'bank_or_channel' => array_key_exists('bank_or_channel', $attributes)
+                ? $attributes['bank_or_channel']
+                : $payment->bank_or_channel,
+            'transaction_status' => $transactionStatus,
+            'transaction_time' => $attributes['transaction_time'] ?? $payment->transaction_time ?? now(),
+        ]);
+
+        $this->updateTransactionStatus(
+            $payment->fresh('transaction'),
+            $transactionStatus,
+            $attributes['fraud_status'] ?? null
+        );
+
+        return $payment->fresh();
     }
 
     private function updateTransactionStatus(Payment $payment, string $transactionStatus, ?string $fraudStatus): void
@@ -142,7 +165,7 @@ class MidtransService
         $updates = ['status' => $newStatus];
 
         // Intercept paid status for Escrow System
-        if ($newStatus === 'paid' && !in_array($oldStatus, ['waiting_cod', 'completed'])) {
+        if ($newStatus === 'paid' && !in_array($oldStatus, ['waiting_cod', 'verified'])) {
             $updates['status'] = 'waiting_cod';
             $updates['auth_code'] = strtoupper(\Illuminate\Support\Str::random(6)); // 6 alphanumeric characters
         }

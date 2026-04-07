@@ -109,35 +109,20 @@ class PaymentController extends Controller
                 try {
                     $payment = Payment::where('order_id', $orderId)->first();
                     
-                    if ($payment && $payment->transaction_status !== $status['transaction_status']) {
-                        // Update Payment record
-                        $payment->update([
-                           'midtrans_transaction_id' => $status['transaction_id'] ?? $payment->midtrans_transaction_id,
-                           'payment_type' => $status['payment_type'] ?? $payment->payment_type,
-                           'transaction_status' => $status['transaction_status'],
-                           'transaction_time' => isset($status['transaction_time'])
-                               ? date('Y-m-d H:i:s', strtotime($status['transaction_time']))
-                               : now(),
-                        ]);
-
-                        // Update Transaction record
-                        $transaction = $payment->transaction;
-                        if ($transaction) {
-                            $newStatus = null;
-                            if (in_array($status['transaction_status'], ['settlement', 'capture'])) {
-                                $newStatus = 'verified';
-                            } elseif ($status['transaction_status'] === 'pending') {
-                                $newStatus = 'pending';
-                            } elseif (in_array($status['transaction_status'], ['deny', 'expire', 'cancel'])) {
-                                $newStatus = 'failed';
-                            }
-
-                            if ($newStatus && $transaction->status !== $newStatus) {
-                                $transaction->update([
-                                    'status' => $newStatus
-                                ]);
-                            }
-                        }
+                    if ($payment) {
+                        $this->midtransService->syncPaymentStatus(
+                            $payment,
+                            $status['transaction_status'],
+                            [
+                                'transaction_id' => $status['transaction_id'] ?? null,
+                                'payment_type' => $status['payment_type'] ?? null,
+                                'bank_or_channel' => $status['bank'] ?? ($status['payment_type'] ?? null),
+                                'transaction_time' => isset($status['transaction_time'])
+                                    ? date('Y-m-d H:i:s', strtotime($status['transaction_time']))
+                                    : now(),
+                                'fraud_status' => $status['fraud_status'] ?? null,
+                            ]
+                        );
                     }
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Failed to auto-sync payment: " . $e->getMessage());
