@@ -34,11 +34,21 @@ export const useSellerIncome = (sellerId) => {
             selectedPeriod
           );
           setIncomeData(transformedData);
-        } else if (rawTransactions && rawTransactions.chart_data) {
-          const formattedChartData = (rawTransactions.chart_data || []).map(
+        } else if (rawTransactions && (rawTransactions.chart_data || rawTransactions.labels || rawTransactions.data)) {
+          const sourceChartData = Array.isArray(rawTransactions.chart_data)
+            ? rawTransactions.chart_data
+            : (rawTransactions.labels || []).map((label, index) => ({
+                label,
+                amount: rawTransactions.data?.[index] || 0,
+              }));
+
+          const formattedChartData = sourceChartData.map(
             (item) => ({
               label: item.label,
-              income: item.income,
+              fullLabel: item.full_label ?? item.fullLabel ?? item.label,
+              amount: Number(item.amount ?? item.income ?? 0),
+              periodKey: item.period_key ?? item.periodKey ?? item.label,
+              date: item.date ?? null,
             })
           );
           setIncomeData({
@@ -75,11 +85,11 @@ export const useSellerIncome = (sellerId) => {
 
   const getYAxisDomain = () => {
     if (incomeData.chartData.length === 0) return [0, 10000];
-    const maxIncome = Math.max(...incomeData.chartData.map((d) => d.income), 0);
-    const minIncome = Math.min(...incomeData.chartData.map((d) => d.income), 0);
-    const padding = Math.max(maxIncome * 0.2, 1000);
-    const max = Math.ceil((maxIncome + padding) / 1000) * 1000;
-    const min = Math.max(0, Math.floor((minIncome - padding) / 1000) * 1000);
+    const maxAmount = Math.max(...incomeData.chartData.map((d) => d.amount), 0);
+    const minAmount = Math.min(...incomeData.chartData.map((d) => d.amount), 0);
+    const padding = Math.max(maxAmount * 0.2, 1000);
+    const max = Math.ceil((maxAmount + padding) / 1000) * 1000;
+    const min = Math.max(0, Math.floor((minAmount - padding) / 1000) * 1000);
     return [min, max];
   };
 
@@ -94,7 +104,7 @@ export const useSellerIncome = (sellerId) => {
   const getMinDataPoint = () => {
     if (incomeData.chartData.length === 0) return null;
     return incomeData.chartData.reduce(
-      (min, item) => (item.income < min.income ? item : min),
+      (min, item) => (item.amount < min.amount ? item : min),
       incomeData.chartData[0]
     );
   };

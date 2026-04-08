@@ -21,7 +21,7 @@ export const useSellerDashboard = (sellerId) => {
 
       try {
         const [productsData, ordersData] = await Promise.all([
-          sellerService.fetchMyProducts(),
+          sellerService.fetchMyProducts(sellerId),
           orderService.fetchSellerOrders({
             sellerId,
             status: 'all',

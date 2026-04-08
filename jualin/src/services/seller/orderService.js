@@ -32,11 +32,11 @@ export const orderService = {
     }
   },
 
-  async fetchIncome(sellerId, period = "Month") {
-    const resp = await fetcher.get("/api/v1/transactions", {
-      params: { period, seller_id: sellerId },
+  async fetchIncome(_sellerId, period = "Month") {
+    const resp = await fetcher.get("/api/v1/transactions/income/statistics", {
+      params: { period },
     });
-    return resp?.data;
+    return resp?.data || resp;
   },
 };
 

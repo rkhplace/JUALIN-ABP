@@ -2,6 +2,7 @@
 
 import useMidtransPayment from "@/app/(private)/product/hooks/useMidtransPayment";
 import { useState } from "react";
+import { useAuth } from "@/context/AuthProvider";
 import { escrowService } from "@/services";
 
 /**
@@ -19,6 +20,7 @@ export function PurchaseHistorySection({
   onRefresh
 }) {
   const { resumePayment, loading: isPaymentLoading, toast: paymentToast } = useMidtransPayment();
+  const { updateUser } = useAuth();
   const [escrowLoading, setEscrowLoading] = useState(false);
   const [escrowToast, setEscrowToast] = useState(null);
   const [refundModalOpen, setRefundModalOpen] = useState(false);
@@ -35,11 +37,24 @@ export function PurchaseHistorySection({
 
     setEscrowLoading(true);
     try {
-      await escrowService.refundPayment(refundOrderId);
+      const response = await escrowService.refundPayment(refundOrderId);
+      const walletBalance = Number(response?.data?.wallet_balance);
+
+      if (Number.isFinite(walletBalance)) {
+        updateUser((currentUser) =>
+          currentUser
+            ? { ...currentUser, wallet_balance: walletBalance }
+            : currentUser
+        );
+      }
+
       setEscrowToast({ type: "success", message: "Refund successful. Funds added to your wallet." });
-      onRefresh();
+
+      if (onRefresh) {
+        await onRefresh();
+      }
     } catch (err) {
-      setEscrowToast({ type: "error", message: err?.response?.data?.message || "Refund failed." });
+      setEscrowToast({ type: "error", message: err?.message || "Refund failed." });
     } finally {
       setEscrowLoading(false);
       setRefundModalOpen(false);
