@@ -20,6 +20,27 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const updateUser = (updater) => {
+    setUser((currentUser) => {
+      const nextUser =
+        typeof updater === "function"
+          ? updater(currentUser)
+          : currentUser
+            ? { ...currentUser, ...updater }
+            : updater;
+
+      if (typeof window !== "undefined") {
+        if (nextUser) {
+          localStorage.setItem("user", JSON.stringify(nextUser));
+        } else {
+          localStorage.removeItem("user");
+        }
+      }
+
+      return nextUser;
+    });
+  };
+
   const syncUserToFirestore = async (userData) => {
     try {
       const userRef = doc(db, "users", userData.id.toString());
@@ -120,7 +141,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, setUser, login, logout, loading, refetchUser }}
+      value={{ user, setUser, updateUser, login, logout, loading, refetchUser }}
     >
       {children}
     </AuthContext.Provider>

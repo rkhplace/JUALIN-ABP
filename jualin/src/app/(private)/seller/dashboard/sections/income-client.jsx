@@ -1,8 +1,23 @@
 "use client";
-import React from "react";
+import React, { useMemo } from "react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceDot } from "recharts";
 import { useSellerIncome } from "@/hooks/seller/useSellerIncome";
 import { Skeleton } from "@/components/ui/skeleton";
+
+function WithdrawTooltip({ active, payload, formatCurrency }) {
+  if (!active || !payload?.length) return null;
+
+  const point = payload[0]?.payload;
+  const fullLabel = point?.fullLabel || point?.label || "-";
+  const amount = Number(point?.amount || 0);
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md">
+      <p className="text-sm font-semibold text-gray-900">{fullLabel}</p>
+      <p className="text-sm text-gray-600">{formatCurrency(amount)}</p>
+    </div>
+  );
+}
 
 const IncomeSectionClient = ({ sellerId }) => {
   const {
@@ -22,6 +37,22 @@ const IncomeSectionClient = ({ sellerId }) => {
   const [yMin, yMax] = getYAxisDomain();
   const yTicks = getYAxisTicks();
   const minDataPoint = getMinDataPoint();
+  const visibleTicks = useMemo(() => {
+    if (!chartData.length) return [];
+    if (chartData.length <= 6) return chartData.map((item) => item.label);
+
+    const step = Math.ceil(chartData.length / 6);
+    const ticks = chartData
+      .filter((_, index) => index % step === 0)
+      .map((item) => item.label);
+    const lastLabel = chartData[chartData.length - 1]?.label;
+
+    if (lastLabel && ticks[ticks.length - 1] !== lastLabel) {
+      ticks.push(lastLabel);
+    }
+
+    return [...new Set(ticks)];
+  }, [chartData]);
 
   return (
     <section>
@@ -59,7 +90,7 @@ const IncomeSectionClient = ({ sellerId }) => {
             </div>
           )}
 
-          <div className="h-64">
+          <div className="h-64 overflow-hidden">
             {isLoading ? (
               <div className="h-full space-y-2">
                 <Skeleton className="h-full w-full" />
@@ -74,15 +105,19 @@ const IncomeSectionClient = ({ sellerId }) => {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 12, right: 20, left: 8, bottom: 0 }}>
+                <LineChart data={chartData} margin={{ top: 12, right: 20, left: 8, bottom: 20 }}>
                   <XAxis
                     dataKey="label"
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: "var(--color-text-tertiary)", fontSize: 12 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
+                    angle={0}
+                    textAnchor="middle"
+                    interval="preserveStartEnd"
+                    ticks={visibleTicks}
+                    minTickGap={24}
+                    tickMargin={10}
+                    height={44}
                   />
                   <YAxis
                     axisLine={false}
@@ -93,19 +128,10 @@ const IncomeSectionClient = ({ sellerId }) => {
                     ticks={yTicks}
                     width={60}
                   />
-                  <Tooltip
-                    contentStyle={{
-                      background: "white",
-                      border: "1px solid var(--color-border-default)",
-                      borderRadius: "8px",
-                      padding: "8px 12px"
-                    }}
-                    formatter={(value) => [formatCurrency(value), "Income"]}
-                    labelStyle={{ color: "var(--color-text-primary)", fontWeight: 600 }}
-                  />
+                  <Tooltip content={<WithdrawTooltip formatCurrency={formatCurrency} />} />
                   <Line
                     type="monotone"
-                    dataKey="income"
+                    dataKey="amount"
                     stroke="var(--color-brand-primary)"
                     strokeWidth={3}
                     dot={{ fill: "var(--color-brand-primary)", r: 4 }}
@@ -114,7 +140,7 @@ const IncomeSectionClient = ({ sellerId }) => {
                   {minDataPoint && (
                     <ReferenceDot
                       x={minDataPoint.label}
-                      y={minDataPoint.income}
+                      y={minDataPoint.amount}
                       r={6}
                       fill="var(--color-brand-primary)"
                       stroke="white"
@@ -127,7 +153,7 @@ const IncomeSectionClient = ({ sellerId }) => {
           </div>
 
           <div className="flex mt-6 bg-[var(--color-neutral-100)] rounded-xl p-1">
-            {["Year", "Month", "Week"].map((p) => (
+            {["Year", "Month", "Week", "Day"].map((p) => (
               <button
                 key={p}
                 onClick={() => setSelectedPeriod(p)}

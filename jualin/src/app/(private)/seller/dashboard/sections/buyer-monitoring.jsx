@@ -1,23 +1,24 @@
 "use client";
-import React, { useState, useMemo, useContext } from "react";
+import React, { useState, useMemo, useContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import DropdownMenu from "@/components/ui/DropdownMenu";
 import {
   Search,
-  MoreHorizontal,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { ChatContext } from "@/context/ChatProvider";
+import { useAuth } from "@/context/AuthProvider";
 import { getProfilePictureUrl, getProductImageUrl } from "@/utils/imageHelper";
 import { escrowService } from "@/services";
 
 const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
   const router = useRouter();
   const { openChatWithUser } = useContext(ChatContext);
+  const { updateUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(8);
+  const [orderList, setOrderList] = useState(orders);
 
   // Escrow Claim State
   const [claimModalOpen, setClaimModalOpen] = useState(false);
@@ -26,6 +27,10 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
   const [claimLoading, setClaimLoading] = useState(false);
   const [claimToast, setClaimToast] = useState(null);
 
+  useEffect(() => {
+    setOrderList(orders);
+  }, [orders]);
+
   const handleClaimSubmit = async (e) => {
     e.preventDefault();
     if (!authCode.trim()) return;
@@ -33,17 +38,34 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
     setClaimLoading(true);
     setClaimToast(null);
     try {
-      await escrowService.claimPayment(claimOrderId, authCode.trim());
+      const response = await escrowService.claimPayment(claimOrderId, authCode.trim());
+      const nextStatus = response?.data?.transaction?.status || "verified";
+      const walletBalance = Number(response?.data?.wallet_balance);
+
+      setOrderList((currentOrders) =>
+        currentOrders.map((order) =>
+          String(order.id) === String(claimOrderId)
+            ? { ...order, status: nextStatus }
+            : order
+        )
+      );
+
+      if (Number.isFinite(walletBalance)) {
+        updateUser((currentUser) =>
+          currentUser
+            ? { ...currentUser, wallet_balance: walletBalance }
+            : currentUser
+        );
+      }
+
       setClaimToast({ type: "success", message: "Payment successfully claimed to your wallet." });
 
-      // Give the user time to read the success message before closing and reloading
       setTimeout(() => {
         setClaimModalOpen(false);
         setAuthCode("");
-        window.location.reload();
-      }, 1500);
+      }, 1200);
     } catch (err) {
-      setClaimToast({ type: "error", message: err?.response?.data?.message || "Failed to claim payment. Please check the authentication code." });
+      setClaimToast({ type: "error", message: err?.message || "Failed to claim payment. Please check the authentication code." });
     } finally {
       setClaimLoading(false);
     }
@@ -52,12 +74,13 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
   const openClaimModal = (orderId) => {
     setClaimOrderId(orderId);
     setAuthCode("");
+    setClaimToast(null);
     setClaimModalOpen(true);
   };
 
   const buyerActivities =
-    orders.length > 0
-      ? orders.map((order) => ({
+    orderList.length > 0
+      ? orderList.map((order) => ({
         id: order.id,
         buyerId: order.customer?.id,
         buyerName: order.customer?.username || "Unknown Buyer",
@@ -91,9 +114,6 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
       );
     }
   };
-
-  const handleViewDetails = (orderId) =>
-    router.push(`/seller/orders/${orderId}`);
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -272,37 +292,36 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
                     </span>
                   </td>
                   <td className="py-3 px-2 text-right">
-                    <DropdownMenu
-                      trigger={
-                        <MoreHorizontal className="h-5 w-5 text-gray-400" />
-                      }
-                      items={[
-                        ...(activity.status === "pending"
-                          ? [
-                            {
-                              label: "Verifikasi Order",
-                              onClick: () => handleVerifyOrder(activity.id),
-                            },
-                          ]
-                          : []),
-                        ...(activity.status === "waiting_cod"
-                          ? [
-                            {
-                              label: "Klaim Pembayaran COD",
-                              onClick: () => openClaimModal(activity.id),
-                            },
-                          ]
-                          : []),
-                        {
-                          label: "Chat Pembeli",
-                          onClick: () => handleChatBuyer(activity.buyerId),
-                        },
-                        {
-                          label: "Lihat Detail",
-                          onClick: () => handleViewDetails(activity.id),
-                        },
-                      ]}
-                    />
+                    <div className="flex items-center justify-end gap-2">
+                      {["pending", "waiting_cod"].includes(activity.status) && (
+                        <button
+                          type="button"
+                          onClick={() => handleChatBuyer(activity.buyerId)}
+                          disabled={!activity.buyerId}
+                          className="inline-flex items-center rounded-lg border border-brand-red bg-white px-3 py-2 text-sm font-semibold text-brand-red shadow-sm transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Chat
+                        </button>
+                      )}
+                      {activity.status === "pending" && (
+                        <button
+                          type="button"
+                          onClick={() => handleVerifyOrder(activity.id)}
+                          className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+                        >
+                          Verifikasi
+                        </button>
+                      )}
+                      {activity.status === "waiting_cod" && (
+                        <button
+                          type="button"
+                          onClick={() => openClaimModal(activity.id)}
+                          className="inline-flex items-center rounded-lg bg-brand-red px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700"
+                        >
+                          Claim COD
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))
