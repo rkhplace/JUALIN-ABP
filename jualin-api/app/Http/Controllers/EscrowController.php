@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Responses\ApiResponse;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Models\WalletTransaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -45,8 +46,8 @@ class EscrowController extends Controller
             $transaction->status = 'verified';
             $transaction->save();
 
-            // Add amount to seller's wallet
-            $seller = $transaction->seller;
+            // Lock the seller row so concurrent wallet updates stay consistent.
+            $seller = User::where('id', $transaction->seller_id)->lockForUpdate()->firstOrFail();
             $seller->wallet_balance += $transaction->total_amount;
             $seller->save();
 
@@ -61,8 +62,8 @@ class EscrowController extends Controller
             DB::commit();
 
             return ApiResponse::success('Escrow claimed successfully', [
-                'transaction' => $transaction,
-                'wallet_balance' => $seller->wallet_balance,
+                'transaction' => $transaction->fresh(),
+                'wallet_balance' => (float) $seller->wallet_balance,
             ], 200);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -99,8 +100,8 @@ class EscrowController extends Controller
             $transaction->status = 'refunded';
             $transaction->save();
 
-            // Add amount to buyer's wallet
-            $buyer = $transaction->customer;
+            // Lock the buyer row so refund credits do not race with other wallet actions.
+            $buyer = User::where('id', $transaction->customer_id)->lockForUpdate()->firstOrFail();
             $buyer->wallet_balance += $transaction->total_amount;
             $buyer->save();
 
@@ -122,8 +123,8 @@ class EscrowController extends Controller
             DB::commit();
 
             return ApiResponse::success('Refund processed successfully', [
-                'transaction' => $transaction,
-                'wallet_balance' => $buyer->wallet_balance,
+                'transaction' => $transaction->fresh(),
+                'wallet_balance' => (float) $buyer->wallet_balance,
             ], 200);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
