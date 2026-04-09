@@ -1,5 +1,13 @@
 import { fetcher } from '@/lib/fetcher';
 
+const normalizeDateString = (value) => {
+  if (!value) return null;
+  const stringValue = typeof value === 'string' ? value : value.toString();
+  const dateOnly = stringValue.split('T')[0];
+  const date = new Date(dateOnly);
+  return Number.isNaN(date.getTime()) ? null : dateOnly;
+};
+
 export const profileService = {
   async fetchCurrentProfile() {
     const response = await fetcher.get('/api/v1/me');
@@ -13,15 +21,15 @@ export const profileService = {
     const userId = storedUser?.id;
     if (!userId) throw new Error('User ID not found. Please login again.');
 
+    const birthday = normalizeDateString(profileData.birthday);
     let response;
+
     if (imageFile) {
       const formData = new FormData();
       formData.append('username', profileData.username);
       formData.append('email', profileData.email);
       formData.append('gender', profileData.gender || 'male');
-      if (profileData.birthday) {
-        formData.append('birthday', profileData.birthday);
-      }
+      formData.append('birthday', birthday ?? '');
       formData.append('region', profileData.region || '');
       formData.append('city', profileData.city || '');
       formData.append('bio', profileData.bio || '');
@@ -33,7 +41,7 @@ export const profileService = {
         username: profileData.username,
         email: profileData.email,
         gender: profileData.gender || 'male',
-        birthday: profileData.birthday || null,
+        birthday,
         region: profileData.region || '',
         city: profileData.city || '',
         bio: profileData.bio || '',

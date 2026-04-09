@@ -145,12 +145,12 @@ export const fetcher = {
   },
   async upload(url, formData, { headers, auth = true } = {}) {
     try {
+      const uploadHeaders = {
+        ...(auth === false ? { Authorization: undefined } : {}),
+        ...(headers || {}),
+      };
       const res = await instance.post(url, formData, {
-        headers: {
-          ...(auth === false ? { Authorization: undefined } : {}),
-          ...(headers || {}),
-          "Content-Type": "multipart/form-data",
-        },
+        headers: uploadHeaders,
       });
       return res.data;
     } catch (err) {

@@ -3,6 +3,16 @@ import { profileService } from '@/services';
 import { useAuth } from '@/context/AuthProvider';
 import { getProfilePictureUrl } from '@/utils/imageHelper';
 
+const normalizeDateString = (value) => {
+  if (!value) return '';
+  if (typeof value !== 'string') {
+    value = value.toString();
+  }
+  const dateOnly = value.split('T')[0];
+  const date = new Date(dateOnly);
+  return Number.isNaN(date.getTime()) ? '' : dateOnly;
+};
+
 /**
  * Hook to manage profile update form and submission
  * @returns {Object} { form, imageFile, imagePreview, errors, isLoading, updateField, selectImage, submit }
@@ -15,7 +25,7 @@ export const useProfileUpdate = () => {
       username: user?.username || '',
       email: user?.email || '',
       gender: user?.gender || 'male',
-      birthday: user?.birthday || '',
+      birthday: normalizeDateString(user?.birthday),
       region: user?.region || '',
       city: user?.city || '',
       bio: user?.bio || '',
