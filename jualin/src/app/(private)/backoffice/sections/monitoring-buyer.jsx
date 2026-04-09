@@ -20,6 +20,9 @@ export default function BuyerMonitoring() {
   const [editingBuyer, setEditingBuyer] = useState(null);
   const [showBuyerModal, setShowBuyerModal] = useState(false);
 
+  const [deletingBuyerId, setDeletingBuyerId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
   // Fetch All Transactions (Once)
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -110,10 +113,17 @@ export default function BuyerMonitoring() {
   }, [searchQuery, filterPeriod, itemsPerPage]);
 
   const handleDeleteBuyer = (id) => {
-    if (confirm("Are you sure you want to delete this order record?")) {
+    setDeletingBuyerId(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteBuyer = () => {
+    if (deletingBuyerId) {
       // In real app, call API. For now, filter local state (but ideally refetch or optimistic update)
       // Since we derived from allTransactions, we update allTransactions
-      setAllTransactions((prev) => prev.filter((t) => t.id !== id));
+      setAllTransactions((prev) => prev.filter((t) => t.id !== deletingBuyerId));
+      setDeletingBuyerId(null);
+      setShowDeleteModal(false);
     }
   };
 
@@ -413,6 +423,53 @@ export default function BuyerMonitoring() {
                 className="w-full bg-[#E53935] text-white py-2.5 rounded-lg font-medium hover:bg-[#D32F2F] transition-colors shadow-sm"
               >
                 Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Buyer (Order) Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Delete Order
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeletingBuyerId(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-sm text-gray-600">
+                Are you sure you want to delete this order record? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeletingBuyerId(null);
+                }}
+                className="flex-1 bg-white border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors shadow-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteBuyer}
+                className="flex-1 bg-[#E53935] text-white py-2.5 rounded-lg font-medium hover:bg-[#D32F2F] transition-colors shadow-sm"
+              >
+                Delete
               </button>
             </div>
           </div>
