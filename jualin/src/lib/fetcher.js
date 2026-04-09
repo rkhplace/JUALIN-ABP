@@ -148,6 +148,7 @@ export const fetcher = {
       const uploadHeaders = {
         ...(auth === false ? { Authorization: undefined } : {}),
         ...(headers || {}),
+        "Content-Type": "multipart/form-data",
       };
       const res = await instance.post(url, formData, {
         headers: uploadHeaders,
