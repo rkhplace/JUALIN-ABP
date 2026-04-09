@@ -73,7 +73,7 @@ class ProductRepository
 
     public function create(array $data): Product
     {
-        $data['image'] = $this->processImages($data);
+        $data['image'] = $this->prepareImageValue($this->processImages($data));
         return Product::create($data);
     }
 
@@ -87,15 +87,15 @@ class ProductRepository
         $newImages = $this->processImages($data);
         if ($newImages !== null) {
             // Delete old images when new ones are provided
-            $oldImages = $product->getRawOriginal('image');
-            if ($oldImages && is_array($oldImages)) {
+            $oldImages = $this->extractStoredImages($product->getRawOriginal('image'));
+            if (!empty($oldImages)) {
                 foreach ($oldImages as $oldImage) {
                     if ($oldImage && Storage::disk('public')->exists($oldImage)) {
                         Storage::disk('public')->delete($oldImage);
                     }
                 }
             }
-            $data['image'] = $newImages;
+            $data['image'] = $this->prepareImageValue($newImages);
         }
 
         $product->fill($data);
@@ -130,6 +130,37 @@ class ProductRepository
         return null;
     }
 
+    private function prepareImageValue(?array $images): ?string
+    {
+        if ($images === null) {
+            return null;
+        }
+
+        return json_encode(array_values($images));
+    }
+
+    private function extractStoredImages($value): array
+    {
+        if (!$value) {
+            return [];
+        }
+
+        if (is_array($value)) {
+            return array_values(array_filter($value));
+        }
+
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded)) {
+                return array_values(array_filter($decoded));
+            }
+
+            return [$value];
+        }
+
+        return [];
+    }
+
     public function delete(int $id): bool
     {
         $product = $this->find($id);
@@ -138,8 +169,8 @@ class ProductRepository
         }
 
         // Delete all images
-        $images = $product->getRawOriginal('image');
-        if ($images && is_array($images)) {
+        $images = $this->extractStoredImages($product->getRawOriginal('image'));
+        if (!empty($images)) {
             foreach ($images as $image) {
                 if ($image && Storage::disk('public')->exists($image)) {
                     Storage::disk('public')->delete($image);
