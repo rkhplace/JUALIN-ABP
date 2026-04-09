@@ -201,15 +201,19 @@ class TransactionController extends Controller
     {
         $user = Auth::user();
 
-        $transactions = Transaction::with(['items.product', 'customer', 'seller', 'payment' => function($q) {
+        $query = Transaction::with(['items.product', 'customer', 'seller', 'payment' => function($q) {
                 // Ensure we get the latest payment attempt if there are multiple
                 $q->latest();
-            }])
-            ->where(function ($query) use ($user) {
-                $query->where('customer_id', $user->id)
+            }]);
+
+        if ($user->role !== 'admin') {
+            $query->where(function ($q) use ($user) {
+                $q->where('customer_id', $user->id)
                     ->orWhere('seller_id', $user->id);
-            })
-            ->latest()
+            });
+        }
+
+        $transactions = $query->latest()
             ->paginate((int) $request->get('per_page', 10));
 
         return ApiResponse::success(
