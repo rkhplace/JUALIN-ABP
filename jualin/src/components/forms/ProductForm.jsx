@@ -292,15 +292,21 @@ export default function ProductForm({
               >
                 Kategori
               </label>
-              <input
-                type="text"
+              <select
                 id="category"
                 name="category"
                 value={formData.category}
                 onChange={handleInputChange}
-                placeholder="e.g. Electronics, Fashion, etc."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
-              />
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg ..."
+              >
+                <option value="">Pilih kategori</option>
+                <option value="Elektronik">Elektronik</option>
+                <option value="Fashion">Fashion</option>
+                <option value="Hobi & Olahraga">Hobi & Olahraga</option>
+                <option value="Rumah Tangga">Rumah Tangga</option>
+                <option value="Aksesoris">Aksesoris</option>
+                <option value="Otomotif">Otomotif</option>
+              </select>
             </div>
 
             {/* Condition */}

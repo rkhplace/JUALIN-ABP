@@ -28,7 +28,7 @@ const Navbar = () => {
         {user?.role !== "admin" && (
           <div className="hidden md:flex items-center gap-8 mx-4">
             <a
-              href="/"
+              href="/dashboard"
               className="relative group text-gray-600 font-medium hover:text-[#E83030] transition-colors duration-300"
             >
               Beranda
@@ -94,7 +94,7 @@ const Navbar = () => {
                   href="/seller/products/new"
                   className="px-4 py-2 rounded-2xl bg-[#E83030] text-white font-semibold shadow transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:scale-95"
                 >
-                  Jual
+                  Upload Produk
                 </a>
               )}
             </>
