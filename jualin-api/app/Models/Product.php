@@ -26,7 +26,6 @@ class Product extends Model
     protected $casts = [
         'price' => 'integer',
         'stock_quantity' => 'integer',
-        'image' => 'array',
     ];
 
     public function seller()
@@ -36,45 +35,7 @@ class Product extends Model
 
     public function getImageAttribute($value)
     {
-        // Jika null atau kosong
-        if (!$value) {
-            return [];
-        }
-
-        // Jika sudah array dari casting
-        if (is_array($value)) {
-            return array_map(function ($image) {
-                if (!$image) {
-                    return null;
-                }
-
-                if (filter_var($image, FILTER_VALIDATE_URL)) {
-                    return $image;
-                }
-
-                return asset('storage/' . $image);
-            }, $value);
-        }
-
-        // Jika masih string (fallback)
-        if (is_string($value)) {
-            $decoded = json_decode($value, true);
-            if (is_array($decoded)) {
-                return array_map(function ($image) {
-                    if (!$image) {
-                        return null;
-                    }
-
-                    if (filter_var($image, FILTER_VALIDATE_URL)) {
-                        return $image;
-                    }
-
-                    return asset('storage/' . $image);
-                }, $decoded);
-            }
-        }
-
-        return [];
+        return $this->normalizeImages($value);
     }
 
     /**
@@ -83,7 +44,7 @@ class Product extends Model
     public function getFirstImageAttribute()
     {
         $images = $this->image;
-        
+
         if (!$images || !is_array($images) || empty($images)) {
             return 'https://via.placeholder.com/400x400?text=No+Image';
         }
@@ -93,10 +54,50 @@ class Product extends Model
             return 'https://via.placeholder.com/400x400?text=No+Image';
         }
 
-        if (filter_var($first, FILTER_VALIDATE_URL)) {
-            return $first;
+        return $first;
+    }
+
+    private function normalizeImages($value): array
+    {
+        if (!$value) {
+            return [];
         }
 
-        return asset('storage/' . $first);
+        $images = [];
+
+        if (is_array($value)) {
+            $images = $value;
+        } elseif (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded)) {
+                $images = $decoded;
+            } else {
+                $images = [$value];
+            }
+        }
+
+        return array_values(array_filter(array_map(
+            fn ($image) => $this->resolveImageUrl($image),
+            $images
+        )));
+    }
+
+    private function resolveImageUrl($image): ?string
+    {
+        if (!$image || !is_string($image)) {
+            return null;
+        }
+
+        if (filter_var($image, FILTER_VALIDATE_URL)) {
+            return $image;
+        }
+
+        $baseUrl = rtrim(request()?->getSchemeAndHttpHost() ?: config('app.url', ''), '/');
+        $cleanPath = ltrim($image, '/');
+        $storagePath = str_starts_with($cleanPath, 'storage/')
+            ? $cleanPath
+            : 'storage/' . $cleanPath;
+
+        return $baseUrl ? "{$baseUrl}/{$storagePath}" : "/{$storagePath}";
     }
 }
