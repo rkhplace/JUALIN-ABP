@@ -13,6 +13,7 @@ export default function BackofficeNewProductPage() {
     try {
       setSaving(true);
       setError("");
+      console.log("🚀 Starting product creation (backoffice)...", formData);
 
       const productData = {
         name: formData.name.trim(),
@@ -24,25 +25,44 @@ export default function BackofficeNewProductPage() {
         status: formData.status,
       };
 
-      const result = await productService.create(
+      console.log("📦 Product data prepared:", productData);
+      console.log("🖼️ Image files:", formData.imageFiles);
+
+      // Call service and await for completion
+      const createdProduct = await productService.create(
         productData,
-        formData.imageFile
+        formData.imageFiles || []
       );
-
-      if (result) {
-        router.push("/backoffice/products");
-      } else {
-        setError("Gagal menambahkan produk");
-      }
+      
+      console.log("✅ Product created successfully:", createdProduct);
+      console.log("🔄 Redirecting to /backoffice/products...");
+      
+      // Use window.location.href directly - most reliable method
+      setTimeout(() => {
+        console.log("⏸️ Executing redirect via window.location.href");
+        window.location.href = "/backoffice/products";
+      }, 300);
+      
     } catch (err) {
-      console.error("Failed to create product:", err);
+      console.error("❌ Error creating product:", err);
+      console.error("Error details:", {
+        message: err?.message,
+        statusCode: err?.statusCode,
+        response: err?.originalError?.response?.data,
+      });
 
-      const validationErrors = err.originalError?.response?.data?.errors;
-      if (validationErrors) {
-        const firstError = Object.values(validationErrors).flat()[0];
-        setError(firstError);
+      // Show user-friendly error
+      if (err?.statusCode === 422) {
+        // Validation errors
+        const validationErrors = err?.originalError?.response?.data?.errors;
+        if (validationErrors && typeof validationErrors === 'object') {
+          const firstError = Object.values(validationErrors).flat()[0];
+          setError(firstError || "Validasi gagal");
+        } else {
+          setError(err?.message || "Data tidak valid");
+        }
       } else {
-        setError(err.message || "Gagal menambahkan produk");
+        setError(err?.message || "Gagal menambahkan produk. Silakan coba lagi.");
       }
     } finally {
       setSaving(false);

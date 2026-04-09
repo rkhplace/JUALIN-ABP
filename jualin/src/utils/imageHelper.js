@@ -32,14 +32,49 @@ export const getProfilePictureUrl = (profilePicture, fallback = '/ProfilePhoto.p
 };
 
 /**
- * Get product image URL with fallback
- * @param {string|null} productImage - Product image path
+ * Get first product image URL with fallback (for single image display)
+ * @param {string|array|null} productImage - Product image path(s)
  * @param {string} fallback - Fallback image path
- * @returns {string} Full image URL
+ * @returns {string} Full image URL or fallback
+ */
+export const getFirstProductImageUrl = (productImage, fallback = '/placeholder.svg') => {
+  if (!productImage) return fallback;
+  
+  // Handle array of images - return first one
+  if (Array.isArray(productImage)) {
+    const firstImage = productImage.find(img => img);
+    return firstImage ? getImageUrl(firstImage) : fallback;
+  }
+  
+  // Handle single image
+  return getImageUrl(productImage);
+};
+
+/**
+ * Get all product image URLs
+ * @param {string|array|null} productImage - Product image path(s)
+ * @returns {array} Array of full image URLs
+ */
+export const getProductImagesUrls = (productImage) => {
+  if (!productImage) return [];
+  
+  // Handle array of images
+  if (Array.isArray(productImage)) {
+    return productImage.filter(img => img).map(img => getImageUrl(img));
+  }
+  
+  // Handle single image - return as array
+  return [getImageUrl(productImage)];
+};
+
+/**
+ * Get product image URL with fallback (BACKWARD COMPATIBLE - returns single image)
+ * @param {string|array|null} productImage - Product image path(s)
+ * @param {string} fallback - Fallback image path
+ * @returns {string} Full image URL or fallback
  */
 export const getProductImageUrl = (productImage, fallback = '/placeholder.svg') => {
-  if (!productImage) return fallback;
-  return getImageUrl(productImage);
+  return getFirstProductImageUrl(productImage, fallback);
 };
 
 export default {

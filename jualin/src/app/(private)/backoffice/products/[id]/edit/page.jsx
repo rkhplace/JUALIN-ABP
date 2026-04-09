@@ -42,34 +42,20 @@ export default function BackofficeEditProductPage() {
       setSaving(true);
       setError("");
 
-      const storedUser =
-        typeof window !== "undefined"
-          ? JSON.parse(localStorage.getItem("user") || "null")
-          : null;
-
-      const sellerId = storedUser?.id || 1;
-
       const payload = {
-        seller_id: sellerId,
         name: formData.name.trim(),
         price: parseFloat(formData.price),
         description: formData.description.trim(),
-        image: formData.image,
         stock_quantity: parseInt(formData.stock_quantity),
         category: formData.category,
         condition: formData.condition,
         status: formData.status,
       };
 
-      let imageFile = null;
-      if (formData.imageFile) {
-        imageFile = formData.imageFile;
-      }
-
       const updatedProduct = await productService.update(
         productId,
         payload,
-        imageFile
+        formData.imageFiles || []
       );
 
       if (updatedProduct) {

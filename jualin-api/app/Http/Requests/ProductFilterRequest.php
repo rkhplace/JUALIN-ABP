@@ -31,6 +31,7 @@ class ProductFilterRequest extends FormRequest
             'sort_dir' => ['sometimes', 'string', 'in:asc,desc'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:200'],
             'min_stock' => ['sometimes', 'integer', 'min:0'],
+            'seller_id' => ['sometimes', 'integer'], // Allow but can be overridden in controller
         ];
     }
 

@@ -97,7 +97,7 @@ export default function RecommendedSection() {
                 tabIndex={0}
               >
                 <img
-                  src={getProductImageUrl(product.image)}
+                  src={getProductImageUrl(product.img || product.image)}
                   alt={product.name || "Foto Produk"}
                   className="w-full h-60 object-cover rounded-xl mb-4 transition-transform duration-200 group-hover:scale-[1.02]"
                   onError={(e) => {

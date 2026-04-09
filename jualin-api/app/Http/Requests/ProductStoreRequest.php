@@ -19,6 +19,8 @@ class ProductStoreRequest extends FormRequest
             'price' => ['required','numeric','min:0'],
             'stock_quantity' => ['required','integer','min:0'],
             'image' => ['nullable','image','mimes:jpeg,png,jpg,gif,webp','max:2048'],
+            'images' => ['nullable','array'],
+            'images.*' => ['image','mimes:jpeg,png,jpg,gif,webp','max:2048'],
             'category' => ['nullable','string','max:100'],
             'condition' => ['nullable','in:new,used,refurbished'],
             'status' => ['nullable','in:active,inactive,archived'],

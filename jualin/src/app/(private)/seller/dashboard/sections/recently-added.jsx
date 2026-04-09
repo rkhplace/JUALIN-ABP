@@ -153,7 +153,7 @@ const RecentlyAddedSection = ({ products, isLoading = false }) => {
                   </div>
                   <div className="flex justify-center mb-3">
                     <img
-                      src={getProductImageUrl(product.image)}
+                      src={getProductImageUrl(product.img || product.image)}
                       alt={product.name}
                       className="h-20 object-contain"
                       onError={(e) => {

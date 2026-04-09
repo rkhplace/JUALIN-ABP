@@ -42,38 +42,20 @@ export default function EditProductPage() {
       setSaving(true);
       setError("");
 
-      const storedUser =
-        typeof window !== "undefined"
-          ? JSON.parse(localStorage.getItem("user") || "null")
-          : null;
-
-      const sellerId = storedUser?.id || 1;
-
       const payload = {
-        seller_id: sellerId,
         name: formData.name.trim(),
         price: parseFloat(formData.price),
         description: formData.description.trim(),
-        image: formData.image || formData.imageFile,
         stock_quantity: parseInt(formData.stock_quantity),
         category: formData.category,
         condition: formData.condition,
         status: formData.status,
       };
 
-      // If it's a file, we need to pass it differently or let service handle it.
-      // ProductService update expects (id, productData, imageFile).
-      // Let's adjust payload logic to match ProductService signature.
-
-      let imageFile = null;
-      if (formData.imageFile) {
-        imageFile = formData.imageFile;
-      }
-
       const updatedProduct = await productService.update(
         productId,
         payload,
-        imageFile
+        formData.imageFiles || []
       );
 
       if (updatedProduct) {
