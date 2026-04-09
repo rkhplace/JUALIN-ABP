@@ -6,7 +6,7 @@ import Spinner from "../../../../components/ui/Spinner";
 import useMidtransPayment from "../hooks/useMidtransPayment";
 import { ChatContext } from "@/context/ChatProvider";
 import { AuthContext } from "@/context/AuthProvider";
-import { getProductImageUrl, getProfilePictureUrl } from "@/utils/imageHelper";
+import { getProductImageUrl, getProfilePictureUrl, getImageUrl } from "@/utils/imageHelper";
 import { formatCurrency } from "@/utils/formatters/currency";
 import PaymentMethodModal from "@/components/payment/PaymentMethodModal";
 import { transactionService } from "@/services";
@@ -20,6 +20,7 @@ export default function ProductDetailSection({ product, seller }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isWalletLoading, setIsWalletLoading] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const handleConfirmPayment = async (method) => {
     setIsModalOpen(false);
@@ -169,15 +170,57 @@ export default function ProductDetailSection({ product, seller }) {
         </div>
       )}
       <div className="flex flex-col md:flex-row gap-8 items-start bg-white rounded-2xl shadow p-6">
-        <img
-          src={getProductImageUrl(product.image)}
-          alt={product.name}
-          loading="lazy"
-          className="w-full md:w-1/2 h-80 object-cover rounded-2xl shadow"
-          onError={(e) => {
-            e.target.src = "https://via.placeholder.com/400x400?text=No+Image";
-          }}
-        />
+        {/* Image Gallery Section */}
+        <div className="w-full md:w-1/2 flex flex-col gap-4">
+          {/* Main Image */}
+          <div className="relative bg-gray-100 rounded-2xl overflow-hidden shadow">
+            <img
+              src={
+                Array.isArray(product.image) && product.image.length > 0
+                  ? getImageUrl(product.image[selectedImageIndex])
+                  : getProductImageUrl(product.img || product.image)
+              }
+              alt={product.name}
+              loading="lazy"
+              className="w-full h-80 object-cover"
+              onError={(e) => {
+                e.target.src = "https://via.placeholder.com/400x400?text=No+Image";
+              }}
+            />
+            {/* Image Counter Badge */}
+            {Array.isArray(product.image) && product.image.length > 1 && (
+              <div className="absolute top-3 right-3 bg-black/50 text-white px-3 py-1 rounded-full text-sm font-medium">
+                {selectedImageIndex + 1} / {product.image.length}
+              </div>
+            )}
+          </div>
+
+          {/* Thumbnail Gallery */}
+          {Array.isArray(product.image) && product.image.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {product.image.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedImageIndex(idx)}
+                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                    selectedImageIndex === idx
+                      ? "border-red-500 scale-105"
+                      : "border-gray-300 hover:border-gray-400"
+                  }`}
+                >
+                  <img
+                    src={getImageUrl(img)}
+                    alt={`${product.name} ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = "https://via.placeholder.com/80x80?text=No+Image";
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="flex-1">
           <h2 className="text-3xl font-semibold mb-1 text-black">
             {product.name}

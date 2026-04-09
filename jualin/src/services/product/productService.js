@@ -1,8 +1,14 @@
 import { fetcher } from "@/lib/fetcher";
+import { getFirstProductImageUrl } from "@/utils/imageHelper";
 
 const normalizeProduct = (product) => ({
   ...product,
-  img: product.image,
+  // For backward compatibility - return first image as string for 'img' field
+  img: Array.isArray(product.image) && product.image.length > 0 
+    ? product.image[0] 
+    : product.image,
+  // Keep original array for 'images' field
+  images: Array.isArray(product.image) ? product.image : (product.image ? [product.image] : []),
   id: product.id,
   category: product.category?.toLowerCase() || "",
   stock: product.stock ?? product.stock_quantity ?? 0,
@@ -45,7 +51,7 @@ export const productService = {
     return normalizeProduct(res?.data || res);
   },
 
-  async create(productData, imageFile = null) {
+  async create(productData, imageFiles = null) {
     const token =
       typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (!token) throw new Error("Please login as seller to create a product.");
@@ -58,7 +64,10 @@ export const productService = {
       storedUser?.id || storedUser?.user_id || storedUser?.userId || null;
     if (!sellerId) throw new Error("Seller ID not found. Please login again.");
 
-    if (imageFile) {
+    // Handle both single file and multiple files
+    const filesToUpload = Array.isArray(imageFiles) ? imageFiles : (imageFiles ? [imageFiles] : []);
+
+    if (filesToUpload.length > 0) {
       const formData = new FormData();
       formData.append("seller_id", sellerId);
       Object.entries({
@@ -70,7 +79,13 @@ export const productService = {
         condition: productData.condition || "new",
         status: productData.status || "active",
       }).forEach(([k, v]) => formData.append(k, v));
-      formData.append("image", imageFile);
+      
+      // Append multiple files with field name 'images[]'
+      filesToUpload.forEach((file) => {
+        if (file instanceof File) {
+          formData.append("images[]", file);
+        }
+      });
 
       const res = await fetcher.upload("/api/v1/products", formData);
       return normalizeProduct(res?.data || res);
@@ -89,8 +104,11 @@ export const productService = {
     return normalizeProduct(res?.data || res);
   },
 
-  async update(id, productData, imageFile = null) {
-    if (imageFile) {
+  async update(id, productData, imageFiles = null) {
+    // Handle both single file and multiple files
+    const filesToUpload = Array.isArray(imageFiles) ? imageFiles : (imageFiles ? [imageFiles] : []);
+
+    if (filesToUpload.length > 0) {
       const formData = new FormData();
       Object.entries({
         name: productData.name,
@@ -101,7 +119,13 @@ export const productService = {
         condition: productData.condition || "new",
         status: productData.status || "active",
       }).forEach(([k, v]) => formData.append(k, v));
-      formData.append("image", imageFile);
+      
+      // Append multiple files with field name 'images[]'
+      filesToUpload.forEach((file) => {
+        if (file instanceof File) {
+          formData.append("images[]", file);
+        }
+      });
 
       const res = await fetcher.upload(
         `/api/v1/products/${id}?_method=PATCH`,

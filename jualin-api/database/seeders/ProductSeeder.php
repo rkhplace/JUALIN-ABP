@@ -357,6 +357,14 @@ class ProductSeeder extends Seeder
             ],
         ];
 
+        // Convert all image URLs to JSON arrays for database storage
+        $products = array_map(function($product) {
+            if (isset($product['image']) && is_string($product['image']) && !str_starts_with($product['image'], '[')) {
+                $product['image'] = json_encode([$product['image']]);
+            }
+            return $product;
+        }, $products);
+
         DB::table('products')->insert($products);
     }
 }

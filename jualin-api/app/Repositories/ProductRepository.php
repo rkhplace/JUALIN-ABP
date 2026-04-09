@@ -73,9 +73,7 @@ class ProductRepository
 
     public function create(array $data): Product
     {
-        if (isset($data['image']) && $data['image'] instanceof \Illuminate\Http\UploadedFile) {
-            $data['image'] = $data['image']->store('products', 'public');
-        }
+        $data['image'] = $this->processImages($data);
         return Product::create($data);
     }
 
@@ -86,17 +84,50 @@ class ProductRepository
             return null;
         }
 
-        if (isset($data['image']) && $data['image'] instanceof \Illuminate\Http\UploadedFile) {
-            $old = $product->getRawOriginal('image');
-            if ($old && Storage::disk('public')->exists($old)) {
-                Storage::disk('public')->delete($old);
+        $newImages = $this->processImages($data);
+        if ($newImages !== null) {
+            // Delete old images when new ones are provided
+            $oldImages = $product->getRawOriginal('image');
+            if ($oldImages && is_array($oldImages)) {
+                foreach ($oldImages as $oldImage) {
+                    if ($oldImage && Storage::disk('public')->exists($oldImage)) {
+                        Storage::disk('public')->delete($oldImage);
+                    }
+                }
             }
-            $data['image'] = $data['image']->store('products', 'public');
+            $data['image'] = $newImages;
         }
 
         $product->fill($data);
         $product->save();
         return $product;
+    }
+
+    /**
+     * Process single or multiple image uploads
+     * Returns array of image paths or null if no images
+     */
+    private function processImages(array $data): ?array
+    {
+        // Handle multiple images from 'images' array
+        if (isset($data['images']) && is_array($data['images']) && !empty($data['images'])) {
+            $imagePaths = [];
+            foreach ($data['images'] as $file) {
+                if ($file instanceof \Illuminate\Http\UploadedFile) {
+                    $imagePaths[] = $file->store('products', 'public');
+                }
+            }
+            if (!empty($imagePaths)) {
+                return $imagePaths;
+            }
+        }
+
+        // Handle single image from 'image' field (backward compatibility)
+        if (isset($data['image']) && $data['image'] instanceof \Illuminate\Http\UploadedFile) {
+            return [$data['image']->store('products', 'public')];
+        }
+
+        return null;
     }
 
     public function delete(int $id): bool
@@ -106,9 +137,14 @@ class ProductRepository
             return false;
         }
 
-        $old = $product->getRawOriginal('image');
-        if ($old && Storage::disk('public')->exists($old)) {
-            Storage::disk('public')->delete($old);
+        // Delete all images
+        $images = $product->getRawOriginal('image');
+        if ($images && is_array($images)) {
+            foreach ($images as $image) {
+                if ($image && Storage::disk('public')->exists($image)) {
+                    Storage::disk('public')->delete($image);
+                }
+            }
         }
 
         return (bool) $product->delete();

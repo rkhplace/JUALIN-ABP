@@ -38,14 +38,14 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::patch('/reports/{id}/status', [ReportController::class, 'updateStatus']);
         Route::post('/users', [UserController::class, 'store']);
 
-        Route::delete('/users/{id}/delete', [UserController::class, 'destroy']);
+        Route::delete('/users/{id}', [UserController::class, 'destroy']);
     });
 
     Route::middleware('role:seller,admin')->group(function () {
         Route::get('/seller/products', [ProductController::class, 'indexMe']);
         Route::post('/products', [ProductController::class, 'store']);
-        Route::patch('/products/{product}', [ProductController::class, 'update']);
-        Route::delete('/products/{product}/delete', [ProductController::class, 'destroy']);
+        Route::patch('/products/{id}', [ProductController::class, 'update']);
+        Route::delete('/products/{id}', [ProductController::class, 'destroy']);
         Route::post('/transactions/withdraw', [TransactionController::class, 'withdraw']);
     });
 

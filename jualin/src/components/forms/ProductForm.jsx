@@ -16,28 +16,36 @@ export default function ProductForm({
     name: "",
     price: "",
     description: "",
-    image: "",
+    images: [],
     stock_quantity: "",
     category: "",
     condition: "new",
     status: "active",
   });
-  const [imagePreview, setImagePreview] = useState("");
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [localError, setLocalError] = useState("");
 
   useEffect(() => {
     if (initialData) {
+      const initialImages = initialData.image || initialData.images || [];
+      const images = Array.isArray(initialImages) ? initialImages : (initialImages ? [initialImages] : []);
+      
       setFormData({
         name: initialData.name || "",
         price: initialData.price || "",
         description: initialData.description || "",
-        image: initialData.image || initialData.img || "",
+        images: images,
         stock_quantity: initialData.stock_quantity || initialData.stock || "",
         category: initialData.category || "",
         condition: initialData.condition || "new",
         status: initialData.status || "active",
       });
-      setImagePreview(getProductImageUrl(initialData.image || initialData.img));
+      
+      // Convert image paths to preview URLs
+      const previews = images.filter(img => img).map(img => {
+        return getProductImageUrl(img);
+      });
+      setImagePreviews(previews);
     }
   }, [initialData]);
 
@@ -50,27 +58,49 @@ export default function ProductForm({
   };
 
   const handleImageSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    if (!file.type.startsWith("image/")) {
-      setLocalError("File harus berupa gambar (JPG atau PNG)");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      setLocalError(
-        "Ukuran gambar terlalu besar. Maksimal 2MB. Silakan gunakan gambar dengan ukuran lebih kecil atau kompres terlebih dahulu."
-      );
-      return;
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    const validFiles = [];
+    const newPreviews = [...imagePreviews];
+    let hasError = false;
+
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) {
+        setLocalError("Semua file harus berupa gambar (JPG atau PNG)");
+        hasError = true;
+        break;
+      }
+      if (file.size > maxSize) {
+        setLocalError(
+          "Ukuran gambar terlalu besar. Maksimal 2MB per gambar. Silakan gunakan gambar dengan ukuran lebih kecil atau kompres terlebih dahulu."
+        );
+        hasError = true;
+        break;
+      }
+      validFiles.push(file);
+      newPreviews.push(URL.createObjectURL(file));
     }
 
-    const previewUrl = URL.createObjectURL(file);
-    setImagePreview(previewUrl);
+    if (hasError) return;
+
+    // Store files for later submission
     setFormData((prev) => ({
       ...prev,
-      imageFile: file,
+      imageFiles: [...(prev.imageFiles || []), ...validFiles],
     }));
+    setImagePreviews(newPreviews);
     setLocalError("");
+  };
+
+  const handleRemoveImage = (index) => {
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    setFormData((prev) => ({
+      ...prev,
+      imageFiles: (prev.imageFiles || []).filter((_, i) => i !== index),
+      images: (prev.images || []).filter((_, i) => i !== index),
+    }));
   };
 
   const handleUploadClick = () => {
@@ -154,19 +184,48 @@ export default function ProductForm({
 
       {/* Photo Upload Section */}
       <div className="mb-8 p-8 border-2 border-gray-200 rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-shadow duration-200">
-        <div className="flex items-start gap-6">
-          <div className="flex-shrink-0">
-            <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
-              {imagePreview ? (
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={handleUploadClick}
+            className="px-6 py-2 bg-brand-red text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium shadow-sm"
+          >
+            {imagePreviews.length > 0 ? "Add more photos" : "Upload photos"}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png"
+            multiple
+            className="hidden"
+            onChange={handleImageSelect}
+          />
+          <p className="text-sm text-gray-600 mt-3">
+            Dengan 'Ctrl' atau 'Cmd', Anda bisa memilih banyak foto sekaligus.
+          </p>
+          <p className="text-sm text-gray-600">JPG atau PNG (Min 800x800px, Max 2MB per gambar)</p>
+        </div>
+
+        {/* Image Previews Gallery */}
+        {imagePreviews.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {imagePreviews.map((preview, index) => (
+              <div
+                key={index}
+                className="relative group rounded-lg overflow-hidden bg-gray-100 aspect-square border-2 border-gray-200 hover:border-brand-red transition-colors"
+              >
                 <img
-                  src={imagePreview}
-                  alt="Product preview"
+                  src={preview}
+                  alt={`Product preview ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
-              ) : (
-                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(index)}
+                  className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
                   <svg
-                    className="w-12 h-12 text-gray-400"
+                    className="w-6 h-6 text-white"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -175,34 +234,17 @@ export default function ProductForm({
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      d="M6 18L18 6M6 6l12 12"
                     />
                   </svg>
-                </div>
-              )}
-            </div>
+                </button>
+                <span className="absolute top-2 right-2 bg-brand-red text-white text-xs font-semibold px-2 py-1 rounded">
+                  {index + 1}
+                </span>
+              </div>
+            ))}
           </div>
-          <div className="flex-1">
-            <button
-              type="button"
-              onClick={handleUploadClick}
-              className="px-6 py-2 bg-brand-red text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium shadow-sm mb-2"
-            >
-              Upload new photo
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/jpg,image/png"
-              className="hidden"
-              onChange={handleImageSelect}
-            />
-            <p className="text-sm text-gray-600">
-              At least 800x800 px recommended.
-            </p>
-            <p className="text-sm text-gray-600">JPG or PNG is allowed.</p>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Error Message */}

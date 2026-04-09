@@ -43,7 +43,8 @@ export default function SellerProductsPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const data = await sellerService.fetchProducts(sellerId, 6, page);
+        // Use fetchMyProducts instead of fetchProducts to get only current seller's products
+        const data = await sellerService.fetchMyProducts(sellerId, 6);
 
         const list = data.products || [];
         setProducts(Array.isArray(list) ? list : []);
@@ -72,18 +73,17 @@ export default function SellerProductsPage() {
       const success = await sellerService.deleteProduct(productToDelete.id);
 
       if (success) {
-        if (products.length === 1 && page > 1) {
-          setPage((prev) => prev - 1);
-        } else {
-          const storedUser =
-            typeof window !== "undefined"
-              ? JSON.parse(localStorage.getItem("user") || "null")
-              : null;
-          const sellerId = storedUser?.id || storedUser?.user_id || 1;
-          const data = await sellerService.fetchProducts(sellerId, 6, page);
-          setProducts(data.products || []);
-          setTotalPages(data.totalPages || 1);
-        }
+        // Refresh products list after successful delete
+        const storedUser =
+          typeof window !== "undefined"
+            ? JSON.parse(localStorage.getItem("user") || "null")
+            : null;
+        const sellerId = storedUser?.id || storedUser?.user_id || 1;
+        
+        // Use fetchMyProducts to get fresh seller's products
+        const data = await sellerService.fetchMyProducts(sellerId, 6);
+        setProducts(data.products || []);
+        setTotalPages(data.totalPages || 1);
 
         setToast({
           show: true,

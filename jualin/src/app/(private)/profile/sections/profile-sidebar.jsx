@@ -56,7 +56,7 @@ export function ProfileSidebarSection({
                 </svg>
                 Ubah Profil
               </button>
-              {role !== "admin" && (
+              {role === "customer" && (
                 <button
                   onClick={() => onTabChange("purchases")}
                   className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] ${activeTab === "purchases"

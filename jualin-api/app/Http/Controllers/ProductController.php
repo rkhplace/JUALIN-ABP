@@ -9,6 +9,7 @@ use App\Http\Responses\ApiResponse;
 use App\Http\Responses\ProductResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -35,12 +36,31 @@ class ProductController extends Controller
 
     public function indexMe(ProductFilterRequest $request)
     {
+        $user = Auth::user();
+        if (!$user) {
+            return ApiResponse::error('Unauthorized', null, 401);
+        }
+
         $filters = $request->validated();
 
-        // Admin bisa melihat semua produk, seller hanya miliknya sendiri
-        if (Auth::user()->role !== 'admin') {
-            $filters['seller_id'] = Auth::id();
+        // CRITICAL: seller hanya bisa lihat produk mereka sendiri
+        // Admin boleh lihat semua produk
+        if ($user->role === 'admin') {
+            // Admin bisa melihat semua, or filter jika query param ada
+            // Jangan override jika admin explicit filter seller_id
+        } else if ($user->role === 'seller') {
+            // Seller HARUS hanya lihat produk milik mereka - FORCE SET
+            $filters['seller_id'] = $user->id;
+        } else {
+            // Role lain tidak boleh akses endpoint ini
+            return ApiResponse::error('Forbidden', null, 403);
         }
+
+        Log::debug('Seller products filter', [
+            'user_id' => $user->id,
+            'user_role' => $user->role,
+            'filters' => $filters
+        ]);
 
         $paginated = $this->repo->getAll($filters);
 
@@ -57,8 +77,9 @@ class ProductController extends Controller
         $data = $request->validated();
         $data['seller_id'] = Auth::id();
 
-        if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image');
+        // Handle multiple images
+        if ($request->hasFile('images')) {
+            $data['images'] = $request->file('images');
         }
 
         $product = $this->repo->create($data);
@@ -81,14 +102,21 @@ class ProductController extends Controller
             return ApiResponse::error('Product not found', null, 404);
         }
 
-        if ($product->seller_id !== Auth::id() && Auth::user()->role !== 'admin') {
+        // Check authorization: only seller of product or admin can update
+        $user = Auth::user();
+        if (!$user) {
+            return ApiResponse::error('Unauthorized', null, 401);
+        }
+
+        if ($product->seller_id !== $user->id && $user->role !== 'admin') {
             return ApiResponse::error('Forbidden', null, 403);
         }
 
         $data = $request->validated();
 
-        if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image');
+        // Handle multiple images
+        if ($request->hasFile('images')) {
+            $data['images'] = $request->file('images');
         }
 
         $updatedProduct = $this->repo->update($id, $data);
@@ -97,15 +125,63 @@ class ProductController extends Controller
 
     public function destroy($id): JsonResponse
     {
-        $product = $this->repo->find($id);
-        if (!$product) {
-            return ApiResponse::error('Product not found', null, 404);
-        }
+        try {
+            Log::info("Delete product attempt", [
+                'product_id' => $id,
+                'user_id' => Auth::id(),
+                'user_role' => Auth::user()?->role ?? 'null'
+            ]);
 
-        if ($product->seller_id !== Auth::id() && Auth::user()->role !== 'admin') {
-            return ApiResponse::error('Forbidden', null, 403);
+            $product = $this->repo->find($id);
+            if (!$product) {
+                Log::info("Product not found", ['product_id' => $id]);
+                return ApiResponse::error('Product not found', null, 404);
+            }
+
+            Log::info("Product found", [
+                'product_id' => $product->id,
+                'seller_id' => $product->seller_id
+            ]);
+
+            // Check authorization: only seller of product or admin can delete
+            $user = Auth::user();
+            if (!$user) {
+                Log::warning("No authenticated user for delete", ['product_id' => $id]);
+                return ApiResponse::error('Unauthorized', null, 401);
+            }
+
+            Log::info("Auth user check", [
+                'user_id' => $user->id,
+                'user_role' => $user->role,
+                'product_seller_id' => $product->seller_id,
+                'is_seller' => $product->seller_id === $user->id,
+                'is_admin' => $user->role === 'admin'
+            ]);
+
+            if ($product->seller_id !== $user->id && $user->role !== 'admin') {
+                Log::warning("Authorization failed for product delete", [
+                    'user_id' => $user->id,
+                    'user_role' => $user->role,
+                    'product_seller_id' => $product->seller_id
+                ]);
+                return ApiResponse::error('Forbidden', null, 403);
+            }
+
+            $deleted = $this->repo->delete($id);
+            if ($deleted) {
+                Log::info("Product deleted successfully", ['product_id' => $id]);
+                return ApiResponse::success('Product deleted successfully', null);
+            } else {
+                Log::error("Delete repository returned false", ['product_id' => $id]);
+                return ApiResponse::error('Failed to delete product', null, 500);
+            }
+        } catch (\Exception $e) {
+            Log::error("Exception during product delete", [
+                'product_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return ApiResponse::error('Internal server error', null, 500);
         }
-        $this->repo->delete($id);
-        return ApiResponse::success('Product deleted successfully', null);
     }
 }
