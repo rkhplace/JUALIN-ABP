@@ -19,14 +19,18 @@ export function ChatHeader({ chat }) {
       <div className="flex items-center gap-4">
         {/* Large Avatar without Ring */}
         <div className="relative shrink-0">
-          <div className="h-12 w-12 rounded-full border-2 border-white overflow-hidden shadow-sm bg-gray-100">
+          <div className="h-12 w-12 rounded-full border-2 border-white overflow-hidden shadow-sm flex items-center justify-center bg-gray-100">
             {getProfilePictureUrl(chat.avatar || chat.profile_picture) ? (
               <img 
                 src={getProfilePictureUrl(chat.avatar || chat.profile_picture)} 
                 alt={displayName} 
                 className="h-full w-full object-cover" 
               />
-            ) : null}
+            ) : (
+              <span className="text-gray-500 font-bold text-lg">
+                {(displayName && displayName.length > 0 ? displayName[0] : 'S').toUpperCase()}
+              </span>
+            )}
           </div>
         </div>
 

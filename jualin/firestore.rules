@@ -4,7 +4,7 @@ service cloud.firestore {
 
     // --- Helper Functions ---
     
-    // Cek apakah user sudah login
+    // Cek apakah user sudah login (custom token atau anonymous)
     function isSignedIn() {
       return request.auth != null;
     }
@@ -14,46 +14,39 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    // Cek apakah user ada di dalam list 'participants' di dokumen chat
-    function isChatParticipant() {
-      return request.auth.uid in resource.data.participants;
-    }
-
     // --- RULES ---
 
     // 1. Collection Users
-    // Note: Project ini utamanya menggunakan API eksternal untuk user data,
-    // tapi rule ini disiapkan jika ada sinkronisasi ke Firestore di masa depan.
     match /users/{userId} {
       allow read: if isSignedIn();
       allow write: if isSignedIn() && isOwner(userId);
     }
 
     // 2. Collection Chats (Room Chat)
+    // Note: participants berisi Laravel user ID (string), bukan Firebase UID.
+    // Kita relaksasi rule agar authenticated user (termasuk anonymous) bisa akses,
+    // karena ID tracking dilakukan di level aplikasi.
     match /chats/{chatId} {
-      // Read: Hanya boleh baca jika user adalah participant
-      allow read: if isSignedIn() && isChatParticipant();
+      // Read: Hanya boleh baca jika user sudah login (auth dilakukan di app level)
+      allow read: if isSignedIn();
       
-      // Create: Boleh buat chat baru asal sudah login dan user sendiri ada di participants
-      allow create: if isSignedIn() && 
-                    request.resource.data.participants.hasAll([request.auth.uid]);
+      // Create: Boleh buat chat baru asal sudah login
+      allow create: if isSignedIn();
       
-      // Update: Boleh update jika participant (misal: update last_message)
-      allow update: if isSignedIn() && isChatParticipant();
+      // Update: Boleh update jika sudah login (misal: update last_message, unread count)
+      allow update: if isSignedIn();
 
       // 3. Sub-collection Messages
       match /messages/{messageId} {
-        // Read & List: Aman, cek apakah user adalah participant dari PARENT chat room
-        allow read, list: if isSignedIn() && 
-                          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        // Read & List: Hanya user yang sudah login
+        allow read, list: if isSignedIn();
         
-        // Create: Sender harus user yang sedang login
-        allow create: if isSignedIn() && 
-                      request.resource.data.senderId == request.auth.uid &&
-                      // Optional: Double check participant status via get() if needed, 
-                      // but typically client-side logic + parent read rule is sufficient coverage.
-                      // For strictness:
-                      request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        // Create: User harus sudah login
+        allow create: if isSignedIn();
+        
+        // Update: tidak diperbolehkan dari client (hanya server)
+        allow update: if false;
+        allow delete: if false;
       }
     }
   }

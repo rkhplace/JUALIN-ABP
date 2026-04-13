@@ -18,16 +18,19 @@ export default function AppChrome({ children }) {
     pathname.startsWith("/auth/reset-password") ||
     pathname.startsWith("/backoffice") ||
     pathname === "/404_not_found";
+
   const hideNavbar = hideBoth;
-  const hideFooter = hideBoth;
+  const hideFooter = hideBoth || pathname.startsWith("/chat");
+  const hideTopBar = hideNavbar || pathname.startsWith("/product") || pathname.startsWith("/chat");
+  const hideHelpCenter = pathname.startsWith("/backoffice") || pathname.startsWith("/chat");
 
   return (
     <>
-      {!hideNavbar && <Topbar />}
+      {!hideTopBar && <Topbar />}
       {!hideNavbar && <Navbar />}
       {children}
       {!hideFooter && <Footer />}
-      {!pathname.startsWith("/backoffice") && <HelpCenter />}
+      {!hideHelpCenter && <HelpCenter />}
     </>
   );
 }
