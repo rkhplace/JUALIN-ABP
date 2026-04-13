@@ -77,7 +77,7 @@ export function ChatProvider({ children }) {
 
         const otherUserInfoWithRole = {
           ...otherUserInfo,
-          role: otherUserInfo.role || "seller", 
+          role: otherUserInfo.role || "seller",
         };
 
         const isCurrentUserCustomer = currentUserInfo.role === "customer";
@@ -125,11 +125,8 @@ export function ChatProvider({ children }) {
 
         const existingChat = chats.find((chat) => {
           if (!chat.participants) return false;
-
           const participantsStr = chat.participants.map((p) => String(p));
-          const hasTarget = participantsStr.includes(targetUserIdStr);
-
-          return hasTarget;
+          return participantsStr.includes(targetUserIdStr);
         });
 
         if (existingChat) {

@@ -11,6 +11,18 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Debug: log missing Firebase config keys in development
+if (process.env.NODE_ENV !== "production") {
+  const missingKeys = Object.entries(firebaseConfig)
+    .filter(([, v]) => !v)
+    .map(([k]) => k);
+  if (missingKeys.length > 0) {
+    console.error("❌ Firebase: Missing config keys:", missingKeys);
+  } else {
+    console.log("✅ Firebase config loaded for project:", firebaseConfig.projectId);
+  }
+}
+
 const app =
   getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 

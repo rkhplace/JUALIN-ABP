@@ -20,6 +20,7 @@ export function ChatInterface() {
   }, [chats, currentChat, selectChat]);
 
   const handleSelect = (id) => {
+    // chats from polling contain full Laravel API data (including other_user)
     const chat = chats.find((c) => c.id === id);
     if (chat) {
       selectChat(chat);
@@ -44,7 +45,7 @@ export function ChatInterface() {
 
   if (!user) {
     return (
-      <div className="relative flex h-[calc(100vh-4rem)] md:h-[800px] bg-white overflow-hidden shadow-lg border border-gray-100">
+      <div className="relative flex h-[calc(100vh-4rem)] bg-white overflow-hidden shadow-lg border border-gray-100">
         <div className="flex items-center justify-center w-full h-full">
           <div className="text-center">
             <div className="h-20 w-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
@@ -78,7 +79,7 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="relative flex h-[calc(100vh-4rem)] md:h-[800px] bg-gray-100 overflow-hidden">
+    <div className="relative flex h-[calc(100vh-4rem)] bg-gray-100 overflow-hidden">
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
         className="md:hidden absolute top-2 left-2 z-40 p-2 bg-white rounded-lg shadow-md border border-gray-200 hover:bg-gray-50"
