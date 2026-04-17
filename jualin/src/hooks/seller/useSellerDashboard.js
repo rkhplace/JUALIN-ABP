@@ -4,7 +4,7 @@ import { orderService } from '@/services/seller/orderService';
 
 /**
  * Hook to fetch seller dashboard data (products + orders in parallel)
- * @param {number|null} sellerId - Seller ID
+ * @param {number|null} sellerId - Seller ID (used for orders)
  */
 export const useSellerDashboard = (sellerId) => {
   const [products, setProducts] = useState([]);
@@ -20,8 +20,8 @@ export const useSellerDashboard = (sellerId) => {
       setError(null);
 
       try {
-        const [productsData, ordersData] = await Promise.all([
-          sellerService.fetchMyProducts(sellerId),
+        const [productsResult, ordersData] = await Promise.all([
+          sellerService.fetchMyProducts(),
           orderService.fetchSellerOrders({
             sellerId,
             status: 'all',
@@ -29,7 +29,9 @@ export const useSellerDashboard = (sellerId) => {
           }),
         ]);
 
-        setProducts(Array.isArray(productsData) ? productsData : []);
+        // fetchMyProducts now returns { products, totalProducts, totalPages, currentPage }
+        const productsList = productsResult?.products ?? productsResult;
+        setProducts(Array.isArray(productsList) ? productsList : []);
         setOrders(Array.isArray(ordersData) ? ordersData : []);
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Failed to load dashboard data');
@@ -50,3 +52,4 @@ export const useSellerDashboard = (sellerId) => {
     error,
   };
 };
+
