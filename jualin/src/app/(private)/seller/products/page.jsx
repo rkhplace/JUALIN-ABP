@@ -32,20 +32,11 @@ export default function SellerProductsPage() {
       smoothScrollTo(scrollRef.current, 500, 100);
     }
 
-    const storedUser =
-      typeof window !== "undefined"
-        ? JSON.parse(localStorage.getItem("user") || "null")
-        : null;
-
-    const sellerId =
-      storedUser?.id || storedUser?.user_id || storedUser?.userId || 1;
-
     const load = async () => {
       setLoading(true);
       try {
         // Use fetchMyProducts instead of fetchProducts to get only current seller's products
-        const data = await sellerService.fetchMyProducts(sellerId, 6);
-
+        const data = await sellerService.fetchMyProducts(6, page);
         const list = data.products || [];
         setProducts(Array.isArray(list) ? list : []);
         setTotalPages(data.totalPages || 1);
@@ -74,14 +65,15 @@ export default function SellerProductsPage() {
 
       if (success) {
         // Refresh products list after successful delete
+
         const storedUser =
           typeof window !== "undefined"
             ? JSON.parse(localStorage.getItem("user") || "null")
             : null;
         const sellerId = storedUser?.id || storedUser?.user_id || 1;
-        
+
         // Use fetchMyProducts to get fresh seller's products
-        const data = await sellerService.fetchMyProducts(sellerId, 6);
+        const data = await sellerService.fetchMyProducts(6, page)
         setProducts(data.products || []);
         setTotalPages(data.totalPages || 1);
 
