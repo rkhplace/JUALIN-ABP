@@ -35,10 +35,8 @@ export default function SellerProductsPage() {
     const load = async () => {
       setLoading(true);
       try {
-        // Uses authenticated /api/v1/seller/products endpoint
-        // Backend auto-filters by logged-in seller via Auth::user()
+        // Use fetchMyProducts instead of fetchProducts to get only current seller's products
         const data = await sellerService.fetchMyProducts(6, page);
-
         const list = data.products || [];
         setProducts(Array.isArray(list) ? list : []);
         setTotalPages(data.totalPages || 1);
@@ -67,7 +65,15 @@ export default function SellerProductsPage() {
 
       if (success) {
         // Refresh products list after successful delete
-        const data = await sellerService.fetchMyProducts(6, page);
+
+        const storedUser =
+          typeof window !== "undefined"
+            ? JSON.parse(localStorage.getItem("user") || "null")
+            : null;
+        const sellerId = storedUser?.id || storedUser?.user_id || 1;
+
+        // Use fetchMyProducts to get fresh seller's products
+        const data = await sellerService.fetchMyProducts(6, page)
         setProducts(data.products || []);
         setTotalPages(data.totalPages || 1);
 
