@@ -108,7 +108,7 @@ export default function EditProfilePage() {
     <div className="min-h-screen bg-white">
       <Navbar />
 
-      <div className="flex">
+      <div className="flex overflow-hidden h-[calc(100vh-80px)]">
         {/* Sidebar */}
         <ProfileSidebarSection
           activeTab={activeTab}
@@ -119,7 +119,7 @@ export default function EditProfilePage() {
         />
 
         {/* Main Content */}
-        <div className="flex-1 bg-white">
+        <div className="flex-1 bg-white overflow-y-auto">
           <div className="max-w-5xl mx-auto p-8">
             {activeTab === "edit" ? (
               <>
