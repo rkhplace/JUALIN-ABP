@@ -44,7 +44,7 @@ export default function SellerProductsPage() {
       setLoading(true);
       try {
         // Use fetchMyProducts instead of fetchProducts to get only current seller's products
-        const data = await sellerService.fetchMyProducts(sellerId, 6);
+        const data = await sellerService.fetchProducts(sellerId, 6, page);
 
         const list = data.products || [];
         setProducts(Array.isArray(list) ? list : []);
@@ -79,7 +79,7 @@ export default function SellerProductsPage() {
             ? JSON.parse(localStorage.getItem("user") || "null")
             : null;
         const sellerId = storedUser?.id || storedUser?.user_id || 1;
-        
+
         // Use fetchMyProducts to get fresh seller's products
         const data = await sellerService.fetchMyProducts(sellerId, 6);
         setProducts(data.products || []);
