@@ -1,17 +1,22 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
     MessageCircle,
     X,
     AlertTriangle,
     User,
     Send,
-    HelpCircle
+    HelpCircle,
+    LogIn
 } from "lucide-react";
 import { reportService } from "@/services/backoffice/reportService";
+import { useAuth } from "@/context/AuthProvider";
 import { toast } from "sonner";
 
 export default function HelpCenter() {
+    const router = useRouter();
+    const { user, loading } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [formData, setFormData] = useState({
         username: "",
@@ -21,6 +26,37 @@ export default function HelpCenter() {
     });
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Auto-populate username saat modal dibuka atau user berubah
+    useEffect(() => {
+        if (isOpen && user?.username && !formData.username) {
+            setFormData((prev) => ({
+                ...prev,
+                username: user.username,
+            }));
+        }
+    }, [isOpen, user?.username, formData.username]);
+
+    // Check authentication saat mencoba membuka help center
+    // Redirect ke login jika user logout saat modal terbuka
+    useEffect(() => {
+        if (isOpen && !user && !loading) {
+            setIsOpen(false);
+            toast.error("Sesi Anda telah berakhir. Silakan login kembali.");
+            router.push("/auth/login");
+        }
+    }, [user, loading, isOpen, router]);
+
+    const handleHelpCenterClick = () => {
+        // Jika user belum login, redirect ke halaman login
+        if (!user) {
+            router.push("/auth/login");
+            toast.info("Silakan login terlebih dahulu untuk menggunakan Pusat Bantuan");
+            return;
+        }
+        // Jika sudah login, buka modal
+        setIsOpen(!isOpen);
+    };
 
     const toggleOpen = () => setIsOpen(!isOpen);
 
@@ -38,7 +74,7 @@ export default function HelpCenter() {
 
     const validate = () => {
         const newErrors = {};
-        if (!formData.username.trim()) newErrors.username = "Username pelapor wajib diisi";
+        // Username sudah auto-filled dari user yang login, skip validasi
         if (!formData.type) newErrors.type = "Tipe pelaporan wajib dipilih";
 
         if (formData.type === "Laporan Pengguna") {
@@ -93,17 +129,20 @@ export default function HelpCenter() {
 
     return (
         <>
-            {/* Floating Button */}
-            <button
-                onClick={toggleOpen}
-                className={`fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 bg-[#E83030] text-white flex items-center justify-center`}
-                aria-label="Pusat Bantuan"
-            >
-                {isOpen ? <X size={28} /> : <HelpCircle size={28} />}
-            </button>
+            {/* Floating Button - Hanya tampil jika user sudah login */}
+            {!loading && user && (
+                <button
+                    onClick={handleHelpCenterClick}
+                    className={`fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 bg-[#E83030] text-white flex items-center justify-center`}
+                    aria-label="Pusat Bantuan"
+                    title="Pusat Bantuan - Hanya untuk pengguna yang login"
+                >
+                    {isOpen ? <X size={28} /> : <HelpCircle size={28} />}
+                </button>
+            )}
 
-            {/* Modal Overlay */}
-            {isOpen && (
+            {/* Modal Overlay - Hanya tampil jika user sudah login dan modal dibuka */}
+            {isOpen && !loading && user && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
                     onClick={toggleOpen}
@@ -132,18 +171,26 @@ export default function HelpCenter() {
                             <div className="space-y-5">
                                 {/* Username Pelapor */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                        Username Anda <span className="text-red-500">*</span>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
+                                        <span>Username Anda</span>
+                                        {formData.username && (
+                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-full">
+                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                                Terdeteksi
+                                            </span>
+                                        )}
                                     </label>
                                     <input
                                         type="text"
                                         name="username"
                                         value={formData.username}
-                                        onChange={handleChange}
-                                        className={`w-full px-4 py-2.5 rounded-lg border ${errors.username ? 'border-red-500 bg-red-50 focus:ring-red-200' : 'border-gray-200 focus:border-[#E83030] focus:ring-red-100'} focus:outline-none focus:ring-4 transition-all`}
-                                        placeholder="Masukkan username Anda"
+                                        disabled
+                                        className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-600 cursor-not-allowed focus:outline-none transition-all"
+                                        placeholder="Username akan terdeteksi otomatis"
                                     />
-                                    {errors.username && <p className="text-xs text-red-500 mt-1 ml-1">{errors.username}</p>}
+                                    <p className="text-xs text-gray-500 mt-1.5 ml-1">Username Anda telah terdeteksi otomatis dari akun yang login</p>
                                 </div>
 
                                 {/* Tipe Pelaporan */}
