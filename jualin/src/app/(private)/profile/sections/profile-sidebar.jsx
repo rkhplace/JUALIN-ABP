@@ -13,8 +13,8 @@ export function ProfileSidebarSection({
   user,
 }) {
   return (
-    <div className="w-64 bg-[#E83030] h-screen sticky top-0 flex flex-col rounded-r-3xl overflow-y-auto">
-      <div className="p-6 flex-1">
+   <div className="w-64 bg-[#E83030] min-h-full flex flex-col rounded-r-3xl">
+      <div className="p-6 flex-1 overflow-y-auto">
         <div className="space-y-8">
           {/* WALLET Section */}
           <div className="bg-white/10 rounded-2xl p-4 shadow-inner border border-white/20">
