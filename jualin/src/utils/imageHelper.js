@@ -11,12 +11,19 @@
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return '';
 
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return imagePath;
+  if (Array.isArray(imagePath)) {
+    const firstImage = imagePath.find(Boolean);
+    return firstImage ? getImageUrl(firstImage) : '';
+  }
+
+  const normalizedPath = String(imagePath);
+
+  if (normalizedPath.startsWith('http://') || normalizedPath.startsWith('https://')) {
+    return normalizedPath;
   }
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const cleanBaseUrl = baseUrl.replace(/\/$/, '');
-  const cleanImagePath = imagePath.replace(/^\//, '');
+  const cleanImagePath = normalizedPath.replace(/^\//, '');
   return `${cleanBaseUrl}/storage/${cleanImagePath}`;
 };
 
