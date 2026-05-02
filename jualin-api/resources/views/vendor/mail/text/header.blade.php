@@ -1,0 +1,1 @@
+Jualin: {{ $url }}
