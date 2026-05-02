@@ -13,6 +13,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Auth\Events\PasswordReset;
 use Kreait\Firebase\Factory;
 
@@ -103,9 +104,23 @@ class AuthController extends Controller
     {
         $request->validate(['email' => 'required|email']);
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        try {
+            $status = Password::sendResetLink(
+                $request->only('email')
+            );
+        } catch (\Throwable $e) {
+            Log::error('Password reset email failed', [
+                'email' => $request->input('email'),
+                'mail_mailer' => config('mail.default'),
+                'mail_host' => config('mail.mailers.smtp.host'),
+                'mail_port' => config('mail.mailers.smtp.port'),
+                'exception' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Gagal mengirim email reset password. Silakan coba lagi beberapa saat.',
+            ], 503);
+        }
 
         return $status === Password::RESET_LINK_SENT
             ? response()->json(['message' => __($status)])

@@ -13,10 +13,10 @@ class TransactionSeeder extends Seeder
      */
     public function run(): void
     {
-        // Transaksi 1 - customer_neo beli dari seller_alpha
+        // Transaksi 1 - customer_rakha beli dari seller_celsyka
         $transaction1Id = DB::table('transactions')->insertGetId([
-            'customer_id' => 4, // customer_neo
-            'seller_id' => 2,   // seller_alpha
+            'customer_id' => 5, // customer_rakha
+            'seller_id' => 2,   // seller_celsyka
             'total_amount' => 599000 + 1299000, // dua produk
             'status' => 'completed',
             'created_at' => now(),
@@ -44,10 +44,10 @@ class TransactionSeeder extends Seeder
             ],
         ]);
 
-        // Transaksi 2 - customer_luna beli dari seller_bravo
+        // Transaksi 2 - customer_galih beli dari seller_latifah
         $transaction2Id = DB::table('transactions')->insertGetId([
-            'customer_id' => 5, // customer_luna
-            'seller_id' => 3,   // seller_bravo
+            'customer_id' => 6, // customer_galih
+            'seller_id' => 3,   // seller_latifah
             'total_amount' => 850000 + 300000,
             'status' => 'paid',
             'created_at' => now(),
@@ -75,10 +75,10 @@ class TransactionSeeder extends Seeder
             ],
         ]);
 
-        // Transaksi 3 - customer_neo beli lagi dari seller_bravo
+        // Transaksi 3 - customer_rizki beli dari seller_aryo
         $transaction3Id = DB::table('transactions')->insertGetId([
-            'customer_id' => 4,
-            'seller_id' => 3,
+            'customer_id' => 7,
+            'seller_id' => 4,
             'total_amount' => 450000,
             'status' => 'pending',
             'created_at' => now(),

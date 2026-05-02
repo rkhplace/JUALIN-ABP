@@ -14,10 +14,10 @@ class ChatMessageSeeder extends Seeder
     public function run(): void
     {
         DB::table('chat_messages')->insert([
-            // Room 1 (customer_neo & seller_alpha)
+            // Room 1 (customer_rakha & seller_celsyka)
             [
                 'chat_room_id' => 1,
-                'sender_id' => 4, // customer_neo
+                'sender_id' => 5, // customer_rakha
                 'message' => 'Halo kak, apakah headphone ini masih tersedia?',
                 'sent_at' => now()->subDays(7)->addMinutes(3),
                 'is_read' => true,
@@ -26,7 +26,7 @@ class ChatMessageSeeder extends Seeder
             ],
             [
                 'chat_room_id' => 1,
-                'sender_id' => 2, // seller_alpha
+                'sender_id' => 2, // seller_celsyka
                 'message' => 'Hai! Masih tersedia kak, stok 3 lagi ya.',
                 'sent_at' => now()->subDays(7)->addMinutes(5),
                 'is_read' => true,
@@ -34,10 +34,10 @@ class ChatMessageSeeder extends Seeder
                 'updated_at' => now()->subDays(7),
             ],
 
-            // Room 2 (customer_luna & seller_bravo)
+            // Room 2 (customer_galih & seller_latifah)
             [
                 'chat_room_id' => 2,
-                'sender_id' => 5, // customer_luna
+                'sender_id' => 6, // customer_galih
                 'message' => 'Kak, bisa kirim foto tambahan untuk tasnya?',
                 'sent_at' => now()->subDays(5)->addMinutes(10),
                 'is_read' => false,
@@ -46,7 +46,7 @@ class ChatMessageSeeder extends Seeder
             ],
             [
                 'chat_room_id' => 2,
-                'sender_id' => 3, // seller_bravo
+                'sender_id' => 3, // seller_latifah
                 'message' => 'Bisa banget, ini saya kirim ya.',
                 'sent_at' => now()->subDays(5)->addMinutes(12),
                 'is_read' => true,
@@ -54,10 +54,10 @@ class ChatMessageSeeder extends Seeder
                 'updated_at' => now()->subDays(5),
             ],
 
-            // Room 3 (customer_neo & seller_bravo)
+            // Room 3 (customer_rizki & seller_aryo)
             [
                 'chat_room_id' => 3,
-                'sender_id' => 4,
+                'sender_id' => 7,
                 'message' => 'Kak, ukuran jaketnya fit to L ya?',
                 'sent_at' => now()->subDays(3)->addMinutes(2),
                 'is_read' => false,
@@ -66,7 +66,7 @@ class ChatMessageSeeder extends Seeder
             ],
             [
                 'chat_room_id' => 3,
-                'sender_id' => 3,
+                'sender_id' => 4,
                 'message' => 'Betul kak, fit to L tapi agak slim fit ya.',
                 'sent_at' => now()->subDays(3)->addMinutes(4),
                 'is_read' => true,
@@ -86,7 +86,7 @@ class ChatMessageSeeder extends Seeder
             ],
             [
                 'chat_room_id' => 4,
-                'sender_id' => 2, // seller_alpha
+                'sender_id' => 2, // seller_celsyka
                 'message' => 'Siap admin, stok saya sudah saya update barusan.',
                 'sent_at' => now()->subDays(2)->addMinutes(5),
                 'is_read' => true,
@@ -95,7 +95,7 @@ class ChatMessageSeeder extends Seeder
             ],
             [
                 'chat_room_id' => 4,
-                'sender_id' => 3, // seller_bravo
+                'sender_id' => 3, // seller_latifah
                 'message' => 'Noted, saya juga update nanti sore.',
                 'sent_at' => now()->subDays(2)->addMinutes(6),
                 'is_read' => true,
@@ -115,7 +115,7 @@ class ChatMessageSeeder extends Seeder
             ],
             [
                 'chat_room_id' => 5,
-                'sender_id' => 4,
+                'sender_id' => 5,
                 'message' => 'Wah, promonya untuk semua produk kak?',
                 'sent_at' => now()->subHours(5)->addMinutes(10),
                 'is_read' => false,

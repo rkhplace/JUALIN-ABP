@@ -14,49 +14,49 @@ class ChatRoomMemberSeeder extends Seeder
     public function run(): void
     {
          DB::table('chat_room_member')->insert([
-            // Room 1 - Private (customer_neo & seller_alpha)
+            // Room 1 - Private (customer_rakha & seller_celsyka)
             [
                 'chat_room_id' => 1,
-                'user_id' => 2, // seller_alpha
+                'user_id' => 2, // seller_celsyka
                 'created_at' => now()->subDays(7),
                 'updated_at' => now()->subDays(7),
             ],
             [
                 'chat_room_id' => 1,
-                'user_id' => 4, // customer_neo
+                'user_id' => 5, // customer_rakha
                 'created_at' => now()->subDays(7),
                 'updated_at' => now()->subDays(7),
             ],
 
-            // Room 2 - Private (customer_luna & seller_bravo)
+            // Room 2 - Private (customer_galih & seller_latifah)
             [
                 'chat_room_id' => 2,
-                'user_id' => 3, // seller_bravo
+                'user_id' => 3, // seller_latifah
                 'created_at' => now()->subDays(5),
                 'updated_at' => now()->subDays(5),
             ],
             [
                 'chat_room_id' => 2,
-                'user_id' => 5, // customer_luna
+                'user_id' => 6, // customer_galih
                 'created_at' => now()->subDays(5),
                 'updated_at' => now()->subDays(5),
             ],
 
-            // Room 3 - Private (customer_neo & seller_bravo)
+            // Room 3 - Private (customer_rizki & seller_aryo)
             [
                 'chat_room_id' => 3,
-                'user_id' => 3, // seller_bravo
+                'user_id' => 4, // seller_aryo
                 'created_at' => now()->subDays(3),
                 'updated_at' => now()->subDays(3),
             ],
             [
                 'chat_room_id' => 3,
-                'user_id' => 4, // customer_neo
+                'user_id' => 7, // customer_rizki
                 'created_at' => now()->subDays(3),
                 'updated_at' => now()->subDays(3),
             ],
 
-            // Room 4 - Group (admin + 2 seller)
+            // Room 4 - Group (admin + semua seller)
             [
                 'chat_room_id' => 4,
                 'user_id' => 1, // admin_master
@@ -65,13 +65,19 @@ class ChatRoomMemberSeeder extends Seeder
             ],
             [
                 'chat_room_id' => 4,
-                'user_id' => 2, // seller_alpha
+                'user_id' => 2, // seller_celsyka
                 'created_at' => now()->subDays(2),
                 'updated_at' => now()->subDays(2),
             ],
             [
                 'chat_room_id' => 4,
-                'user_id' => 3, // seller_bravo
+                'user_id' => 3, // seller_latifah
+                'created_at' => now()->subDays(2),
+                'updated_at' => now()->subDays(2),
+            ],
+            [
+                'chat_room_id' => 4,
+                'user_id' => 4, // seller_aryo
                 'created_at' => now()->subDays(2),
                 'updated_at' => now()->subDays(2),
             ],
@@ -85,13 +91,19 @@ class ChatRoomMemberSeeder extends Seeder
             ],
             [
                 'chat_room_id' => 5,
-                'user_id' => 4, // customer_neo
+                'user_id' => 5, // customer_rakha
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'chat_room_id' => 5,
-                'user_id' => 5, // customer_luna
+                'user_id' => 6, // customer_galih
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'chat_room_id' => 5,
+                'user_id' => 7, // customer_rizki
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
