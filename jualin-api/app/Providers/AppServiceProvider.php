@@ -25,16 +25,20 @@ class AppServiceProvider extends ServiceProvider
     {
         Route::aliasMiddleware('role', RoleMiddleware::class);
 
-        ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
+        $createResetUrl = function (object $notifiable, string $token) {
             $frontendUrl = rtrim(config('app.frontend_url') ?: config('app.url'), '/');
 
             return $frontendUrl . '/auth/reset-password?' . http_build_query([
                 'token' => $token,
                 'email' => $notifiable->getEmailForPasswordReset(),
             ]);
-        });
+        };
 
-        ResetPassword::toMailUsing(function (object $notifiable, string $url) {
+        ResetPassword::createUrlUsing($createResetUrl);
+
+        ResetPassword::toMailUsing(function (object $notifiable, string $token) use ($createResetUrl) {
+            $url = $createResetUrl($notifiable, $token);
+
             return (new MailMessage)
                 ->subject('Reset Kata Sandi Akun Jualin')
                 ->greeting('Hai, ' . ($notifiable->username ?? 'Sobat Jualin') . '!')
