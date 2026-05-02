@@ -15,8 +15,8 @@ class ReportSeeder extends Seeder
     {
         DB::table('reports')->insert([
             [
-                'reporter_id' => 4, // customer_neo
-                'reported_user_id' => 2, // seller_alpha
+                'reporter_id' => 5, // customer_rakha
+                'reported_user_id' => 2, // seller_celsyka
                 'product_id' => 1, // Wireless Headphones
                 'description' => 'Produk tidak sesuai dengan deskripsi, kualitas sangat buruk.',
                 'status' => 'pending',
@@ -24,8 +24,8 @@ class ReportSeeder extends Seeder
                 'updated_at' => now()->subDays(2),
             ],
             [
-                'reporter_id' => 5, // customer_luna
-                'reported_user_id' => 3, // seller_bravo
+                'reporter_id' => 6, // customer_galih
+                'reported_user_id' => 3, // seller_latifah
                 'product_id' => 3, // Leather Handbag
                 'description' => 'Barang yang diterima palsu, berbeda dengan foto.',
                 'status' => 'reviewed',
@@ -33,8 +33,8 @@ class ReportSeeder extends Seeder
                 'updated_at' => now()->subDays(1),
             ],
             [
-                'reporter_id' => 4,
-                'reported_user_id' => 3,
+                'reporter_id' => 7,
+                'reported_user_id' => 4,
                 'product_id' => 4, // Denim Jacket
                 'description' => 'Produk ini tampaknya diposting berulang kali dengan nama berbeda.',
                 'status' => 'resolved',
@@ -42,7 +42,7 @@ class ReportSeeder extends Seeder
                 'updated_at' => now()->subDays(2),
             ],
             [
-                'reporter_id' => 5,
+                'reporter_id' => 6,
                 'reported_user_id' => 2,
                 'product_id' => 2, // Smart Watch
                 'description' => 'Penjual meminta pembayaran di luar platform.',
@@ -51,7 +51,7 @@ class ReportSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'reporter_id' => 4,
+                'reporter_id' => 5,
                 'reported_user_id' => 3,
                 'product_id' => 5, // Minimalist Watch
                 'description' => 'Deskripsi produk berisi kata-kata tidak pantas.',

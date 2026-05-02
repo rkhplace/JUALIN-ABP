@@ -8,5 +8,10 @@ Route::get('/', function () {
 
 Route::get('/password/reset/{token}', function ($token) {
     $email = request('email');
-    return redirect("https://www.jualin-tel.biz.id/auth/reset-password?token=$token&email=$email");
+    $frontendUrl = rtrim(config('app.frontend_url') ?: config('app.url'), '/');
+
+    return redirect($frontendUrl . '/auth/reset-password?' . http_build_query([
+        'token' => $token,
+        'email' => $email,
+    ]));
 })->name('password.reset');
