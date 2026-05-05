@@ -1,0 +1,44 @@
+name: mobile_app
+description: "A new Flutter project for Jualin"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  http: ^1.1.2
+  shared_preferences: ^2.2.2
+  google_fonts: ^6.2.1
+  flutter_native_splash: ^2.4.0
+  url_launcher: ^6.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/images/Logo.png
+  android_gravity: center
+  ios_content_mode: center
+  android_12:
+    color: "#FFFFFF"
+    image: assets/images/Logo_splash.png
+    icon_background_color: "#FFFFFF"
+  ios: true
+  android: true
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/Logo.png
+    - assets/images/Logo_splash.png
+    - assets/images/Banner_1.png
+    - assets/images/Banner_2.png
+    - assets/images/Banner_3.png
