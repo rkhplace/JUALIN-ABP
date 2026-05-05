@@ -1,0 +1,44 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Laravel / PHP
+vendor/
+.env
+.env.*
+!.env.example
+storage/logs/*.log
+bootstrap/cache/*.php
+.phpunit.result.cache
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+pubspec.lock.backup
+
+# Android
+.gradle/
+local.properties
+
+# iOS / macOS
+Pods/
+DerivedData/
+Flutter/ephemeral/
+
+# Misc
+PsySH/
+*.log
