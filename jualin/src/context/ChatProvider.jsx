@@ -5,6 +5,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { AuthContext } from "./AuthProvider";
 import {
@@ -24,6 +25,8 @@ export function ChatProvider({ children }) {
   const [currentChat, setCurrentChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  // Ref ke fungsi refresh() dari getChatMessages — dipanggil setelah sendMessage
+  const refreshMessagesRef = useRef(null);
 
   useEffect(() => {
     if (!user?.id) {
@@ -43,12 +46,16 @@ export function ChatProvider({ children }) {
   useEffect(() => {
     if (!currentChat?.id) {
       setMessages([]);
+      refreshMessagesRef.current = null;
       return;
     }
 
-    const unsubscribe = getChatMessages(currentChat.id, (messagesData) => {
+    const { unsubscribe, refresh } = getChatMessages(currentChat.id, (messagesData) => {
       setMessages(messagesData);
     });
+
+    // Simpan ref ke refresh() agar bisa dipanggil dari sendMessage
+    refreshMessagesRef.current = refresh;
 
     if (user?.id) {
       resetUnreadCount(currentChat.id, user.id).catch((err) => {
@@ -58,6 +65,7 @@ export function ChatProvider({ children }) {
 
     return () => {
       unsubscribe();
+      refreshMessagesRef.current = null;
     };
   }, [currentChat?.id, user?.id]);
 
@@ -151,15 +159,35 @@ export function ChatProvider({ children }) {
         return;
       }
 
+      // Optimistic update — tampilkan pesan langsung di UI tanpa tunggu server
+      const optimisticId = `optimistic-${Date.now()}`;
+      const optimisticMsg = {
+        id: optimisticId,
+        text: text.trim(),
+        senderId: user.id.toString(),
+        senderName: user.name || user.username || user.email,
+        senderAvatar: user.avatar || user.profile_picture || null,
+        timestamp: new Date(),
+        read: false,
+        _optimistic: true,
+      };
+      setMessages((prev) => [...prev, optimisticMsg]);
+
       try {
         await sendMessageService(
           currentChat.id,
           user.id,
           user.name || user.username || user.email,
           text.trim(),
-          user.avatar || user.profile_picture || null
+          user.avatar || user.profile_picture || null,
+          currentChat.participants || [] // pastikan room Firestore ada sebelum tulis pesan
         );
+        // Hapus optimistis lalu ambil versi final dari Laravel
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+        refreshMessagesRef.current?.();
       } catch (error) {
+        // Rollback: hapus pesan optimistis jika server gagal
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
         console.error("❌ Error sending message:", error);
         throw error;
       }
