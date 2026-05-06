@@ -75,14 +75,26 @@ export function AuthProvider({ children }) {
       setUser(me);
       localStorage.setItem("user", JSON.stringify(me));
 
-      // Sync to Firebase Auth
-      if (me.firebase_token) {
+      // Coba sign in ke Firebase:
+      // 1. Gunakan firebase_token dari response /me (jika ada)
+      // 2. Fallback ke token yang disimpan saat login
+      const fbToken =
+        me.firebase_token ||
+        (typeof window !== "undefined"
+          ? localStorage.getItem("firebase_token")
+          : null);
+
+      if (fbToken) {
         try {
-          await signInWithCustomToken(auth, me.firebase_token);
-          console.log("🔥 [Refetch] Firebase Custom Token Login Success");
+          await signInWithCustomToken(auth, fbToken);
+          console.log("🔥 [Refetch] Firebase Auth Success");
         } catch (fbError) {
-          console.error("❌ [Refetch] Firebase Login Failed:", fbError);
+          console.warn("⚠️ [Refetch] Firebase Auth Failed:", fbError.code);
+          // Token mungkin expired — hapus agar tidak dipakai lagi
+          localStorage.removeItem("firebase_token");
         }
+      } else {
+        console.warn("⚠️ No firebase_token available — Firestore realtime disabled");
       }
 
       syncUserToFirestore(me);
@@ -111,6 +123,9 @@ export function AuthProvider({ children }) {
 
     // Login to Firebase if token is provided
     if (userData.firebase_token) {
+      // Simpan firebase_token terpisah agar bisa dipakai saat page reload
+      // (endpoint /me tidak selalu return firebase_token)
+      localStorage.setItem("firebase_token", userData.firebase_token);
       try {
         await signInWithCustomToken(auth, userData.firebase_token);
         console.log("🔥 Firebase Custom Token Login Success");
@@ -121,8 +136,6 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    const accessToken =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
     try {
       await authService.logout();
     } catch (error) {
@@ -131,6 +144,7 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("user");
+      localStorage.removeItem("firebase_token");
       setUser(null);
       Cookies.remove("role");
       Cookies.remove("token");
