@@ -65,6 +65,7 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::post('/rooms/start',                 [ChatController::class, 'startRoom']);
         Route::get('/rooms/{roomId}/messages',      [ChatController::class, 'messages']);
         Route::post('/rooms/{roomId}/messages',     [ChatController::class, 'sendMessage']);
+        Route::post('/rooms/{roomId}/product-message', [ChatController::class, 'sendProductMessage']);
     });
 
     Route::middleware('role:seller')->group(function () {

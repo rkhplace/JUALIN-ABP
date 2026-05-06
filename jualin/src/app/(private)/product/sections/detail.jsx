@@ -102,7 +102,16 @@ export default function ProductDetailSection({ product, seller }) {
         avatar: getProfilePictureUrl(seller?.profile_picture),
       };
 
-      await startChat(seller.id, sellerInfo, product.id);
+      const productPayload = {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        slug: product.slug || null,
+        description: product.description || "",
+      };
+
+      await startChat(seller.id, sellerInfo, productPayload);
 
       router.push("/chat");
     } catch (error) {

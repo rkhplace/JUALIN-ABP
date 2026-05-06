@@ -150,6 +150,8 @@ export function getChatMessages(chatId, callback) {
         senderAvatar: m.sender?.profile_picture || null,
         timestamp: new Date(m.sent_at),
         read: m.is_read,
+        type: m.type || "text",
+        product: m.product_data || null,
       }));
 
       callback(mappedMsgs);
@@ -167,6 +169,18 @@ export function getChatMessages(chatId, callback) {
   return () => {
     isCancelled = true;
   };
+}
+
+export async function sendProductMessage(chatId, productData) {
+  try {
+    const res = await fetcher.post(`/api/v1/chat/rooms/${chatId}/product-message`, {
+      product_data: productData,
+    });
+    return res;
+  } catch (e) {
+    console.error("❌ Error sending product message:", e);
+    throw e;
+  }
 }
 
 export async function getChatRoomInfo(chatId) {
