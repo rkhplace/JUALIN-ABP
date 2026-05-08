@@ -300,6 +300,8 @@ function parseLaravelMessages(res) {
     senderAvatar: m.sender?.profile_picture || null,
     timestamp: new Date(m.sent_at),
     read: m.is_read,
+    type: m.type || "text",
+    product: m.product_data || null,
   }));
 }
 
@@ -340,6 +342,21 @@ export function getChatMessages(chatId, callback) {
 
   // Return both unsubscribe and refresh
   return { unsubscribe, refresh };
+}
+
+// ---------------------------------------------------------------------------
+// Send product message to chat (product bubble feature)
+// ---------------------------------------------------------------------------
+export async function sendProductMessage(chatId, productData) {
+  try {
+    const res = await fetcher.post(`/api/v1/chat/rooms/${chatId}/product-message`, {
+      product_data: productData,
+    });
+    return res;
+  } catch (e) {
+    console.error("❌ Error sending product message:", e);
+    throw e;
+  }
 }
 
 // ---------------------------------------------------------------------------

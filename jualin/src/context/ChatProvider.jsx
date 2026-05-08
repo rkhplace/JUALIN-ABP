@@ -12,6 +12,7 @@ import {
   getUserChatRooms,
   getChatMessages,
   sendMessage as sendMessageService,
+  sendProductMessage as sendProductMessageService,
   getOrCreateChatRoom,
   getChatRoomInfo,
   resetUnreadCount,
@@ -70,7 +71,7 @@ export function ChatProvider({ children }) {
   }, [currentChat?.id, user?.id]);
 
   const startChat = useCallback(
-    async (otherUserId, otherUserInfo, productId = null) => {
+    async (otherUserId, otherUserInfo, productPayload = null) => {
       if (!user?.id) {
         throw new Error("User belum login");
       }
@@ -92,20 +93,24 @@ export function ChatProvider({ children }) {
 
         const customerId = isCurrentUserCustomer ? user.id : otherUserId;
         const sellerId = isCurrentUserCustomer ? otherUserId : user.id;
-        const customerInfo = isCurrentUserCustomer
-          ? currentUserInfo
-          : otherUserInfoWithRole;
-        const sellerInfo = isCurrentUserCustomer
-          ? otherUserInfoWithRole
-          : currentUserInfo;
 
         const chatId = await getOrCreateChatRoom(
           customerId,
           sellerId,
-          customerInfo,
-          sellerInfo,
-          productId
+          currentUserInfo,
+          otherUserInfoWithRole,
+          productPayload?.id || productPayload
         );
+
+        // Send product as a chat message (prevents duplicates server-side)
+        if (productPayload && typeof productPayload === "object" && chatId) {
+          try {
+            await sendProductMessageService(chatId, productPayload);
+            console.log("[startChat] Product message sent for chatId:", chatId);
+          } catch (err) {
+            console.error("[startChat] Failed to send product message:", err);
+          }
+        }
 
         const chatInfo = await getChatRoomInfo(chatId);
         setCurrentChat(chatInfo);
