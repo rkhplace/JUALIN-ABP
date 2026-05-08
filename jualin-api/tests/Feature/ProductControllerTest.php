@@ -35,7 +35,10 @@ class ProductControllerTest extends TestCase
 
         $res = $this->json('GET', '/api/v1/products');
         $res->assertStatus(200)->assertJsonStructure([
-            'products', 'totalProducts', 'totalPages', 'currentPage'
+            'products',
+            'totalProducts',
+            'totalPages',
+            'currentPage'
         ]);
     }
 

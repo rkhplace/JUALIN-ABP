@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\Notification;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\User;
 
@@ -31,6 +33,65 @@ class AuthControllerTest extends TestCase
 
         $res->assertStatus(201)
             ->assertJsonStructure(['message', 'user', 'access_token', 'refresh_token', 'role']);
+    }
+
+    public function testRegisterNormalizesEmailBeforeSaving()
+    {
+        JWTAuth::shouldReceive('fromUser')->once()->andReturn('access-token-xyz');
+
+        $res = $this->json('POST', '/api/v1/register', [
+            'username' => 'normaluser',
+            'email' => '  NewUser@Example.COM  ',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'role' => 'customer',
+        ]);
+
+        $res->assertStatus(201);
+        $this->assertDatabaseHas('users', ['email' => 'newuser@example.com']);
+    }
+
+    public function testRegisteredUserCanRequestPasswordResetLink()
+    {
+        Notification::fake();
+
+        $user = User::create([
+            'username' => 'resetuser',
+            'email' => 'ResetUser@Example.com',
+            'password' => 'password123',
+            'role' => 'customer',
+        ]);
+
+        $res = $this->json('POST', '/api/v1/password/email', [
+            'email' => 'resetuser@example.com',
+        ]);
+
+        $res->assertOk()
+            ->assertJson(['message' => 'Jika email terdaftar, link reset password akan dikirim.']);
+
+        $this->assertDatabaseHas('password_reset_tokens', [
+            'email' => 'ResetUser@Example.com',
+        ]);
+
+        Notification::assertSentTo($user, ResetPassword::class);
+    }
+
+    public function testForgotPasswordResponseDoesNotRevealUnknownEmail()
+    {
+        Notification::fake();
+
+        $res = $this->json('POST', '/api/v1/password/email', [
+            'email' => 'unknown@example.com',
+        ]);
+
+        $res->assertOk()
+            ->assertJson(['message' => 'Jika email terdaftar, link reset password akan dikirim.']);
+
+        $this->assertDatabaseMissing('password_reset_tokens', [
+            'email' => 'unknown@example.com',
+        ]);
+
+        Notification::assertNothingSent();
     }
 
     public function testLoginInvalidCredentialsReturns401()
