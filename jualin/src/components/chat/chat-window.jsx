@@ -2,6 +2,7 @@
 import { useEffect, useRef, useContext, useState } from 'react';
 import { ChatHeader } from './ChatHeader';
 import { ChatBubble } from './ChatBubble';
+import { ProductBubble } from './ProductBubble';
 import { ChatInput } from './ChatInput';
 import { AuthContext } from '@/context/AuthProvider';
 import { getProfilePictureUrl } from '@/utils/imageHelper';
@@ -74,6 +75,8 @@ export function ChatWindow({ chat, messages = [], onSend }) {
       isMe: msg.senderId === user?.id?.toString(),
       sender: msg.senderId === user?.id?.toString() ? 'You' : msg.senderName,
       avatar: msg.senderAvatar,
+      type: msg.type || 'text',
+      product: msg.product || null,
     };
   });
 
@@ -95,7 +98,7 @@ export function ChatWindow({ chat, messages = [], onSend }) {
       <ChatHeader chat={chatHeaderData} />
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto bg-gray-100 py-6 px-4">
+      <div className="flex-1 overflow-y-auto bg-gray-100 py-6 px-4 flex flex-col">
         {transformedMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center p-6">
@@ -111,7 +114,11 @@ export function ChatWindow({ chat, messages = [], onSend }) {
         ) : (
           <>
             {transformedMessages.map((msg) => (
-              <ChatBubble key={msg.id} message={msg} />
+              msg.type === 'product' ? (
+                <ProductBubble key={msg.id} message={msg} userRole={user?.role} />
+              ) : (
+                <ChatBubble key={msg.id} message={msg} />
+              )
             ))}
             <div ref={messagesEndRef} />
           </>

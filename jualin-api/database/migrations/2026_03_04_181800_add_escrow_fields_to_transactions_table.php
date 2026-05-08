@@ -16,7 +16,9 @@ return new class extends Migration
             $table->string('auth_code')->nullable()->after('total_amount');
         });
         
-        DB::statement('ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_status_check');
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_status_check');
+        }
     }
 
     /**

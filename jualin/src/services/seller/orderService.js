@@ -32,9 +32,9 @@ export const orderService = {
     }
   },
 
-  async fetchIncome(_sellerId, period = "Month") {
+  async fetchIncome(_sellerId, period = "Month", type = "withdraw") {
     const resp = await fetcher.get("/api/v1/transactions/income/statistics", {
-      params: { period },
+      params: { period, type },
     });
     return resp?.data || resp;
   },

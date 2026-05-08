@@ -31,7 +31,7 @@ export const queryKeys = {
   productsByCategory: (category) => ['products', 'category', category],
 
   sellerProducts: (sellerId) => ['seller', sellerId, 'products'],
-  sellerIncome: (sellerId, period) => ['seller', sellerId, 'income', period],
+  sellerIncome: (sellerId, period, type) => ['seller', sellerId, 'income', period, type],
   sellerOrders: (sellerId) => ['seller', sellerId, 'orders'],
   sellerDashboard: (sellerId) => ['seller', sellerId, 'dashboard'],
   sellerInfo: (sellerId) => ['seller', sellerId, 'info'],

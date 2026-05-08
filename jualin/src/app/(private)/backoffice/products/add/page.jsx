@@ -1,82 +1,40 @@
 "use client";
-import React, { useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { productService } from "@/services/product/productService";
-import ProductForm from "@/components/forms/ProductForm";
 
 export default function BackofficeNewProductPage() {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
 
-  const handleSubmit = async (formData) => {
-    try {
-      setSaving(true);
-      setError("");
-      console.log("🚀 Starting product creation (backoffice)...", formData);
-
-      const productData = {
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        price: parseFloat(formData.price),
-        stock_quantity: parseInt(formData.stock_quantity),
-        category: formData.category.trim() || "",
-        condition: formData.condition,
-        status: formData.status,
-      };
-
-      console.log("📦 Product data prepared:", productData);
-      console.log("🖼️ Image files:", formData.imageFiles);
-
-      // Call service and await for completion
-      const createdProduct = await productService.create(
-        productData,
-        formData.imageFiles || []
-      );
-      
-      console.log("✅ Product created successfully:", createdProduct);
-      console.log("🔄 Redirecting to /backoffice/products...");
-      
-      // Use window.location.href directly - most reliable method
-      setTimeout(() => {
-        console.log("⏸️ Executing redirect via window.location.href");
-        window.location.href = "/backoffice/products";
-      }, 300);
-      
-    } catch (err) {
-      console.error("❌ Error creating product:", err);
-      console.error("Error details:", {
-        message: err?.message,
-        statusCode: err?.statusCode,
-        response: err?.originalError?.response?.data,
-      });
-
-      // Show user-friendly error
-      if (err?.statusCode === 422) {
-        // Validation errors
-        const validationErrors = err?.originalError?.response?.data?.errors;
-        if (validationErrors && typeof validationErrors === 'object') {
-          const firstError = Object.values(validationErrors).flat()[0];
-          setError(firstError || "Validasi gagal");
-        } else {
-          setError(err?.message || "Data tidak valid");
-        }
-      } else {
-        setError(err?.message || "Gagal menambahkan produk. Silakan coba lagi.");
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
+  useEffect(() => {
+    // Admin tidak diperbolehkan menambah produk — redirect ke daftar produk
+    router.replace("/backoffice/products");
+  }, [router]);
 
   return (
-    <div className="bg-[#F5F6FA] min-h-screen">
-      <ProductForm
-        title="Tambah Produk (Backoffice)"
-        onSubmit={handleSubmit}
-        saving={saving}
-        error={error}
-      />
+    <div className="flex items-center justify-center min-h-screen bg-[#F5F6FA]">
+      <div className="text-center p-8 bg-white rounded-2xl shadow-md border border-gray-100 max-w-sm">
+        <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg
+            className="w-7 h-7 text-[#E83030]"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+            />
+          </svg>
+        </div>
+        <h2 className="text-lg font-bold text-gray-800 mb-1">Akses Ditolak</h2>
+        <p className="text-sm text-gray-500">
+          Admin tidak memiliki izin untuk menambah produk baru.
+        </p>
+        <p className="text-xs text-gray-400 mt-2">Mengalihkan halaman...</p>
+      </div>
     </div>
   );
 }
+
