@@ -33,6 +33,8 @@ class User extends Authenticatable implements JWTSubject
         'following',
         'refresh_token',
         'wallet_balance',
+        'is_banned',
+        'banned_until',
     ];
 
     /**
@@ -56,6 +58,8 @@ class User extends Authenticatable implements JWTSubject
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'birthday' => 'date',
+            'is_banned' => 'boolean',
+            'banned_until' => 'datetime',
         ];
     }
 

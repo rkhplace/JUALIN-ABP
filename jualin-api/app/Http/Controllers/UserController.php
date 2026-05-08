@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Responses\ApiResponse;
+use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 
@@ -30,6 +31,26 @@ class UserController extends Controller
     public function show($id)
     {
         return ApiResponse::success('User fetched', $this->service->getById($id));
+    }
+
+    public function search(Request $request)
+    {
+        $query = trim((string) $request->input('q', ''));
+        $limit = min(max((int) $request->input('limit', 8), 1), 10);
+
+        $users = User::query()
+            ->select('id', 'username', 'role')
+            ->when($query !== '', function ($userQuery) use ($query) {
+                $userQuery->where('username', 'like', "%{$query}%");
+            })
+            ->when($request->user(), function ($userQuery, $currentUser) {
+                $userQuery->where('id', '!=', $currentUser->id);
+            })
+            ->orderBy('username')
+            ->limit($limit)
+            ->get();
+
+        return ApiResponse::success('Users found', $users);
     }
 
     public function store(StoreUserRequest $request)

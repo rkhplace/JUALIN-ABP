@@ -19,13 +19,13 @@ Route::prefix('v1')->group(function () {
     Route::post('/refresh-token', [AuthController::class, 'refreshToken']);
     Route::get('products', [ProductController::class, 'index']);
     Route::get('products/{id}', [ProductController::class, 'show']);
-    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::get('/users/{id}', [UserController::class, 'show'])->whereNumber('id');
     Route::post('/payments/notification', [PaymentController::class, 'handleNotification']);
-    Route::post('/reports', [ReportController::class, 'store']);
-
     Route::middleware('auth:api')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
+        Route::get('/users/search', [UserController::class, 'search']);
+        Route::post('/reports', [ReportController::class, 'store']);
         Route::patch('/profile/update', [\App\Http\Controllers\ProfileController::class, 'update']);
     });
 });
@@ -36,6 +36,7 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/reports', [ReportController::class, 'index']);
         Route::patch('/reports/{id}/status', [ReportController::class, 'updateStatus']);
+        Route::patch('/reports/{id}/ban', [ReportController::class, 'banReportedUser']);
         Route::post('/users', [UserController::class, 'store']);
         Route::patch('/transactions/{id}/status', [TransactionController::class, 'update']);
 

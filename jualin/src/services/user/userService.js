@@ -17,6 +17,13 @@ export const userService = {
     const response = await fetcher.get("/api/v1/users/me");
     return response?.data || response;
   },
+
+  async searchByUsername(query) {
+    const response = await fetcher.get("/api/v1/users/search", {
+      params: { q: query, limit: 8 },
+    });
+    return response?.data || [];
+  },
 };
 
 export default userService;
