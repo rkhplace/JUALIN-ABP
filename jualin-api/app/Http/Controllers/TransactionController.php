@@ -254,6 +254,37 @@ class TransactionController extends Controller
         }
     }
 
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $request->validate([
+            'status' => 'required|string',
+        ]);
+
+        try {
+            $transaction = Transaction::findOrFail($id);
+            $transaction->status = $request->status;
+            $transaction->save();
+
+            return ApiResponse::success(
+                'Transaction status updated successfully',
+                $transaction,
+                200
+            );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return ApiResponse::error(
+                'Transaction not found',
+                null,
+                404
+            );
+        } catch (\Exception $e) {
+            return ApiResponse::error(
+                'Failed to update transaction status',
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
     public function incomeStatistics(Request $request): JsonResponse
     {
         $user = Auth::user();

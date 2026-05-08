@@ -37,6 +37,7 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::get('/reports', [ReportController::class, 'index']);
         Route::patch('/reports/{id}/status', [ReportController::class, 'updateStatus']);
         Route::post('/users', [UserController::class, 'store']);
+        Route::patch('/transactions/{id}/status', [TransactionController::class, 'update']);
 
         Route::delete('/users/{id}', [UserController::class, 'destroy']);
     });

@@ -95,8 +95,6 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
         avatar: getProfilePictureUrl(order.customer?.profile_picture),
       }))
       : [];
-  const handleVerifyOrder = (orderId) =>
-    router.push(`/seller/orders/${orderId}/verify`);
 
   const handleChatBuyer = async (buyerId) => {
     if (!buyerId) {
@@ -301,15 +299,6 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
                           className="inline-flex items-center rounded-lg border border-brand-red bg-white px-3 py-2 text-sm font-semibold text-brand-red shadow-sm transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Chat
-                        </button>
-                      )}
-                      {activity.status === "pending" && (
-                        <button
-                          type="button"
-                          onClick={() => handleVerifyOrder(activity.id)}
-                          className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
-                        >
-                          Verifikasi
                         </button>
                       )}
                       {activity.status === "waiting_cod" && (

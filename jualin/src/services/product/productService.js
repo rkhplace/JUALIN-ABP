@@ -147,7 +147,7 @@ export const productService = {
   },
 
   async delete(id) {
-    await fetcher.delete(`/api/v1/products/${id}/delete`);
+    await fetcher.delete(`/api/v1/products/${id}`);
     return true;
   },
 };
