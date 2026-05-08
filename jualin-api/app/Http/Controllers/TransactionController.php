@@ -542,6 +542,51 @@ class TransactionController extends Controller
             ];
         })->values()->all();
     }
+
+    public function update(string $id, Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        // Only admin can update transaction status
+        if ($user->role !== 'admin') {
+            return ApiResponse::error(
+                'Only admins can update transaction status',
+                null,
+                403
+            );
+        }
+
+        $request->validate([
+            'status' => 'required|string|in:pending,verified,processing,completed,cancelled',
+        ]);
+
+        try {
+            $transaction = Transaction::findOrFail($id);
+
+            $oldStatus = $transaction->status;
+            $newStatus = $request->status;
+
+            $transaction->status = $newStatus;
+            $transaction->save();
+
+            $transaction->load(['items.product', 'customer', 'seller', 'payment']);
+
+            return ApiResponse::success(
+                'Transaction status updated successfully',
+                $transaction,
+                200
+            );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return ApiResponse::error('Transaction not found', null, 404);
+        } catch (\Exception $e) {
+            return ApiResponse::error(
+                'Failed to update transaction status',
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
     public function withdraw(Request $request): JsonResponse
     {
         $user = Auth::user();

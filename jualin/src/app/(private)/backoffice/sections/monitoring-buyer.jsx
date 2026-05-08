@@ -19,6 +19,8 @@ export default function BuyerMonitoring() {
 
   const [editingBuyer, setEditingBuyer] = useState(null);
   const [showBuyerModal, setShowBuyerModal] = useState(false);
+  const [isEditLoading, setIsEditLoading] = useState(false);
+  const [editError, setEditError] = useState(null);
 
   const [deletingBuyerId, setDeletingBuyerId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -129,22 +131,42 @@ export default function BuyerMonitoring() {
 
   const handleEditBuyer = (buyer) => {
     setEditingBuyer(buyer);
+    setEditError(null);
     setShowBuyerModal(true);
   };
 
-  const handleSaveEdit = (updatedBuyer) => {
-    // Update local state
-    setAllTransactions((prev) =>
-      prev.map((t) => {
-        if (t.id === updatedBuyer.id) {
-          return { ...t, status: updatedBuyer.status }; // Minimal update for demo
-        }
-        return t;
-      })
-    );
-    setEditingBuyer(null);
-    setShowBuyerModal(false);
-    // TODO: Implement API update
+  const handleSaveEdit = async (updatedBuyer) => {
+    if (!updatedBuyer || !updatedBuyer.id) return;
+
+    setIsEditLoading(true);
+    setEditError(null);
+
+    try {
+      // Call API to update transaction status
+      const response = await transactionService.updateTransactionStatus(
+        updatedBuyer.id,
+        updatedBuyer.status
+      );
+
+      // Update local state with response data
+      const updatedTransaction = response?.data || response;
+      setAllTransactions((prev) =>
+        prev.map((t) => {
+          if (t.id === updatedBuyer.id) {
+            return { ...t, status: updatedTransaction.status || updatedBuyer.status };
+          }
+          return t;
+        })
+      );
+
+      setEditingBuyer(null);
+      setShowBuyerModal(false);
+    } catch (error) {
+      console.error("Failed to update transaction:", error);
+      setEditError(error?.message || "Gagal mengubah status transaksi");
+    } finally {
+      setIsEditLoading(false);
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -378,13 +400,22 @@ export default function BuyerMonitoring() {
               </h3>
               <button
                 type="button"
-                onClick={() => setShowBuyerModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                onClick={() => {
+                  setShowBuyerModal(false);
+                  setEditError(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                disabled={isEditLoading}
               >
                 <X size={20} />
               </button>
             </div>
             <div className="space-y-4">
+              {editError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-700">{editError}</p>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Buyer Name
@@ -401,7 +432,7 @@ export default function BuyerMonitoring() {
                   Status
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E53935]/80"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E53935]/80 disabled:opacity-50"
                   defaultValue={editingBuyer.status}
                   onChange={(e) => {
                     setEditingBuyer({
@@ -409,6 +440,7 @@ export default function BuyerMonitoring() {
                       status: e.target.value,
                     });
                   }}
+                  disabled={isEditLoading}
                 >
                   <option value="pending">Pending</option>
                   <option value="verified">Verified</option>
@@ -420,9 +452,17 @@ export default function BuyerMonitoring() {
               <button
                 type="button"
                 onClick={() => handleSaveEdit(editingBuyer)}
-                className="w-full bg-[#E53935] text-white py-2.5 rounded-lg font-medium hover:bg-[#D32F2F] transition-colors shadow-sm"
+                className="w-full bg-[#E53935] text-white py-2.5 rounded-lg font-medium hover:bg-[#D32F2F] transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                disabled={isEditLoading}
               >
-                Save Changes
+                {isEditLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Menyimpan...
+                  </>
+                ) : (
+                  "Simpan Perubahan"
+                )}
               </button>
             </div>
           </div>
