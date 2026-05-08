@@ -70,6 +70,13 @@ export function middleware(request) {
     return NextResponse.redirect(url)
   }
 
+  // Blokir admin dari halaman tambah produk
+  if (pathname.startsWith('/backoffice/products/add') && role === 'admin') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/backoffice/products'
+    return NextResponse.redirect(url)
+  }
+
   if (!isValidRoute(pathname)) {
     const url = request.nextUrl.clone()
     url.pathname = '/404_not_found'
