@@ -29,6 +29,7 @@ const IncomeSectionClientCached = ({ sellerId }) => {
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [selectedGraph, setSelectedGraph] = useState("withdraw");
 
   const {
     withdrawn,
@@ -41,7 +42,9 @@ const IncomeSectionClientCached = ({ sellerId }) => {
     getYAxisTicks,
     getMinDataPoint,
     refetch,
-  } = useSellerIncomeQuery(sellerId, selectedPeriod);
+  } = useSellerIncomeQuery(sellerId, selectedPeriod, selectedGraph);
+  const activeChartData = chartData;
+  const activeChartTotal = chartTotal;
 
   const [yMin, yMax] = getYAxisDomain();
   const yTicks = getYAxisTicks();
@@ -158,6 +161,24 @@ const IncomeSectionClientCached = ({ sellerId }) => {
               </button>
             </div>
           )}
+          <div className="flex gap-2 mb-4">
+            {[
+              { value: "sales", label: "Grafik Penjualan" },
+              { value: "withdraw", label: "Grafik Withdraw" },
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setSelectedGraph(option.value)}
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${selectedGraph === option.value
+                  ? "bg-brand-red text-white"
+                  : "bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-200)]"
+                  }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
 
           <div className="h-64 overflow-hidden">
             {isLoading ? (
@@ -223,7 +244,8 @@ const IncomeSectionClientCached = ({ sellerId }) => {
 
           {!isLoading && chartData.length > 0 && (
             <p className="mt-3 text-sm text-gray-500">
-              Total data pada grafik: <span className="font-semibold text-gray-700">{formatCurrency(chartTotal)}</span>
+              Total {selectedGraph === "sales" ? "Penjualan" : "Withdraw"} pada grafik:
+              <span className="font-semibold text-gray-700">{formatCurrency(activeChartTotal)}</span>
             </p>
           )}
 

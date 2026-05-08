@@ -4,9 +4,9 @@ import { transformIncomeData } from "@/utils/helpers/incomeHelper";
 import { formatCurrency } from "@/utils/formatters/currency";
 import { orderService } from "@/services";
 
-const fetchSellerIncome = async ({ sellerId, period }) => {
+const fetchSellerIncome = async ({ sellerId, period, type}) => {
   if (!sellerId) throw new Error("Seller ID is required");
-  const rawTransactions = await orderService.fetchIncome(sellerId, period);
+  const rawTransactions = await orderService.fetchIncome(sellerId, period, type);
 
   if (Array.isArray(rawTransactions))
     return transformIncomeData(rawTransactions, period);
@@ -56,10 +56,10 @@ const fetchSellerIncome = async ({ sellerId, period }) => {
   };
 };
 
-export const useSellerIncomeQuery = (sellerId, period = "Month") => {
+export const useSellerIncomeQuery = (sellerId, period = "Month", type = "withdraw") => {
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: queryKeys.sellerIncome(sellerId, period),
-    queryFn: () => fetchSellerIncome({ sellerId, period }),
+    queryKey: queryKeys.sellerIncome(sellerId, period, type),
+    queryFn: () => fetchSellerIncome({ sellerId, period, type }),
     enabled: !!sellerId,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,

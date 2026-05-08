@@ -321,11 +321,6 @@ export default function BuyerMonitoring() {
                             label: "Edit Order",
                             onClick: () => handleEditBuyer(buyer),
                           },
-                          {
-                            label: "Delete Order",
-                            onClick: () => handleDeleteBuyer(buyer.id),
-                            variant: "danger",
-                          },
                         ]}
                       />
                     </td>
