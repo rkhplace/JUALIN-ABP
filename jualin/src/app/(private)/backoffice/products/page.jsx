@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Edit2, Trash2, Search, ArrowLeft, User } from "lucide-react";
+import { Edit2, Trash2, Search, ArrowLeft, User } from "lucide-react";
 import { productService } from "@/services/product/productService";
 import { getProductImageUrl } from "@/utils/imageHelper";
 import { formatCurrency } from "@/utils/formatters/currency";
@@ -107,14 +107,6 @@ export default function BackofficeProductsPage() {
             />
           </div>
 
-          <button
-            type="button"
-            onClick={() => router.push("/backoffice/products/add")}
-            className="bg-[#E53935] hover:bg-[#D32F2F] text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm transition-colors whitespace-nowrap"
-          >
-            <Plus size={16} />
-            <span className="hidden sm:inline">Tambah Produk</span>
-          </button>
         </div>
       </div>
 
