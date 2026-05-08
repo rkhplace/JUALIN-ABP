@@ -18,7 +18,7 @@ export default function NewProductPage() {
       const productData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
-        price: parseFloat(formData.price),
+        price: parseFloat(formData.priceRaw || formData.price),
         stock_quantity: parseInt(formData.stock_quantity),
         category: formData.category.trim() || "",
         condition: formData.condition,

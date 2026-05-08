@@ -44,7 +44,7 @@ export default function EditProductPage() {
 
       const payload = {
         name: formData.name.trim(),
-        price: parseFloat(formData.price),
+        price: parseFloat(formData.priceRaw || formData.price),
         description: formData.description.trim(),
         stock_quantity: parseInt(formData.stock_quantity),
         category: formData.category,
