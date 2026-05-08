@@ -24,3 +24,5 @@ Homestead.yaml
 Thumbs.db
 .env.local
 package-lock.json
+# Firebase Service Account
+storage/app/firebase-credentials.json
