@@ -22,10 +22,11 @@ class ProductResponse extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'seller' => [
-                'id' => $this->seller->id ?? null,
-                'username' => $this->seller->username ?? null,
+                'id'              => $this->seller->id ?? null,
+                'username'        => $this->seller->username ?? null,
                 'profile_picture' => $this->seller->profile_picture ?? null,
-                'city' => $this->seller->city ?? null,
+                'city'            => $this->seller->city ?? null,
+                'is_verified'     => (bool) ($this->seller->is_verified ?? false),
             ],
         ];
     }

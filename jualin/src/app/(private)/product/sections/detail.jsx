@@ -10,6 +10,7 @@ import { getProductImageUrl, getProfilePictureUrl, getImageUrl } from "@/utils/i
 import { formatCurrency } from "@/utils/formatters/currency";
 import PaymentMethodModal from "@/components/payment/PaymentMethodModal";
 import { transactionService } from "@/services";
+import VerifiedBadge from "@/components/ui/VerifiedBadge";
 
 export default function ProductDetailSection({ product, seller }) {
   const router = useRouter();
@@ -249,7 +250,10 @@ export default function ProductDetailSection({ product, seller }) {
               )}
             </div>
             <div>
-              <p className="font-semibold text-gray-900">{seller?.username || "Seller"}</p>
+              <p className="font-semibold text-gray-900 flex items-center gap-1">
+                {seller?.username || "Seller"}
+                {seller?.is_verified && <VerifiedBadge size="sm" />}
+              </p>
               {seller?.city && <p className="text-xs text-gray-500">{seller.city}</p>}
             </div>
           </div>

@@ -6,6 +6,7 @@ use App\Http\Requests\TransactionStoreRequest;
 use App\Http\Responses\ApiResponse;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use App\Services\SellerVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -264,6 +265,12 @@ class TransactionController extends Controller
             $transaction = Transaction::findOrFail($id);
             $transaction->status = $request->status;
             $transaction->save();
+
+            // Trigger seller verification whenever a transaction reaches 'completed'
+            if ($request->status === 'completed') {
+                app(SellerVerificationService::class)
+                    ->updateSellerVerification($transaction->seller_id);
+            }
 
             return ApiResponse::success(
                 'Transaction status updated successfully',
