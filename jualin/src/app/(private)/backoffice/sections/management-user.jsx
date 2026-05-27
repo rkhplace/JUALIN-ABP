@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Search } from "lucide-react";
+import { toast } from "sonner";
+import ConfirmationModal from "@/components/ui/ConfirmationModal";
 import { userService } from "@/services/user/userService";
 import { getProfilePictureUrl } from "@/utils/imageHelper";
 import Pagination from "@/components/ui/Pagination";
@@ -14,12 +16,19 @@ export default function UserManagement() {
   // const [totalPages, setTotalPages] = useState(1); // Now derived
   // const [totalItems, setTotalItems] = useState(0); // Now derived
   const [isLoading, setIsLoading] = useState(false);
-  const [userActions, setUserActions] = useState({});
 
   const [filterPeriod, setFilterPeriod] = useState("30days");
 
   // State for all raw users fetched from server
   const [allUsers, setAllUsers] = useState([]);
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    action: null,
+    user: null,
+  });
+  const [banDurations, setBanDurations] = useState({});
+  const [processingUserId, setProcessingUserId] = useState(null);
 
   // Fetch All Users (Once, or on mount)
   useEffect(() => {
@@ -87,10 +96,98 @@ export default function UserManagement() {
     setCurrentPage(1);
   }, [searchQuery, filterPeriod, itemsPerPage]);
 
-  const handleToggleStatus = (userId, currentAction) => {
-    const isSuspended = currentAction === "suspended";
-    const newStatus = isSuspended ? "active" : "suspended";
-    setUserActions((prev) => ({ ...prev, [userId]: newStatus }));
+  const closeConfirmModal = () => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const openConfirmModal = (user, action) => {
+    setConfirmModal({
+      isOpen: true,
+      action,
+      user,
+    });
+  };
+
+  const formatBannedUntil = (timestamp) => {
+    if (!timestamp) return null;
+    return `${new Date(timestamp).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })} ${new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
+  const executeBanUser = async (user) => {
+    const duration = banDurations[user.id] || "7";
+    if (!user || !duration) return;
+
+    setProcessingUserId(user.id);
+    const promise = userService.banUser(user.id, duration);
+
+    try {
+      const response = await toast.promise(promise, {
+        loading: `Memproses ban ${user.username}...`,
+        success: (result) => {
+          const bannedUntil = result?.banned_until || result?.data?.banned_until || result?.data?.user?.banned_until || null;
+          return bannedUntil
+            ? `User ${user.username} berhasil diban sampai ${formatBannedUntil(bannedUntil)}`
+            : `User ${user.username} berhasil diban`;
+        },
+        error: (err) => err.message || `Gagal mem-ban user ${user.username}`,
+      });
+
+      const updatedUser = response?.data?.user || response?.data || response;
+      const bannedUntil = response?.banned_until || response?.data?.banned_until || response?.data?.user?.banned_until || null;
+
+      setAllUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id
+            ? { ...u, is_banned: true, banned_until: bannedUntil || updatedUser?.banned_until }
+            : u
+        )
+      );
+    } catch (error) {
+      console.error("Failed to ban user:", error);
+    } finally {
+      setProcessingUserId(null);
+    }
+  };
+
+  const executeUnbanUser = async (user) => {
+    if (!user) return;
+
+    setProcessingUserId(user.id);
+    const promise = userService.unbanUser(user.id);
+
+    try {
+      await toast.promise(promise, {
+        loading: `Memproses unban ${user.username}...`,
+        success: () => `User ${user.username} berhasil di-unban`,
+        error: (err) => err.message || `Gagal unban user ${user.username}`,
+      });
+
+      setAllUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id
+            ? { ...u, is_banned: false, banned_until: null }
+            : u
+        )
+      );
+    } catch (error) {
+      console.error("Failed to unban user:", error);
+    } finally {
+      setProcessingUserId(null);
+    }
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmModal.user || !confirmModal.action) return;
+
+    const user = confirmModal.user;
+    const action = confirmModal.action;
+    closeConfirmModal();
+
+    if (action === "ban") {
+      await executeBanUser(user);
+    } else if (action === "unban") {
+      await executeUnbanUser(user);
+    }
   };
 
   return (
@@ -214,40 +311,58 @@ export default function UserManagement() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col items-start gap-2">
                         <div className="flex items-center gap-2">
-                          {userActions[user.id] === "suspended" ? (
-                            <>
-                              <span className="inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-xs font-semibold text-red-700 min-w-[80px] justify-center">
-                                Suspended
-                              </span>
+                          {(["seller", "customer"].includes(user.role)) && (
+                            user.is_banned ? (
                               <button
                                 type="button"
-                                onClick={() =>
-                                  handleToggleStatus(user.id, "suspended")
-                                }
-                                className="text-xs text-blue-600 hover:text-blue-800 font-medium underline px-2"
+                                onClick={() => openConfirmModal(user, "unban")}
+                                disabled={processingUserId === user.id}
+                                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                               >
-                                Activate
+                                {processingUserId === user.id ? "Memproses..." : "Unban"}
                               </button>
-                            </>
-                          ) : (
-                            <>
-                              <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-xs font-semibold text-green-700 min-w-[80px] justify-center">
-                                Active
+                            ) : (
+                              <>
+                                <select
+                                  value={banDurations[user.id] || "7"}
+                                  onChange={(e) => setBanDurations((prev) => ({ ...prev, [user.id]: e.target.value }))}
+                                  className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium text-gray-700 focus:border-[#E83030] focus:outline-none"
+                                  disabled={processingUserId === user.id}
+                                >
+                                  <option value="1">1 hari</option>
+                                  <option value="7">7 hari</option>
+                                  <option value="30">30 hari</option>
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => openConfirmModal(user, "ban")}
+                                  disabled={processingUserId === user.id}
+                                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-red-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {processingUserId === user.id ? "Memproses..." : "Ban"}
+                                </button>
+                              </>
+                            )
+                          )}
+
+                          {!(["seller", "customer"].includes(user.role)) && (
+                            user.is_banned ? (
+                              <span className="inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-xs font-semibold text-red-700">
+                                Banned
                               </span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleToggleStatus(user.id, "active")
-                                } // "active" just means current state is active
-                                className="px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-xs font-medium text-gray-700 transition-colors border border-gray-200"
-                              >
-                                Suspend
-                              </button>
-                            </>
+                            ) : (
+                              <span className="text-sm text-gray-500">-</span>
+                            )
                           )}
                         </div>
+
+                        {user.banned_until && (
+                          <p className="mt-1 text-xs text-red-600">
+                            Dibanned sampai {`${new Date(user.banned_until).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })} ${new Date(user.banned_until).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`}
+                          </p>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -288,6 +403,24 @@ export default function UserManagement() {
           </select>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={closeConfirmModal}
+        onConfirm={handleConfirmAction}
+        title={
+          confirmModal.action === "ban"
+            ? `Ban user ${confirmModal.user?.username}`
+            : `Unban user ${confirmModal.user?.username}`
+        }
+        message={
+          confirmModal.action === "ban"
+            ? `Apakah Anda yakin ingin memban user ${confirmModal.user?.username} selama ${banDurations[confirmModal.user?.id] || "7"} hari?`
+            : `Apakah Anda yakin ingin meng-unban user ${confirmModal.user?.username}?`
+        }
+        confirmText={confirmModal.action === "unban" ? "Unban" : "Ban"}
+        isDanger={confirmModal.action === "ban"}
+      />
     </section>
   );
 }

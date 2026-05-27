@@ -6,6 +6,7 @@ import Spinner from "../../../../components/ui/Spinner";
 import useMidtransPayment from "../hooks/useMidtransPayment";
 import { ChatContext } from "@/context/ChatProvider";
 import { AuthContext } from "@/context/AuthProvider";
+import { reportService } from "@/services/backoffice/reportService";
 import { getProductImageUrl, getProfilePictureUrl, getImageUrl } from "@/utils/imageHelper";
 import { formatCurrency } from "@/utils/formatters/currency";
 import PaymentMethodModal from "@/components/payment/PaymentMethodModal";
@@ -20,7 +21,22 @@ export default function ProductDetailSection({ product, seller }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isWalletLoading, setIsWalletLoading] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportType, setReportType] = useState("");
+  const isOwnProduct = user?.id && seller?.id && user.id === seller.id;
+  const [reportDescription, setReportDescription] = useState("");
+  const [isReportSubmitting, setIsReportSubmitting] = useState(false);
+  const [reportErrors, setReportErrors] = useState({});
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  const reportReasons = [
+    "Produk Terlarang",
+    "Penipuan",
+    "Pornografi",
+    "Hak Cipta",
+    "Kategori Tidak Sesuai",
+    "Lainnya",
+  ];
 
   const handleConfirmPayment = async (method) => {
     setIsModalOpen(false);
@@ -122,6 +138,86 @@ export default function ProductDetailSection({ product, seller }) {
       });
     } finally {
       setIsStartingChat(false);
+    }
+  };
+
+  const handleReportClick = () => {
+    if (!user) {
+      setToast({
+        message: "Please login first to report this product",
+        type: "error",
+      });
+      setTimeout(() => router.push("/login"), 2000);
+      return;
+    }
+
+    if (isOwnProduct) {
+      setToast({
+        message: "Anda tidak bisa melaporkan produk Anda sendiri.",
+        type: "error",
+      });
+      return;
+    }
+
+    setIsReportModalOpen(true);
+  };
+
+  const handleCloseReportModal = () => {
+    setIsReportModalOpen(false);
+    setReportType("");
+    setReportDescription("");
+    setReportErrors({});
+  };
+
+  const validateReport = () => {
+    const errors = {};
+
+    if (!reportType) {
+      errors.type = "Pilih alasan laporan produk";
+    }
+
+    if (!reportDescription.trim()) {
+      errors.description = "Deskripsi laporan wajib diisi";
+    }
+
+    setReportErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmitProductReport = async (event) => {
+    event.preventDefault();
+
+    if (!validateReport()) {
+      return;
+    }
+
+    setIsReportSubmitting(true);
+
+    try {
+      await reportService.createReport({
+        product_id: product.id,
+        type: reportType,
+        description: reportDescription.trim(),
+        reported_user_id: seller?.id || null,
+        reported_username: seller?.username || null,
+        target_username: seller?.username || null,
+      });
+
+      setToast({
+        message: "Laporan produk berhasil dikirim. Terima kasih.",
+        type: "success",
+      });
+      handleCloseReportModal();
+    } catch (err) {
+      setToast({
+        message: err.message || "Gagal mengirim laporan produk",
+        type: "error",
+      });
+      if (err.errors) {
+        setReportErrors(err.errors);
+      }
+    } finally {
+      setIsReportSubmitting(false);
     }
   };
 
@@ -290,9 +386,92 @@ export default function ProductDetailSection({ product, seller }) {
               {isStartingChat && <Spinner size="sm" color="gray" />}
               {isStartingChat ? "Starting chat..." : "Chat"}
             </button>
+            <button
+              onClick={handleReportClick}
+              className="px-5 py-2 rounded-full font-semibold border border-red-400 text-red-700 bg-white hover:bg-red-50 transition shadow disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isOwnProduct}
+              title={isOwnProduct ? "Tidak dapat melaporkan produk sendiri" : undefined}
+            >
+              Laporkan Produk
+            </button>
           </div>
         </div>
       </div>
+
+      {isReportModalOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          onClick={handleCloseReportModal}
+        >
+          <div
+            className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="px-6 py-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Laporkan Produk</h3>
+                <p className="text-sm text-gray-500 mt-1">Pilih jenis laporan dan jelaskan detailnya.</p>
+              </div>
+              <button
+                onClick={handleCloseReportModal}
+                className="text-gray-500 hover:text-gray-700 transition"
+                aria-label="Tutup laporan produk"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleSubmitProductReport} className="px-6 py-6 space-y-5">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Alasan Laporan <span className="text-red-500">*</span></label>
+                <select
+                  value={reportType}
+                  onChange={(event) => {
+                    setReportType(event.target.value);
+                    setReportErrors((prev) => ({ ...prev, type: "" }));
+                  }}
+                  className={`w-full rounded-2xl border px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 ${reportErrors.type ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}
+                >
+                  <option value="">Pilih alasan laporan...</option>
+                  {reportReasons.map((reason) => (
+                    <option key={reason} value={reason}>{reason}</option>
+                  ))}
+                </select>
+                {reportErrors.type && <p className="text-xs text-red-500 mt-2">{reportErrors.type}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Detail Laporan <span className="text-red-500">*</span></label>
+                <textarea
+                  value={reportDescription}
+                  onChange={(event) => {
+                    setReportDescription(event.target.value);
+                    setReportErrors((prev) => ({ ...prev, description: "" }));
+                  }}
+                  rows={5}
+                  placeholder={reportType === 'Lainnya' ? 'Jelaskan alasan custom Anda untuk laporan produk ini...' : 'Tuliskan detail masalah produk di sini...'}
+                  className={`w-full rounded-2xl border px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 ${reportErrors.description ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}
+                />
+                {reportErrors.description && <p className="text-xs text-red-500 mt-2">{reportErrors.description}</p>}
+              </div>
+              <div className="flex flex-col sm:flex-row items-stretch gap-3">
+                <button
+                  type="button"
+                  onClick={handleCloseReportModal}
+                  className="flex-1 rounded-2xl border border-gray-200 px-5 py-3 text-gray-700 font-semibold hover:bg-gray-50 transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isReportSubmitting}
+                  className="flex-1 rounded-2xl bg-red-600 text-white px-5 py-3 font-semibold shadow hover:bg-red-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isReportSubmitting ? 'Mengirim...' : 'Kirim Laporan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }

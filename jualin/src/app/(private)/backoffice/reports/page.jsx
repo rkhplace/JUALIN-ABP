@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { reportService } from "@/services/backoffice/reportService";
+import { userService } from "@/services/user/userService";
 import { toast } from "sonner";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
-import { Loader2, AlertCircle, MessageSquareWarning, CheckCircle, XCircle, Ban } from "lucide-react";
+import { Loader2, AlertCircle, MessageSquareWarning, CheckCircle, XCircle } from "lucide-react";
 
 const BAN_DURATION_OPTIONS = [
     { value: "1", label: "1 hari" },
@@ -20,6 +22,7 @@ export default function ReportsPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [banDurations, setBanDurations] = useState({});
     const [banningReportId, setBanningReportId] = useState(null);
+    const [statusSelections, setStatusSelections] = useState({});
 
     const fetchReports = async (page) => {
         setLoading(true);
@@ -28,6 +31,10 @@ export default function ReportsPage() {
             if (response.success) {
                 // response.data contains the array of reports directly (see ApiResponse.php helper)
                 setReports(response.data);
+                setStatusSelections(response.data.reduce((acc, report) => ({
+                    ...acc,
+                    [report.id]: getUIStatusValue(report.status),
+                }), {}));
                 // Pagination data is in response.pagination
                 setCurrentPage(response.pagination?.current_page || 1);
                 setTotalPages(response.pagination?.last_page || 1);
@@ -73,18 +80,36 @@ export default function ReportsPage() {
 
     const getReporterUsername = (report) => report.reporter_username || report.username || "-";
     const getReportedUsername = (report) => report.reported_username || report.target_username || null;
+    const getReportedProductName = (report) => report.reported_product_name || report.product?.name || null;
 
-    const handleUpdateStatus = (id, newStatus) => {
-        setConfirmModal({
-            isOpen: true,
-            type: newStatus === 'rejected' ? 'danger' : null,
-            title: newStatus === 'accepted' ? 'Terima Laporan' : 'Tolak Laporan',
-            message: `Apakah Anda yakin ingin mengubah status laporan ini menjadi "${newStatus}"?`,
-            onConfirm: () => {
-                executeStatusUpdate(id, newStatus);
-                closeConfirmModal();
-            },
-        });
+    const getUIStatusValue = (status) => {
+        if (status === 'reviewed') return 'accepted';
+        if (status === 'resolved') return 'rejected';
+        if (status === 'processed') return 'processing';
+        return status;
+    };
+
+    const formatReportStatus = (status) => {
+        switch (status) {
+            case 'pending':
+                return 'Menunggu';
+            case 'processing':
+            case 'processed':
+                return 'Diproses';
+            case 'reviewed':
+            case 'accepted':
+                return 'Diterima';
+            case 'resolved':
+            case 'rejected':
+                return 'Ditolak';
+            default:
+                return status;
+        }
+    };
+
+    const handleUpdateStatus = async (id, newStatus) => {
+        setStatusSelections((prev) => ({ ...prev, [id]: newStatus }));
+        await executeStatusUpdate(id, newStatus);
     };
 
     const executeStatusUpdate = async (id, newStatus) => {
@@ -92,9 +117,14 @@ export default function ReportsPage() {
 
         toast.promise(promise, {
             loading: 'Mengupdate status...',
-            success: () => {
-                // Optimistic update
-                setReports(reports.map(r => r.id === id ? { ...r, status: newStatus } : r));
+            success: (response) => {
+                const updatedStatus = response?.data?.status || newStatus;
+                const uiStatus = getUIStatusValue(updatedStatus);
+
+                setReports((currentReports) => currentReports.map((report) => (
+                    report.id === id ? { ...report, status: updatedStatus } : report
+                )));
+                setStatusSelections((prev) => ({ ...prev, [id]: uiStatus }));
                 return "Status berhasil diperbarui";
             },
             error: (err) => err.message || "Gagal mengupdate status"
@@ -125,22 +155,29 @@ export default function ReportsPage() {
 
     const executeBanUser = async (id, durationDays) => {
         setBanningReportId(id);
-        const promise = reportService
-            .banReportedUser(id, durationDays)
+        
+        const report = reports.find(r => r.id === id);
+        if (!report || !report.reported_user_id) {
+            toast.error("User ID tidak ditemukan untuk laporan ini");
+            setBanningReportId(null);
+            return;
+        }
+
+        const promise = userService
+            .banUser(report.reported_user_id, durationDays)
             .finally(() => setBanningReportId(null));
 
         toast.promise(promise, {
             loading: 'Memproses ban akun...',
             success: (response) => {
                 const bannedUntil = response?.data?.banned_until
-                    ? new Date(response.data.banned_until).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+                    ? `${new Date(response.data.banned_until).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })} ${new Date(response.data.banned_until).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`
                     : null;
 
                 setReports((currentReports) => currentReports.map((report) => (
                     report.id === id
                         ? {
                             ...report,
-                            reported_username: response?.data?.user?.username || report.reported_username,
                             reported_user_is_banned: true,
                             reported_user_banned_until: response?.data?.banned_until || null,
                         }
@@ -186,7 +223,6 @@ export default function ReportsPage() {
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipe</th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Detail</th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -212,75 +248,39 @@ export default function ReportsPage() {
                                                         <div className="text-orange-600">Terlapor: <span className="font-semibold">{getReportedUsername(report) || "Tidak tersedia"}</span></div>
                                                     </div>
                                                 )}
+                                                {getReportedProductName(report) && (
+                                                    <div className="mb-1 text-xs">
+                                                        <span className="text-gray-500">Produk: </span>
+                                                        <Link href={`/backoffice/products/${report.product?.id ?? report.reported_product_id}/edit`} className="font-semibold text-[#E83030] hover:underline">
+                                                            {getReportedProductName(report)}
+                                                        </Link>
+                                                    </div>
+                                                )}
                                                 <p className="truncate" title={report.description}>{report.description}</p>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${report.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                                                    report.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                                        report.status === 'processed' ? 'bg-blue-100 text-blue-700' :
-                                                            'bg-yellow-100 text-yellow-700'
-                                                    }`}>
-                                                    {report.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                {report.status === 'pending' && (
-                                                    <div className="flex justify-end gap-2">
-                                                        <button
-                                                            onClick={() => handleUpdateStatus(report.id, 'accepted')}
-                                                            className="p-1 text-green-500 hover:bg-green-50 rounded-full transition-colors"
-                                                            title="Terima"
-                                                        >
-                                                            <CheckCircle size={20} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleUpdateStatus(report.id, 'rejected')}
-                                                            className="p-1 text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                                                            title="Tolak"
-                                                        >
-                                                            <XCircle size={20} />
-                                                        </button>
-                                                    </div>
-                                                )}
-                                                <div className="mt-3 flex justify-end gap-2">
-                                                    <select
-                                                        value={banDurations[report.id] || "1"}
-                                                        onChange={(event) => setBanDurations((prev) => ({ ...prev, [report.id]: event.target.value }))}
-                                                        className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium text-gray-700 focus:border-[#E83030] focus:outline-none focus:ring-2 focus:ring-[#E83030]/20"
-                                                        aria-label={`Durasi ban untuk ${getReportedUsername(report) || "akun pelanggar tidak tersedia"}`}
-                                                        disabled={banningReportId === report.id || !getReportedUsername(report)}
-                                                    >
-                                                        {BAN_DURATION_OPTIONS.map((option) => (
-                                                            <option key={option.value} value={option.value}>
-                                                                {option.label}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    <button
-                                                        onClick={() => handleBanUser(report)}
-                                                        disabled={banningReportId === report.id || !getReportedUsername(report)}
-                                                        className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-red-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-                                                        title={getReportedUsername(report) ? "Ban akun pelanggar" : "Akun pelanggar tidak tersedia"}
-                                                    >
-                                                        {banningReportId === report.id ? (
-                                                            <Loader2 size={14} className="animate-spin" />
-                                                        ) : (
-                                                            <Ban size={14} />
-                                                        )}
-                                                        Ban
-                                                    </button>
-                                                </div>
-                                                {report.reported_user_banned_until && (
-                                                    <p className="mt-2 text-xs text-red-600">
-                                                        Dibanned sampai {new Date(report.reported_user_banned_until).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
-                                                    </p>
-                                                )}
+                                                <select
+                                                    value={statusSelections[report.id] ?? getUIStatusValue(report.status)}
+                                                    onChange={(event) => handleUpdateStatus(report.id, event.target.value)}
+                                                    className={`h-9 rounded-lg border px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#E83030]/20 ${
+                                                        report.status === 'reviewed' || report.status === 'accepted' ? 'border-green-200 bg-green-50 text-green-700' :
+                                                        report.status === 'resolved' || report.status === 'rejected' ? 'border-red-200 bg-red-50 text-red-700' :
+                                                        report.status === 'processed' || (statusSelections[report.id] ?? getUIStatusValue(report.status)) === 'processing' ? 'border-blue-200 bg-blue-50 text-blue-700' :
+                                                        'border-yellow-200 bg-yellow-50 text-yellow-700'
+                                                    }`}
+                                                    aria-label={`Status laporan untuk laporan ${report.id}`}
+                                                >
+                                                    <option value="pending">Menunggu</option>
+                                                    <option value="processing">Diproses</option>
+                                                    <option value="accepted">Diterima</option>
+                                                    <option value="rejected">Ditolak</option>
+                                                </select>
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                                        <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
                                             <div className="flex flex-col items-center gap-3">
                                                 <div className="p-3 bg-gray-100 rounded-full">
                                                     <MessageSquareWarning size={24} className="text-gray-400" />

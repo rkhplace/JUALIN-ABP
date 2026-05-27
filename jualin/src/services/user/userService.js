@@ -24,6 +24,18 @@ export const userService = {
     });
     return response?.data || [];
   },
+
+  async banUser(id, durationDays) {
+    const response = await fetcher.patch(`/api/v1/users/${id}/ban`, {
+      duration_days: Number(durationDays),
+    });
+    return response?.data || response;
+  },
+
+  async unbanUser(id) {
+    const response = await fetcher.patch(`/api/v1/users/${id}/unban`);
+    return response?.data || response;
+  },
 };
 
 export default userService;
