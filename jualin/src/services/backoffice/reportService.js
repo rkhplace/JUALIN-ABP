@@ -55,17 +55,5 @@ export const reportService = {
         } catch (error) {
             throwServiceError(error);
         }
-    },
-
-    // Ban reported user account (admin only)
-    banReportedUser: async (id, durationDays) => {
-        try {
-            const response = await axios.patch(`${API_URL}/reports/${id}/ban`, { duration_days: Number(durationDays) }, {
-                headers: getAuthHeaders(),
-            });
-            return response.data;
-        } catch (error) {
-            throwServiceError(error);
-        }
     }
 };

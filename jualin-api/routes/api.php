@@ -37,7 +37,8 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/reports', [ReportController::class, 'index']);
         Route::patch('/reports/{id}/status', [ReportController::class, 'updateStatus']);
-        Route::patch('/reports/{id}/ban', [ReportController::class, 'banReportedUser']);
+        Route::patch('/users/{id}/ban', [UserController::class, 'banUser']);
+        Route::patch('/users/{id}/unban', [UserController::class, 'unbanUser']);
         Route::post('/users', [UserController::class, 'store']);
         Route::patch('/transactions/{id}/status', [TransactionController::class, 'update']);
 

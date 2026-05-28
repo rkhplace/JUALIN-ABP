@@ -80,4 +80,69 @@ class UserController extends Controller
         $this->service->delete($id);
         return ApiResponse::success('User deleted');
     }
+
+    public function banUser(Request $request, $id)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'duration_days' => 'required|integer|in:1,7,30',
+        ]);
+
+        if ($validator->fails()) {
+            return ApiResponse::error('Validation error', $validator->errors(), 422);
+        }
+
+        try {
+            $user = User::find($id);
+
+            if (!$user) {
+                return ApiResponse::error('User not found', null, 404);
+            }
+
+            if (!in_array($user->role, ['customer', 'seller'], true)) {
+                return ApiResponse::error('Only customer or seller accounts can be banned', null, 422);
+            }
+
+            $banStartsAt = \Illuminate\Support\Carbon::now();
+            $banEndsAt = $banStartsAt->copy()->addDays((int) $request->duration_days);
+
+            $user->update([
+                'is_banned' => true,
+                'banned_until' => $banEndsAt,
+            ]);
+
+            return ApiResponse::success('User banned successfully', [
+                'user' => $user->fresh(),
+                'ban_started_at' => $banStartsAt->toDateTimeString(),
+                'banned_until' => $banEndsAt->toDateTimeString(),
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::error('Failed to ban user', $e->getMessage(), 500);
+        }
+    }
+
+    public function unbanUser($id)
+    {
+        try {
+            $user = User::find($id);
+
+            if (!$user) {
+                return ApiResponse::error('User not found', null, 404);
+            }
+
+            if (!in_array($user->role, ['customer', 'seller'], true)) {
+                return ApiResponse::error('Only customer or seller accounts can be unbanned', null, 422);
+            }
+
+            $user->update([
+                'is_banned' => false,
+                'banned_until' => null,
+            ]);
+
+            return ApiResponse::success('User unbanned successfully', [
+                'user' => $user->fresh(),
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::error('Failed to unban user', $e->getMessage(), 500);
+        }
+    }
 }

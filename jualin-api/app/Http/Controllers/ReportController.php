@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Report;
 use App\Models\User;
+use App\Models\Product;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -18,10 +19,12 @@ class ReportController extends Controller
         $reports = Report::with([
             'reporter:id,username',
             'reportedUser:id,username,is_banned,banned_until',
+            'product:id,name',
         ])->orderBy('created_at', 'desc')->paginate(10);
 
         $reports->getCollection()->transform(function ($report) {
             $reportedUser = $report->reportedUser;
+            $reportedProduct = $report->product;
 
             $report->reporter_username = $report->reporter_username
                 ?: $report->reporter?->username
@@ -31,6 +34,8 @@ class ReportController extends Controller
                 ?: $report->target_username;
             $report->reported_user_is_banned = (bool) ($reportedUser?->is_banned ?? false);
             $report->reported_user_banned_until = $reportedUser?->banned_until?->toDateTimeString();
+            $report->reported_product_name = $reportedProduct?->name;
+            $report->reported_product_id = $reportedProduct?->id;
 
             return $report;
         });
@@ -40,14 +45,15 @@ class ReportController extends Controller
 
     public function store(Request $request)
     {
-        $isUserViolation = in_array($request->input('type'), ['Laporan Pengguna', 'Pelanggaran User'], true);
+        $userViolationTypes = ['Laporan Pengguna', 'Pelanggaran User'];
+        $isUserViolation = in_array($request->input('type'), $userViolationTypes, true);
         $currentUser = $request->user();
 
         $validator = Validator::make($request->all(), [
             'type' => 'required|string',
             'description' => 'required|string',
+            'product_id' => 'nullable|integer|exists:products,id',
             'reported_user_id' => [
-                Rule::requiredIf($isUserViolation),
                 'nullable',
                 'integer',
                 'exists:users,id',
@@ -61,13 +67,32 @@ class ReportController extends Controller
             return ApiResponse::error('Validation error', $validator->errors(), 422);
         }
 
-        try {
-            $reportedUser = $isUserViolation
-                ? User::find($request->input('reported_user_id'))
-                : null;
+        if ($request->filled('reported_user_id') && $request->input('reported_user_id') === $currentUser?->id) {
+            return ApiResponse::error('Anda tidak dapat melaporkan akun sendiri.', null, 422);
+        }
 
-            if ($isUserViolation && !$reportedUser) {
-                return ApiResponse::error('Reported user not found', null, 422);
+        try {
+            $product = $request->filled('product_id') ? Product::find($request->input('product_id')) : null;
+            $reportedUser = null;
+
+            if ($request->filled('product_id') && !$product) {
+                return ApiResponse::error('Product not found', null, 422);
+            }
+
+            if ($product && $product->seller_id === $currentUser?->id) {
+                return ApiResponse::error('Anda tidak dapat melaporkan produk Anda sendiri.', null, 422);
+            }
+
+            if ($product) {
+                $reportedUser = $product->seller_id ? User::find($product->seller_id) : null;
+            }
+
+            if ($isUserViolation) {
+                $reportedUser = User::find($request->input('reported_user_id'));
+
+                if (!$reportedUser) {
+                    return ApiResponse::error('Reported user not found', null, 422);
+                }
             }
 
             $report = Report::create([
@@ -76,8 +101,9 @@ class ReportController extends Controller
                 'reported_user_id' => $reportedUser?->id,
                 'reported_username' => $reportedUser?->username,
                 'username' => $currentUser->username,
+                'product_id' => $product?->id,
                 'type' => $request->type,
-                'target_username' => $reportedUser?->username,
+                'target_username' => $reportedUser?->username ?? $request->input('target_username'),
                 'description' => $request->description,
                 'status' => 'pending'
             ]);
@@ -92,11 +118,22 @@ class ReportController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'status' => 'required|string|in:accepted,rejected,pending', // Add other statuses if needed
+            'status' => 'required|string|in:pending,processing,accepted,rejected,reviewed,resolved',
         ]);
 
         if ($validator->fails()) {
             return ApiResponse::error('Validation error', $validator->errors(), 422);
+        }
+
+        $newStatus = $request->input('status');
+
+        // Normalize friendly admin states to the persisted report states.
+        if ($newStatus === 'accepted') {
+            $newStatus = 'reviewed';
+        }
+
+        if ($newStatus === 'rejected') {
+            $newStatus = 'resolved';
         }
 
         try {
@@ -106,64 +143,12 @@ class ReportController extends Controller
                 return ApiResponse::error('Report not found', null, 404);
             }
 
-            $report->status = $request->status;
+            $report->status = $newStatus;
             $report->save();
 
             return ApiResponse::success('Report status updated successfully', $report);
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to update report status', $e->getMessage(), 500);
-        }
-    }
-
-    public function banReportedUser(Request $request, $id)
-    {
-        $validator = Validator::make($request->all(), [
-            'duration_days' => 'required|integer|in:1,7,30',
-        ]);
-
-        if ($validator->fails()) {
-            return ApiResponse::error('Validation error', $validator->errors(), 422);
-        }
-
-        try {
-            $report = Report::find($id);
-
-            if (!$report) {
-                return ApiResponse::error('Report not found', null, 404);
-            }
-
-            $user = $report->reported_user_id
-                ? User::find($report->reported_user_id)
-                : null;
-
-            if (!$user && ($report->reported_username || $report->target_username)) {
-                $user = User::where('username', $report->reported_username ?: $report->target_username)->first();
-            }
-
-            if (!$user) {
-                return ApiResponse::error('Reported user not available for this report', null, 422);
-            }
-
-            if (!in_array($user->role, ['customer', 'seller'], true)) {
-                return ApiResponse::error('Only customer or seller accounts can be banned from reports', null, 422);
-            }
-
-            $banStartsAt = Carbon::now();
-            $banEndsAt = $banStartsAt->copy()->addDays((int) $request->duration_days);
-
-            $user->update([
-                'is_banned' => true,
-                'banned_until' => $banEndsAt,
-            ]);
-
-            return ApiResponse::success('Reported user banned successfully', [
-                'report' => $report,
-                'user' => $user->fresh(),
-                'ban_started_at' => $banStartsAt->toDateTimeString(),
-                'banned_until' => $banEndsAt->toDateTimeString(),
-            ]);
-        } catch (\Exception $e) {
-            return ApiResponse::error('Failed to ban reported user', $e->getMessage(), 500);
         }
     }
 }
