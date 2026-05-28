@@ -5,6 +5,8 @@ import IncomeSection from "./sections/income.jsx";
 import RecentlyAddedSection from "./sections/recently-added.jsx";
 import BuyerMonitoringSection from "./sections/buyer-monitoring.jsx";
 import { useSellerDashboard } from "@/hooks/seller/useSellerDashboard";
+import SellerMissionPopup from "@/components/seller/SellerMissionPopup";
+import SellerMissionBanner from "@/components/seller/SellerMissionBanner";
 
 export default function SellerDashboardPage() {
   const [sellerId, setSellerId] = useState(null);
@@ -23,7 +25,13 @@ export default function SellerDashboardPage() {
 
   return (
     <main className="bg-white min-h-screen">
+      {/* Seller verification mission / congrats popup */}
+      <SellerMissionPopup />
+
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-8">
+        {/* Permanent mission progress banner (hidden when verified) */}
+        <SellerMissionBanner />
+
         <IncomeSection sellerId={sellerId || 1} />
         <RecentlyAddedSection products={products} isLoading={isLoading} />
         <BuyerMonitoringSection orders={orders} isLoading={isLoading} />

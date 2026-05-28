@@ -8,6 +8,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\SellerController;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Http\Request;
 
@@ -73,6 +74,7 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
     Route::middleware('role:seller')->group(function () {
         Route::get('/transactions/income/statistics', [TransactionController::class, 'incomeStatistics']);
         Route::post('/escrow/{id}/claim', [\App\Http\Controllers\EscrowController::class, 'claim']);
+        Route::get('/seller/verification-status', [SellerController::class, 'verificationStatus']);
     });
 
     Route::middleware('role:customer')->group(function () {
