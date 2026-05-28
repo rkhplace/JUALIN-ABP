@@ -1,1 +1,0 @@
-Removing 'Aksi' column from reports table and updating colSpan to 6.
