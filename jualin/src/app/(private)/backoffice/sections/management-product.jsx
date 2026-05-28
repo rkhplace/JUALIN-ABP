@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Edit2 } from "lucide-react";
+import { Trash2, Edit2 } from "lucide-react";
 import { productService } from "@/services/product/productService";
 import { getProductImageUrl } from "@/utils/imageHelper";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
@@ -168,18 +168,7 @@ export default function ProductManagement() {
             </div>
           ))}
 
-          <button
-            type="button"
-            onClick={() => router.push("/backoffice/products/add")}
-            className="border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 bg-gray-50 hover:border-gray-400 hover:bg-gray-100 transition-colors min-h-[300px] lg:min-h-auto"
-          >
-            <div className="w-11 h-11 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-400">
-              <Plus size={22} />
-            </div>
-            <span className="text-xs font-medium text-gray-500">
-              Tambah Produk
-            </span>
-          </button>
+
         </div>
       )}
 

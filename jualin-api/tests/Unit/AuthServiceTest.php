@@ -74,6 +74,32 @@ class AuthServiceTest extends TestCase
         $this->assertNotNull($user->fresh()->refresh_token);
     }
 
+    public function testLoginBannedUserReturnsSuspensionMessage()
+    {
+        $user = User::create([
+            'username' => 'banned-user',
+            'email' => 'banned@example.com',
+            'password' => 'secretpassword',
+            'role' => 'customer',
+            'is_banned' => true,
+            'banned_until' => now()->addDays(7),
+        ]);
+
+        $guard = Mockery::mock();
+        $guard->shouldReceive('attempt')->once()->andReturn('jwt-access-token');
+        $guard->shouldReceive('user')->andReturn($user);
+        $guard->shouldReceive('logout')->once();
+        Auth::shouldReceive('guard')->with('api')->andReturn($guard);
+
+        $service = new AuthService(new UserRepository());
+        $result = $service->login(['email' => $user->email, 'password' => 'secretpassword']);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame(403, $result['status']);
+        $this->assertStringStartsWith('Your account has been suspended until ', $result['message']);
+        $this->assertNull($user->fresh()->refresh_token);
+    }
+
     public function testLogoutClearsRefreshTokenAndLogsOut()
     {
         $user = User::create([

@@ -8,6 +8,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\SellerController;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Http\Request;
 
@@ -19,13 +20,13 @@ Route::prefix('v1')->group(function () {
     Route::post('/refresh-token', [AuthController::class, 'refreshToken']);
     Route::get('products', [ProductController::class, 'index']);
     Route::get('products/{id}', [ProductController::class, 'show']);
-    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::get('/users/{id}', [UserController::class, 'show'])->whereNumber('id');
     Route::post('/payments/notification', [PaymentController::class, 'handleNotification']);
-    Route::post('/reports', [ReportController::class, 'store']);
-
     Route::middleware('auth:api')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
+        Route::get('/users/search', [UserController::class, 'search']);
+        Route::post('/reports', [ReportController::class, 'store']);
         Route::patch('/profile/update', [\App\Http\Controllers\ProfileController::class, 'update']);
     });
 });
@@ -36,7 +37,10 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/reports', [ReportController::class, 'index']);
         Route::patch('/reports/{id}/status', [ReportController::class, 'updateStatus']);
+        Route::patch('/users/{id}/ban', [UserController::class, 'banUser']);
+        Route::patch('/users/{id}/unban', [UserController::class, 'unbanUser']);
         Route::post('/users', [UserController::class, 'store']);
+        Route::patch('/transactions/{id}/status', [TransactionController::class, 'update']);
 
         Route::delete('/users/{id}', [UserController::class, 'destroy']);
     });
@@ -65,11 +69,13 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::post('/rooms/start',                 [ChatController::class, 'startRoom']);
         Route::get('/rooms/{roomId}/messages',      [ChatController::class, 'messages']);
         Route::post('/rooms/{roomId}/messages',     [ChatController::class, 'sendMessage']);
+        Route::post('/rooms/{roomId}/product-message', [ChatController::class, 'sendProductMessage']);
     });
 
     Route::middleware('role:seller')->group(function () {
         Route::get('/transactions/income/statistics', [TransactionController::class, 'incomeStatistics']);
         Route::post('/escrow/{id}/claim', [\App\Http\Controllers\EscrowController::class, 'claim']);
+        Route::get('/seller/verification-status', [SellerController::class, 'verificationStatus']);
     });
 
     Route::middleware('role:customer')->group(function () {

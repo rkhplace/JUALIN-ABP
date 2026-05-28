@@ -36,13 +36,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       debugPrint('[ProfileScreen] _fetchProfile: starting...');
       final user = await _profileService.getProfile();
       final idAndRole = await _authService.getUserIdAndRole();
-      debugPrint('[ProfileScreen] _fetchProfile: user=$user, idAndRole=$idAndRole');
+      debugPrint(
+          '[ProfileScreen] _fetchProfile: user=$user, idAndRole=$idAndRole');
       if (mounted) {
         setState(() {
           _user = user;
           _userRole = idAndRole['role'] as String? ?? 'customer';
           _isLoading = false;
-          _errorMessage = user == null ? 'Profil tidak ditemukan. Pastikan Anda sudah login.' : null;
+          _errorMessage = user == null
+              ? 'Profil tidak ditemukan. Pastikan Anda sudah login.'
+              : null;
         });
       }
     } catch (e) {
@@ -100,7 +103,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       showNavbar: true,
       showSearch: false,
       child: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFFE83030)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFFE83030)))
           : (_user == null || _errorMessage != null)
               ? Center(
                   child: Padding(
@@ -108,12 +112,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.person_off_outlined, size: 64, color: Colors.grey),
+                        const Icon(Icons.person_off_outlined,
+                            size: 64, color: Colors.grey),
                         const SizedBox(height: 16),
                         Text(
                           _errorMessage ?? 'Gagal memuat profil.',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.black54, fontSize: 14),
+                          style: const TextStyle(
+                              color: Colors.black54, fontSize: 14),
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
@@ -127,7 +133,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 8),
                         TextButton(
-                          onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                          onPressed: () =>
+                              Navigator.pushReplacementNamed(context, '/login'),
                           child: const Text('Masuk / Daftar'),
                         ),
                       ],
@@ -273,12 +280,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildListTile(BuildContext context, IconData icon, String title,
-      VoidCallback onTap) {
+  Widget _buildListTile(
+      BuildContext context, IconData icon, String title, VoidCallback onTap) {
     return ListTile(
       leading: Icon(icon, color: Colors.black87),
-      title: Text(title,
-          style: const TextStyle(fontWeight: FontWeight.w500)),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
       trailing: const Icon(Icons.chevron_right, color: Colors.black26),
       contentPadding: EdgeInsets.zero,
       onTap: onTap,

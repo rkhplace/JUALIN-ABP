@@ -105,6 +105,16 @@ export const sellerService = {
       return false;
     }
   },
+
+  /**
+   * Fetch the authenticated seller's verification progress.
+   * Returns { total_sales, is_verified, target }
+   */
+  async getVerificationStatus() {
+    const res = await fetcher.get("/api/v1/seller/verification-status");
+    // API wraps in { data: { total_sales, is_verified, target } }
+    return res?.data ?? res;
+  },
 };
 
 export default sellerService;

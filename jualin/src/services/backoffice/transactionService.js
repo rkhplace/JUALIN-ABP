@@ -19,6 +19,13 @@ export const transactionService = {
     if (Array.isArray(payload)) return payload;
     return [];
   },
+
+  async updateTransactionStatus(transactionId, status) {
+    const resp = await fetcher.patch(`/api/v1/transactions/${transactionId}/status`, {
+      status,
+    });
+    return resp?.data || resp;
+  },
   
   async deleteTransaction(transactionId) {
      // Placeholder for future delete functionality

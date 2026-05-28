@@ -12,9 +12,11 @@ export default function ProductForm({
   title = "Form Produk",
 }) {
   const fileInputRef = useRef(null);
+  // priceRaw menyimpan nilai numerik murni (tanpa titik) untuk dikirim ke API
+  const [priceRaw, setPriceRaw] = useState("");
   const [formData, setFormData] = useState({
     name: "",
-    price: "",
+    price: "",       // string tampilan dengan titik, misal "5.000.000"
     description: "",
     images: [],
     stock_quantity: "",
@@ -25,14 +27,26 @@ export default function ProductForm({
   const [imagePreviews, setImagePreviews] = useState([]);
   const [localError, setLocalError] = useState("");
 
+  // Format angka menjadi string dengan titik ribuan, misal 5000000 → "5.000.000"
+  const formatPriceDisplay = (value) => {
+    const digits = String(value).replace(/\D/g, "");
+    if (!digits) return "";
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
   useEffect(() => {
     if (initialData) {
       const initialImages = initialData.image || initialData.images || [];
       const images = Array.isArray(initialImages) ? initialImages : (initialImages ? [initialImages] : []);
-      
+
+      // Format harga awal dari API (angka) menjadi tampilan dengan titik
+      const rawPrice = initialData.price || "";
+      const displayPrice = rawPrice ? formatPriceDisplay(rawPrice) : "";
+
+      setPriceRaw(String(rawPrice));
       setFormData({
         name: initialData.name || "",
-        price: initialData.price || "",
+        price: displayPrice,
         description: initialData.description || "",
         images: images,
         stock_quantity: initialData.stock_quantity || initialData.stock || "",
@@ -40,11 +54,9 @@ export default function ProductForm({
         condition: initialData.condition || "new",
         status: initialData.status || "active",
       });
-      
+
       // Convert image paths to preview URLs
-      const previews = images.filter(img => img).map(img => {
-        return getProductImageUrl(img);
-      });
+      const previews = images.filter(img => img).map(img => getProductImageUrl(img));
       setImagePreviews(previews);
     }
   }, [initialData]);
@@ -54,6 +66,16 @@ export default function ProductForm({
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+    }));
+  };
+
+  // Handler khusus input harga — format tampilan dengan titik, simpan angka di priceRaw
+  const handlePriceChange = (e) => {
+    const digits = e.target.value.replace(/\D/g, ""); // Ambil hanya angka
+    setPriceRaw(digits);
+    setFormData((prev) => ({
+      ...prev,
+      price: digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "",
     }));
   };
 
@@ -115,7 +137,7 @@ export default function ProductForm({
       setLocalError("Nama produk wajib diisi");
       return;
     }
-    if (!formData.price || parseFloat(formData.price) <= 0) {
+    if (!priceRaw || parseFloat(priceRaw) <= 0) {
       setLocalError("Harga produk wajib diisi dan harus lebih dari 0");
       return;
     }
@@ -131,7 +153,8 @@ export default function ProductForm({
       return;
     }
 
-    onSubmit(formData);
+    // Sertakan priceRaw agar halaman pemanggil bisa parseFloat dengan benar
+    onSubmit({ ...formData, priceRaw });
   };
 
   if (loading) {
@@ -291,14 +314,13 @@ export default function ProductForm({
                 Harga Produk <span className="text-red-500">*</span>
               </label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 id="price"
                 name="price"
                 value={formData.price}
-                onChange={handleInputChange}
-                placeholder="Enter your price product"
-                min="0"
-                step="1"
+                onChange={handlePriceChange}
+                placeholder="Contoh: 5.000.000"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
                 required
               />

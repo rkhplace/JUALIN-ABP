@@ -6,6 +6,7 @@ use App\Repositories\UserRepository;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class AuthService
@@ -46,6 +47,23 @@ class AuthService
         }
 
         $user = Auth::guard('api')->user();
+
+        if ($user->is_banned && $user->banned_until && Carbon::now()->lt($user->banned_until)) {
+            Auth::guard('api')->logout();
+
+            return [
+                'success' => false,
+                'message' => 'Your account has been suspended until ' . $user->banned_until->format('Y-m-d H:i:s'),
+                'status' => 403,
+            ];
+        }
+
+        if ($user->is_banned && (!$user->banned_until || Carbon::now()->gte($user->banned_until))) {
+            $user->update([
+                'is_banned' => false,
+                'banned_until' => null,
+            ]);
+        }
 
         // Generate refresh token
         $refreshToken = Str::random(60);

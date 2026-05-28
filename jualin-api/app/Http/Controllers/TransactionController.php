@@ -6,6 +6,7 @@ use App\Http\Requests\TransactionStoreRequest;
 use App\Http\Responses\ApiResponse;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use App\Services\SellerVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -254,10 +255,48 @@ class TransactionController extends Controller
         }
     }
 
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $request->validate([
+            'status' => 'required|string',
+        ]);
+
+        try {
+            $transaction = Transaction::findOrFail($id);
+            $transaction->status = $request->status;
+            $transaction->save();
+
+            // Trigger seller verification whenever a transaction reaches 'completed'
+            if ($request->status === 'completed') {
+                app(SellerVerificationService::class)
+                    ->updateSellerVerification($transaction->seller_id);
+            }
+
+            return ApiResponse::success(
+                'Transaction status updated successfully',
+                $transaction,
+                200
+            );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return ApiResponse::error(
+                'Transaction not found',
+                null,
+                404
+            );
+        } catch (\Exception $e) {
+            return ApiResponse::error(
+                'Failed to update transaction status',
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
     public function incomeStatistics(Request $request): JsonResponse
     {
         $user = Auth::user();
         $period = $request->get('period', 'Month'); // Year, Month, Week, Day
+        $type = $request->get('type', 'sales'); // sales or withdraw
         [$startDate, $endDate] = $this->resolveChartRange($request, $period);
 
         $claimed = (float) WalletTransaction::query()
@@ -269,6 +308,37 @@ class TransactionController extends Controller
 
         $withdrawn = (float) (clone $successfulWithdrawals)
             ->sum(DB::raw('ABS(amount)'));
+        if ($type === 'sales') {
+            $chartData = $this->groupSalesTransactionsByPeriod(
+                $this->salesQuery($user->id),
+                $period,
+                $startDate,
+                $endDate
+            );
+            $salesTotal = array_sum(array_map(fn($item) => (float)$item['amount'], $chartData));
+
+            return ApiResponse::success(
+                'Income statistics retrieved successfully',
+                [
+                    'balance' => (float) $user->wallet_balance,
+                    'chart_total' => $salesTotal,
+                    'claimed' => $claimed,
+                    'transferred' => $withdrawn,
+                    'withdrawn' => $withdrawn,
+                    'current_balance' => (float) $user->wallet_balance,
+                    'start_date' => $startDate->toDateString(),
+                    'end_date' => $endDate->toDateString(),
+                    'labels' => array_column($chartData, 'label'),
+                    'full_labels' => array_column($chartData, 'full_label'),
+                    'data' => array_map(fn ($item) => (float) $item['amount'], $chartData),
+                    'chart_data' => $chartData,
+                    'period' => $period,
+                    'type' => $type,
+                ],
+                200
+            );
+        }
+
 
         $chartData = $this->groupWithdrawTransactionsByPeriod(
             clone $successfulWithdrawals,
@@ -300,6 +370,12 @@ class TransactionController extends Controller
             ],
             200
         );
+    }
+    private function salesQuery(int $userId)
+    {
+        return Transaction::query()
+            ->where('seller_id', $userId)
+            ->whereIn('status', ['paid', 'settlement', 'completed', 'verified']);
     }
 
     private function successfulWithdrawalsQuery(int $userId)
@@ -542,6 +618,211 @@ class TransactionController extends Controller
             ];
         })->values()->all();
     }
+    
+private function groupSalesTransactionsByPeriod($query, string $period, $startDate, $endDate): array
+{
+    $driver = DB::connection()->getDriverName();
+    $normalizedPeriod = in_array($period, ['Year', 'Month', 'Week', 'Day'], true) ? $period : 'Month';
+
+    if ($normalizedPeriod === 'Year') {
+        return $this->groupSalesByYear($query, $driver, $startDate, $endDate);
+    }
+
+    if ($normalizedPeriod === 'Week') {
+        return $this->groupSalesByWeek($query, $driver, $startDate, $endDate);
+    }
+
+    if ($normalizedPeriod === 'Day') {
+        return $this->groupSalesByDay($query, $driver, $startDate, $endDate);
+    }
+
+    return $this->groupSalesByMonth($query, $driver, $startDate, $endDate);
+}
+
+private function groupSalesByYear($query, string $driver, $startDate, $endDate): array
+{
+    $query->whereBetween('created_at', [$startDate, $endDate]);
+
+    if ($driver === 'sqlite') {
+        $rows = $query
+            ->selectRaw("CAST(strftime('%Y', created_at) AS INTEGER) AS period_year")
+            ->selectRaw('SUM(total_amount) AS total_amount')
+            ->groupByRaw("strftime('%Y', created_at)")
+            ->orderByRaw("CAST(strftime('%Y', created_at) AS INTEGER)")
+            ->get();
+    } else {
+        $rows = $query
+            ->selectRaw('EXTRACT(YEAR FROM created_at)::INT AS period_year')
+            ->selectRaw('SUM(total_amount) AS total_amount')
+            ->groupByRaw('EXTRACT(YEAR FROM created_at)')
+            ->orderByRaw('EXTRACT(YEAR FROM created_at)')
+            ->get();
+    }
+
+    $totalsByYear = $rows->mapWithKeys(function ($row) {
+        return [(string) $row->period_year => (float) $row->total_amount];
+    });
+
+    $period = \Carbon\CarbonPeriod::create(
+        $startDate->copy()->startOfYear(),
+        '1 year',
+        $endDate->copy()->startOfYear()
+    );
+
+    return collect($period)->map(function ($date) use ($totalsByYear) {
+        $periodKey = $date->format('Y');
+
+        return [
+            'label' => $periodKey,
+            'full_label' => $periodKey,
+            'amount' => (float) ($totalsByYear[$periodKey] ?? 0),
+            'income' => (float) ($totalsByYear[$periodKey] ?? 0),
+            'period_key' => $periodKey,
+        ];
+    })->values()->all();
+}
+
+private function groupSalesByMonth($query, string $driver, $startDate, $endDate): array
+{
+    $query->whereBetween('created_at', [$startDate, $endDate]);
+
+    if ($driver === 'sqlite') {
+        $rows = $query
+            ->selectRaw("CAST(strftime('%Y', created_at) AS INTEGER) AS period_year")
+            ->selectRaw("CAST(strftime('%m', created_at) AS INTEGER) AS period_month")
+            ->selectRaw('SUM(total_amount) AS total_amount')
+            ->groupByRaw("strftime('%Y', created_at), strftime('%m', created_at)")
+            ->orderByRaw("CAST(strftime('%Y', created_at) AS INTEGER)")
+            ->orderByRaw("CAST(strftime('%m', created_at) AS INTEGER)")
+            ->get();
+    } else {
+        $rows = $query
+            ->selectRaw('EXTRACT(YEAR FROM created_at)::INT AS period_year')
+            ->selectRaw('EXTRACT(MONTH FROM created_at)::INT AS period_month')
+            ->selectRaw('SUM(total_amount) AS total_amount')
+            ->groupByRaw('EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)')
+            ->orderByRaw('EXTRACT(YEAR FROM created_at)')
+            ->orderByRaw('EXTRACT(MONTH FROM created_at)')
+            ->get();
+    }
+
+    $totalsByMonth = $rows->mapWithKeys(function ($row) {
+        $date = \Carbon\Carbon::create((int) $row->period_year, (int) $row->period_month, 1);
+
+        return [$date->format('Y-m') => (float) $row->total_amount];
+    });
+
+    $period = \Carbon\CarbonPeriod::create(
+        $startDate->copy()->startOfMonth(),
+        '1 month',
+        $endDate->copy()->startOfMonth()
+    );
+
+    return collect($period)->map(function ($date) use ($totalsByMonth) {
+        $periodKey = $date->format('Y-m');
+
+        return [
+            'label' => $date->format('M'),
+            'full_label' => $date->format('M Y'),
+            'amount' => (float) ($totalsByMonth[$periodKey] ?? 0),
+            'income' => (float) ($totalsByMonth[$periodKey] ?? 0),
+            'period_key' => $periodKey,
+        ];
+    })->values()->all();
+}
+
+private function groupSalesByWeek($query, string $driver, $startDate, $endDate): array
+{
+    $query->whereBetween('created_at', [$startDate, $endDate]);
+
+    if ($driver === 'sqlite') {
+        $rows = $query
+            ->selectRaw("CAST(strftime('%Y', created_at) AS INTEGER) AS period_year")
+            ->selectRaw("CAST(strftime('%W', created_at) AS INTEGER) AS period_week")
+            ->selectRaw("MIN(date(created_at)) AS period_start")
+            ->selectRaw('SUM(total_amount) AS total_amount')
+            ->groupByRaw("strftime('%Y', created_at), strftime('%W', created_at)")
+            ->orderByRaw("CAST(strftime('%Y', created_at) AS INTEGER)")
+            ->orderByRaw("CAST(strftime('%W', created_at) AS INTEGER)")
+            ->get();
+    } else {
+        $rows = $query
+            ->selectRaw('EXTRACT(ISOYEAR FROM created_at)::INT AS period_year')
+            ->selectRaw('EXTRACT(WEEK FROM created_at)::INT AS period_week')
+            ->selectRaw("MIN(DATE_TRUNC('week', created_at)) AS period_start")
+            ->selectRaw('SUM(total_amount) AS total_amount')
+            ->groupByRaw('EXTRACT(ISOYEAR FROM created_at), EXTRACT(WEEK FROM created_at)')
+            ->orderByRaw('EXTRACT(ISOYEAR FROM created_at)')
+            ->orderByRaw('EXTRACT(WEEK FROM created_at)')
+            ->get();
+    }
+
+    $totalsByWeek = $rows->mapWithKeys(function ($row) {
+        $weekStart = \Carbon\Carbon::parse($row->period_start)->startOfWeek();
+        $periodKey = $weekStart->format('o') . '-W' . $weekStart->format('W');
+
+        return [$periodKey => (float) $row->total_amount];
+    });
+
+    $period = \Carbon\CarbonPeriod::create(
+        $startDate->copy()->startOfWeek(),
+        '1 week',
+        $endDate->copy()->startOfWeek()
+    );
+
+    return collect($period)->map(function ($date) use ($totalsByWeek) {
+        $periodKey = $date->format('o') . '-W' . $date->format('W');
+
+        return [
+            'label' => 'W' . $date->format('W'),
+            'full_label' => 'Week ' . $date->format('W') . ' ' . $date->format('o'),
+            'amount' => (float) ($totalsByWeek[$periodKey] ?? 0),
+            'income' => (float) ($totalsByWeek[$periodKey] ?? 0),
+            'period_key' => $periodKey,
+        ];
+    })->values()->all();
+}
+
+private function groupSalesByDay($query, string $driver, $startDate, $endDate): array
+{
+    $query->whereBetween('created_at', [$startDate, $endDate]);
+
+    if ($driver === 'sqlite') {
+        $rows = $query
+            ->selectRaw("date(created_at) AS period_day")
+            ->selectRaw('SUM(total_amount) AS total_amount')
+            ->groupByRaw("date(created_at)")
+            ->orderByRaw("date(created_at)")
+            ->get();
+    } else {
+        $rows = $query
+            ->selectRaw("DATE(created_at) AS period_day")
+            ->selectRaw('SUM(total_amount) AS total_amount')
+            ->groupByRaw('DATE(created_at)')
+            ->orderByRaw('DATE(created_at)')
+            ->get();
+    }
+
+    $totalsByDate = $rows->mapWithKeys(function ($row) {
+        return [(string) $row->period_day => (float) $row->total_amount];
+    });
+
+    $period = \Carbon\CarbonPeriod::create($startDate->copy()->startOfDay(), '1 day', $endDate->copy()->startOfDay());
+
+    return collect($period)->map(function ($date) use ($totalsByDate) {
+        $periodKey = $date->format('Y-m-d');
+
+        return [
+            'label' => $date->format('d'),
+            'full_label' => $date->format('d M Y'),
+            'amount' => (float) ($totalsByDate[$periodKey] ?? 0),
+            'income' => (float) ($totalsByDate[$periodKey] ?? 0),
+            'date' => $periodKey,
+            'period_key' => $periodKey,
+        ];
+    })->values()->all();
+}
+    
     public function withdraw(Request $request): JsonResponse
     {
         $user = Auth::user();

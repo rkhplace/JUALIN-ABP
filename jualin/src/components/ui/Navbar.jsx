@@ -1,10 +1,12 @@
 "use client";
-import React, { useContext, Suspense } from "react";
+import React, { useContext, useEffect, useState, Suspense } from "react";
 import { usePathname } from "next/navigation";
+import { BadgeCheck } from "lucide-react";
 import Logo from "./Logo.jsx";
 import { AuthContext } from "../../context/AuthProvider.jsx";
 import SearchBar from "./SearchBar.jsx";
 import { getProfilePictureUrl } from "@/utils/imageHelper";
+import { sellerService } from "@/services/seller/sellerService";
 
 const Navbar = () => {
   const { user, loading } = useContext(AuthContext);
@@ -13,6 +15,24 @@ const Navbar = () => {
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/product") ||
     pathname.startsWith("/products");
+
+  const [isVerified, setIsVerified] = useState(false);
+
+  useEffect(() => {
+    if (user?.role !== "seller") {
+      setIsVerified(false);
+      return;
+    }
+
+    sellerService
+      .getVerificationStatus()
+      .then((data) => {
+        setIsVerified(data?.is_verified ?? false);
+      })
+      .catch(() => {
+        setIsVerified(false);
+      });
+  }, [user?.id, user?.role]);
 
   return (
     <header className="bg-white">
@@ -85,8 +105,14 @@ const Navbar = () => {
                   alt="avatar"
                   className="w-8 h-8 rounded-full transition-transform duration-200 hover:scale-105"
                 />
-                <span className="font-semibold text-gray-800">
+                <span className="font-semibold text-gray-800 flex items-center gap-1">
                   Hi, {user.name || user.username || "User"}
+                  {isVerified && (
+                    <BadgeCheck
+                      className="w-4 h-4 text-blue-500 flex-shrink-0"
+                      aria-label="Seller Terverifikasi"
+                    />
+                  )}
                 </span>
               </a>
               {user?.role === "seller" && (
