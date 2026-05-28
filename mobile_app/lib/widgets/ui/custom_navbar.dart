@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'logo.dart';
 
 class CustomNavbar extends StatefulWidget implements PreferredSizeWidget {
   final bool showSearch;
@@ -56,20 +57,10 @@ class _CustomNavbarState extends State<CustomNavbar> {
       ),
       title: Row(
         children: [
-          // Logo image from assets
-          Image.asset(
-            'assets/images/Logo.png',
-            height: 32,
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Text(
-              'JUALIN',
-              style: TextStyle(
-                color: Color(0xFFE83030),
-                fontWeight: FontWeight.w800,
-                fontStyle: FontStyle.italic,
-                fontSize: 22,
-              ),
-            ),
+          const Logo(
+            width: 92,
+            height: 42,
+            alignment: Alignment.centerLeft,
           ),
           if (widget.showSearch) ...[
             const SizedBox(width: 12),

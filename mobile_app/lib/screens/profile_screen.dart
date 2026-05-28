@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import '../widgets/ui/app_chrome.dart';
 import '../widgets/ui/custom_button.dart';
 import '../services/profile_service.dart';
@@ -18,6 +17,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _authService = AuthService();
   User? _user;
   bool _isLoading = true;
+  bool _isSendingResetLink = false;
   String _userRole = 'customer';
   String? _errorMessage;
 
@@ -54,6 +54,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
       }
     }
+  }
+
+  Future<void> _handlePasswordReset() async {
+    final email = _user?.email.trim() ?? '';
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email profil tidak ditemukan.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSendingResetLink = true);
+    final error = await _authService.sendResetLink(email);
+    if (!mounted) return;
+
+    setState(() => _isSendingResetLink = false);
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    await _authService.logout();
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Link reset telah dikirim ke email Anda. Silakan cek inbox.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
   @override
@@ -162,6 +199,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         onPressed: () =>
                             Navigator.pushNamed(context, '/profile_edit'),
                       ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        icon: _isSendingResetLink
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.lock_reset, size: 18),
+                        label: Text(
+                          _isSendingResetLink
+                              ? 'Mengirim link reset...'
+                              : 'Reset Password',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFE83030),
+                          side: const BorderSide(color: Color(0xFFE83030)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: _isSendingResetLink ? null : _handlePasswordReset,
+                      ),
                       const SizedBox(height: 32),
 
                       // ── Navigation Links ──────────────────────────────────
@@ -199,7 +259,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         onPressed: () async {
                           await _authService.logout();
                           if (context.mounted) {
-                            Navigator.pushReplacementNamed(context, '/login');
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              '/main',
+                              (route) => false,
+                            );
                           }
                         },
                       ),
