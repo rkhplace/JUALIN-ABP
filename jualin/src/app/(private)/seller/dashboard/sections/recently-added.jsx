@@ -81,8 +81,8 @@ const RecentlyAddedSection = ({ products, isLoading = false }) => {
   const hasProducts = visibleProducts.length > 0;
 
   return (
-    <div className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-200 p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-200 p-4 sm:p-6">
+      <div className="flex items-start justify-between gap-4 mb-4">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">
             Produk Terbaru
@@ -97,18 +97,18 @@ const RecentlyAddedSection = ({ products, isLoading = false }) => {
         </button>
       </div>
 
-      <div className="grid grid-cols-5 gap-4">
+      <div className="flex gap-3 overflow-x-auto pb-2 md:grid md:grid-cols-5 md:gap-4 md:overflow-visible md:pb-0">
         {isLoading ? (
           <>
             {[...Array(4)].map((_, index) => (
               <div
                 key={index}
-                className="bg-white rounded-2xl p-4 shadow-lg animate-pulse"
+                className="min-w-[136px] bg-white rounded-2xl p-3 shadow-lg animate-pulse md:min-w-0 md:p-4"
               >
                 <div className="relative">
                   <div className="absolute top-0 right-0 h-6 w-6 bg-gray-200 rounded-full"></div>
                   <div className="flex justify-center mb-3">
-                    <div className="h-20 w-full bg-gray-200 rounded-lg"></div>
+                    <div className="h-20 w-full bg-gray-200 rounded-lg md:h-20"></div>
                   </div>
                 </div>
                 <div className="text-center">
@@ -118,7 +118,7 @@ const RecentlyAddedSection = ({ products, isLoading = false }) => {
                 </div>
               </div>
             ))}
-            <div className="border-2 border-dashed rounded-2xl p-4 min-h-[180px] flex items-center justify-center">
+            <div className="min-w-[112px] border-2 border-dashed rounded-2xl p-3 min-h-[170px] flex items-center justify-center md:min-w-0 md:p-4 md:min-h-[180px]">
               <button
                 onClick={() => router.push("/seller/products/new")}
                 className="h-12 w-12 rounded-full border-2 border-dashed border-gray-400 text-gray-500 hover:text-gray-700 hover:border-gray-700 flex items-center justify-center"
@@ -132,7 +132,7 @@ const RecentlyAddedSection = ({ products, isLoading = false }) => {
             {visibleProducts.slice(0, 4).map((product) => (
               <div
                 key={product.id}
-                className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-2xl transition-shadow duration-200"
+                className="min-w-[136px] bg-white rounded-2xl p-3 shadow-lg hover:shadow-2xl transition-shadow duration-200 md:min-w-0 md:p-4"
               >
                 <div className="relative">
                   <div className="absolute top-0 right-0 h-6 w-6 text-gray-400 flex items-center justify-center">
@@ -155,7 +155,7 @@ const RecentlyAddedSection = ({ products, isLoading = false }) => {
                     <img
                       src={getProductImageUrl(product.img || product.image)}
                       alt={product.name}
-                      className="h-20 object-contain"
+                      className="h-16 w-full object-contain md:h-20"
                       onError={(e) => {
                         e.target.src = "/ProfilePhoto.png";
                       }}
@@ -163,10 +163,10 @@ const RecentlyAddedSection = ({ products, isLoading = false }) => {
                   </div>
                 </div>
                 <div className="text-center">
-                  <h3 className="font-semibold text-gray-900 text-sm truncate">
+                  <h3 className="font-semibold text-gray-900 text-xs sm:text-sm truncate">
                     {product.name}
                   </h3>
-                  <p className="text-xs text-gray-600 mb-3">
+                  <p className="text-[11px] sm:text-xs text-gray-600 mb-3 line-clamp-2">
                     {product.size ||
                       product.brand ||
                       product.category ||
@@ -174,7 +174,7 @@ const RecentlyAddedSection = ({ products, isLoading = false }) => {
                   </p>
                   <button
                     onClick={() => handleView(product.id)}
-                    className="bg-brand-red text-white rounded-full px-4 py-1 text-sm hover:bg-red-600"
+                    className="bg-brand-red text-white rounded-full px-3 py-1 text-xs font-semibold hover:bg-red-600 sm:px-4 sm:text-sm"
                   >
                     {formatRupiah(product.price)}
                   </button>
@@ -182,7 +182,7 @@ const RecentlyAddedSection = ({ products, isLoading = false }) => {
               </div>
             ))}
             {/* Add New Product Card - selalu di posisi ke-5 */}
-            <div className="border-2 border-dashed rounded-2xl p-4 min-h-[180px] flex items-center justify-center">
+            <div className="min-w-[112px] border-2 border-dashed rounded-2xl p-3 min-h-[170px] flex items-center justify-center md:min-w-0 md:p-4 md:min-h-[180px]">
               <button
                 onClick={() => router.push("/seller/products/new")}
                 className="h-12 w-12 rounded-full border-2 border-dashed border-gray-400 text-gray-500 hover:text-gray-700 hover:border-gray-700 flex items-center justify-center"
@@ -194,7 +194,7 @@ const RecentlyAddedSection = ({ products, isLoading = false }) => {
         ) : (
           <>
             {/* Empty state untuk 4 kolom pertama */}
-            <div className="col-span-4 flex flex-col items-center justify-center text-center text-gray-500 border-2 border-dashed rounded-2xl p-6">
+            <div className="min-w-[240px] flex flex-col items-center justify-center text-center text-gray-500 border-2 border-dashed rounded-2xl p-5 md:col-span-4 md:min-w-0 md:p-6">
               <p className="font-medium mb-1">Belum ada produk terbaru</p>
               <p className="text-sm mb-3">
                 Tambahkan produk pertama Anda agar tampil di sini.
@@ -208,7 +208,7 @@ const RecentlyAddedSection = ({ products, isLoading = false }) => {
               </button>
             </div>
             {/* Add New Product Card - selalu di posisi ke-5 */}
-            <div className="border-2 border-dashed rounded-2xl p-4 min-h-[180px] flex items-center justify-center">
+            <div className="min-w-[112px] border-2 border-dashed rounded-2xl p-3 min-h-[170px] flex items-center justify-center md:min-w-0 md:p-4 md:min-h-[180px]">
               <button
                 onClick={() => router.push("/seller/products/new")}
                 className="h-12 w-12 rounded-full border-2 border-dashed border-gray-400 text-gray-500 hover:text-gray-700 hover:border-gray-700 flex items-center justify-center"

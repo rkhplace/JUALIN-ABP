@@ -404,13 +404,13 @@ export default function ProductDetailSection({ product, seller }) {
           onClick={handleCloseReportModal}
         >
           <div
-            className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300"
+            className="w-full max-w-[340px] sm:max-w-2xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="px-6 py-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+            <div className="px-5 py-4 sm:px-6 sm:py-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">Laporkan Produk</h3>
-                <p className="text-sm text-gray-500 mt-1">Pilih jenis laporan dan jelaskan detailnya.</p>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Laporkan Produk</h3>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">Pilih jenis laporan dan jelaskan detailnya.</p>
               </div>
               <button
                 onClick={handleCloseReportModal}
@@ -420,7 +420,7 @@ export default function ProductDetailSection({ product, seller }) {
                 ✕
               </button>
             </div>
-            <form onSubmit={handleSubmitProductReport} className="px-6 py-6 space-y-5">
+            <form onSubmit={handleSubmitProductReport} className="px-5 py-5 sm:px-6 sm:py-6 space-y-4 sm:space-y-5">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Alasan Laporan <span className="text-red-500">*</span></label>
                 <select
@@ -429,7 +429,7 @@ export default function ProductDetailSection({ product, seller }) {
                     setReportType(event.target.value);
                     setReportErrors((prev) => ({ ...prev, type: "" }));
                   }}
-                  className={`w-full rounded-2xl border px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 ${reportErrors.type ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}
+                  className={`w-full rounded-xl sm:rounded-2xl border px-4 py-2.5 sm:py-3 text-sm sm:text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 ${reportErrors.type ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}
                 >
                   <option value="">Pilih alasan laporan...</option>
                   {reportReasons.map((reason) => (
@@ -446,9 +446,9 @@ export default function ProductDetailSection({ product, seller }) {
                     setReportDescription(event.target.value);
                     setReportErrors((prev) => ({ ...prev, description: "" }));
                   }}
-                  rows={5}
+                  rows={4}
                   placeholder={reportType === 'Lainnya' ? 'Jelaskan alasan custom Anda untuk laporan produk ini...' : 'Tuliskan detail masalah produk di sini...'}
-                  className={`w-full rounded-2xl border px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 ${reportErrors.description ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}
+                  className={`w-full rounded-xl sm:rounded-2xl border px-4 py-2.5 sm:py-3 text-sm sm:text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 ${reportErrors.description ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}
                 />
                 {reportErrors.description && <p className="text-xs text-red-500 mt-2">{reportErrors.description}</p>}
               </div>
@@ -456,14 +456,14 @@ export default function ProductDetailSection({ product, seller }) {
                 <button
                   type="button"
                   onClick={handleCloseReportModal}
-                  className="flex-1 rounded-2xl border border-gray-200 px-5 py-3 text-gray-700 font-semibold hover:bg-gray-50 transition"
+                  className="flex-1 rounded-xl sm:rounded-2xl border border-gray-200 px-5 py-2.5 sm:py-3 text-sm sm:text-base text-gray-700 font-semibold hover:bg-gray-50 transition"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isReportSubmitting}
-                  className="flex-1 rounded-2xl bg-red-600 text-white px-5 py-3 font-semibold shadow hover:bg-red-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="flex-1 rounded-xl sm:rounded-2xl bg-red-600 text-white px-5 py-2.5 sm:py-3 text-sm sm:text-base font-semibold shadow hover:bg-red-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {isReportSubmitting ? 'Mengirim...' : 'Kirim Laporan'}
                 </button>
