@@ -167,6 +167,15 @@ body {
   --tw-ring-color: var(--color-brand-primary);
 }
 
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 .focus\:ring-brand-red:focus {
   --tw-ring-color: var(--color-brand-primary);
 }
