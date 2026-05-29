@@ -1,7 +1,7 @@
 "use client";
-import React, { useContext, useEffect, useState, Suspense } from "react";
+import React, { useContext, useEffect, useState, useRef, useCallback, Suspense } from "react";
 import { usePathname } from "next/navigation";
-import { BadgeCheck } from "lucide-react";
+import { BadgeCheck, Menu, X } from "lucide-react";
 import Logo from "./Logo.jsx";
 import { AuthContext } from "../../context/AuthProvider.jsx";
 import SearchBar from "./SearchBar.jsx";
@@ -17,6 +17,9 @@ const Navbar = () => {
     pathname.startsWith("/products");
 
   const [isVerified, setIsVerified] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const drawerRef = useRef(null);
+  const hamburgerRef = useRef(null);
 
   useEffect(() => {
     if (user?.role !== "seller") {
@@ -34,8 +37,40 @@ const Navbar = () => {
       });
   }, [user?.id, user?.role]);
 
+  // Close drawer when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        isMenuOpen &&
+        drawerRef.current &&
+        !drawerRef.current.contains(e.target) &&
+        hamburgerRef.current &&
+        !hamburgerRef.current.contains(e.target)
+      ) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
+  // Close drawer on route change
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
+
+  const toggleMenu = useCallback(() => {
+    setIsMenuOpen((prev) => !prev);
+  }, []);
+
   return (
-    <header className="bg-white">
+    <header className="bg-white relative">
+      {/* === Row 1: Main bar === */}
       <div className="w-full px-2 sm:px-4 py-3 flex items-center gap-4 transition-shadow duration-200">
         <div className="flex items-center gap-4 sm:gap-6 min-w-0">
           <Logo
@@ -44,7 +79,7 @@ const Navbar = () => {
           />
         </div>
 
-        {/* Navigation Items */}
+        {/* Navigation Items — Desktop only */}
         {user?.role !== "admin" && (
           <div className="hidden md:flex items-center gap-8 mx-4">
             <a
@@ -73,8 +108,9 @@ const Navbar = () => {
           </div>
         )}
 
+        {/* Search bar — Desktop (inline) */}
         {showSearch && (
-          <div className="flex-1">
+          <div className="hidden md:block flex-1">
             <Suspense
               fallback={
                 <div className="w-full px-4 py-2.5 bg-gray-100 rounded-2xl animate-pulse"></div>
@@ -85,7 +121,8 @@ const Navbar = () => {
           </div>
         )}
 
-        <div className="flex items-center gap-3 sm:gap-4 ml-auto">
+        {/* Right side actions — Desktop only */}
+        <div className="hidden md:flex items-center gap-3 sm:gap-4 ml-auto">
           {loading ? (
             <div className="flex items-center gap-3 animate-pulse">
               <div className="w-8 h-8 rounded-full bg-gray-200"></div>
@@ -118,7 +155,7 @@ const Navbar = () => {
               {user?.role === "seller" && (
                 <a
                   href="/seller/products/new"
-                  className="px-4 py-2 rounded-2xl bg-[#E83030] text-white font-semibold shadow transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:scale-95"
+                  className="px-4 py-2.5 rounded-2xl bg-[#E83030] text-white font-semibold text-center shadow transition-all duration-200 hover:shadow-lg active:scale-95"
                 >
                   Upload Produk
                 </a>
@@ -128,22 +165,153 @@ const Navbar = () => {
             <>
               <a
                 href="/auth/login"
-                className="px-4 py-2 rounded-2xl bg-[#E83030] text-white font-semibold shadow transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:scale-95"
+                className="px-4 py-2.5 rounded-2xl bg-[#E83030] text-white font-semibold text-center shadow transition-all duration-200 hover:shadow-lg active:scale-95"
               >
                 Masuk
               </a>
               <a
                 href="/auth/register"
-                className="px-4 py-2 rounded-2xl bg-[#E83030] text-white font-semibold shadow transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:scale-95"
+                className="px-4 py-2.5 rounded-2xl bg-[#E83030] text-white font-semibold text-center shadow transition-all duration-200 hover:shadow-lg active:scale-95"
               >
                 Daftar
               </a>
             </>
           )}
         </div>
+
+        {/* Hamburger button — Mobile only */}
+        <button
+          ref={hamburgerRef}
+          onClick={toggleMenu}
+          className="md:hidden ml-auto p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors duration-200 focus:outline-none"
+          aria-label={isMenuOpen ? "Tutup menu" : "Buka menu"}
+          aria-expanded={isMenuOpen}
+        >
+          {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
       </div>
+
+      {/* === Row 2: Search bar — Mobile only === */}
+      {showSearch && (
+        <div className="md:hidden px-3 pb-3">
+          <Suspense
+            fallback={
+              <div className="w-full px-4 py-2.5 bg-gray-100 rounded-2xl animate-pulse"></div>
+            }
+          >
+            <SearchBar inline />
+          </Suspense>
+        </div>
+      )}
+
+      {/* === Mobile Drawer (slide down) === */}
+      <div
+        ref={drawerRef}
+        className={`md:hidden absolute left-0 right-0 bg-white shadow-lg border-t border-gray-100 z-50 overflow-hidden transition-all duration-300 ease-in-out ${
+          isMenuOpen
+            ? "max-h-[500px] opacity-100"
+            : "max-h-0 opacity-0 pointer-events-none"
+        }`}
+      >
+        <nav className="flex flex-col px-4 py-3 gap-1">
+          {/* Nav links */}
+          {user?.role !== "admin" && (
+            <>
+              <a
+                href="/dashboard"
+                className="px-3 py-2.5 rounded-lg text-gray-700 font-medium hover:bg-red-50 hover:text-[#E83030] transition-colors duration-200"
+              >
+                Beranda
+              </a>
+              {user?.role !== "seller" && (
+                <a
+                  href="/products"
+                  className="px-3 py-2.5 rounded-lg text-gray-700 font-medium hover:bg-red-50 hover:text-[#E83030] transition-colors duration-200"
+                >
+                  Produk
+                </a>
+              )}
+              <a
+                href="/chat"
+                className="px-3 py-2.5 rounded-lg text-gray-700 font-medium hover:bg-red-50 hover:text-[#E83030] transition-colors duration-200"
+              >
+                Pesan
+              </a>
+            </>
+          )}
+
+          {/* Divider */}
+          <div className="my-1 border-t border-gray-100"></div>
+
+          {/* User / Auth actions */}
+          {loading ? (
+            <div className="flex items-center gap-3 px-3 py-2 animate-pulse">
+              <div className="w-8 h-8 rounded-full bg-gray-200"></div>
+              <div className="w-24 h-5 rounded bg-gray-200"></div>
+            </div>
+          ) : user ? (
+            <>
+              <a
+                href={`/profile/edit?id=${
+                  user?.id || user?._id || user?.userId || ""
+                }`}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+              >
+                <img
+                  src={getProfilePictureUrl(user?.profile_picture)}
+                  alt="avatar"
+                  className="w-8 h-8 rounded-full"
+                />
+                <span className="font-semibold text-gray-800 flex items-center gap-1">
+                  Hi, {user.name || user.username || "User"}
+                  {isVerified && (
+                    <BadgeCheck
+                      className="w-4 h-4 text-blue-500 flex-shrink-0"
+                      aria-label="Seller Terverifikasi"
+                    />
+                  )}
+                </span>
+              </a>
+              {user?.role === "seller" && (
+                <a
+                  href="/seller/products/new"
+                  className="mx-3 mt-1 px-4 py-2.5 rounded-2xl bg-[#E83030] text-white font-semibold text-center shadow transition-all duration-200 hover:shadow-lg active:scale-95"
+                >
+                  Upload Produk
+                </a>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col gap-2 px-3 py-1">
+              <a
+                href="/auth/login"
+                className="px-4 py-2.5 rounded-2xl bg-[#E83030] text-white font-semibold text-center shadow transition-all duration-200 hover:shadow-lg active:scale-95"
+              >
+                Masuk
+              </a>
+              <a
+                href="/auth/register"
+                className="px-4 py-2.5 rounded-2xl border-2 border-[#E83030] text-[#E83030] font-semibold text-center transition-all duration-200 hover:bg-red-50 active:scale-95"
+              >
+                Daftar
+              </a>
+            </div>
+          )}
+        </nav>
+      </div>
+
+      {/* Backdrop overlay — Mobile only */}
+      {isMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/20 z-40"
+          style={{ top: drawerRef.current?.getBoundingClientRect?.()?.bottom || 0 }}
+          onClick={() => setIsMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
     </header>
   );
 };
 
 export default Navbar;
+

@@ -71,7 +71,7 @@ function BannerSection({ banners, isLoading = false }) {
               <img
                 src={banner.src}
                 alt={banner.alt}
-                className={`absolute inset-0 w-full h-full object-cover rounded-2xl ${idx === active ? "" : ""}`}
+                className={`absolute inset-0 w-full h-full object-cover object-left sm:object-center rounded-2xl ${idx === active ? "" : ""}`}
                 style={idx === active ? undefined : { transform: "scale(0.995)" }}
               />
             </div>

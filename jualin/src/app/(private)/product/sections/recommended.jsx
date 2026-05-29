@@ -22,7 +22,7 @@ export default function RecommendedSection({
 
   return (
     <section className="w-full my-8 animate-fade-in">
-      <h2 className="text-2xl font-bold mb-4 text-center text-black">
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center text-black">
         Produk Terkait
       </h2>
       {showFilter && (
@@ -33,7 +33,7 @@ export default function RecommendedSection({
       )}
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
           {[...Array(3)].map((_, idx) => (
             <ProductCardSkeleton key={idx} />
           ))}
@@ -43,12 +43,12 @@ export default function RecommendedSection({
           <p className="text-lg">Tidak ada produk terkait</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
           {filteredProducts.map((product, idx) => (
             <a
               key={product.id}
               href={`/product/${product.id}`}
-              className="group bg-white rounded-2xl shadow p-6 flex flex-col items-start transition-all duration-200 ease-out hover:shadow-xl hover:-translate-y-1 active:scale-95 focus:outline-none"
+              className="group bg-white rounded-2xl shadow p-4 sm:p-6 flex flex-col items-start transition-all duration-200 ease-out hover:shadow-xl hover:-translate-y-1 active:scale-95 focus:outline-none"
               style={{ cursor: "pointer" }}
               tabIndex={0}
             >
@@ -56,7 +56,7 @@ export default function RecommendedSection({
                 src={getProductImageUrl(product.img || product.image)}
                 alt={product.name}
                 loading="lazy"
-                className="w-full h-60 object-cover rounded-xl mb-4 transition-transform duration-200 group-hover:scale-[1.02]"
+                className="w-full h-44 sm:h-60 object-cover rounded-xl mb-4 transition-transform duration-200 group-hover:scale-[1.02]"
                 onError={(e) => {
                   e.target.src =
                     "https://via.placeholder.com/400x400?text=No+Image";
