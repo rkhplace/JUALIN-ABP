@@ -92,7 +92,7 @@ export default function RecommendedSection() {
               <a
                 key={product.id}
                 href={`/product/${product.id}`}
-                className="group bg-white rounded-2xl shadow p-4 sm:p-6 flex flex-col items-start transition-all duration-200 ease-out hover:shadow-xl hover:-translate-y-1 active:scale-95 focus:outline-none"
+                className="group bg-white rounded-2xl shadow p-4 sm:p-6 flex h-full flex-col items-start transition-all duration-200 ease-out hover:shadow-xl hover:-translate-y-1 active:scale-95 focus:outline-none"
                 style={{ cursor: "pointer" }}
                 tabIndex={0}
               >
@@ -111,7 +111,7 @@ export default function RecommendedSection() {
                 <h3 className="font-semibold text-base sm:text-xl mb-1 text-black">
                   {product.name}
                 </h3>
-                <p className="hidden sm:block text-gray-500 text-base mb-2 line-clamp-2 break-all text-ellipsis overflow-hidden">
+                <p className="hidden sm:block h-12 text-gray-500 text-base leading-6 mb-2 overflow-hidden text-ellipsis break-all [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
                   {product.description}
                 </p>
                 <div className="flex items-center gap-1.5 mb-2 sm:mb-3 bg-red-50 px-3 py-1.5 rounded-full border border-red-100 self-start">
@@ -120,7 +120,7 @@ export default function RecommendedSection() {
                     {product.seller?.username || "Unknown"}
                   </span>
                 </div>
-                <div className="flex justify-between items-center w-full">
+                <div className="mt-auto flex justify-between items-center w-full">
                   <span className="font-bold text-lg text-black">
                     {formatCurrency(product.price)}
                   </span>

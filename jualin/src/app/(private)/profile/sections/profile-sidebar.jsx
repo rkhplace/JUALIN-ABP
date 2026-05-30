@@ -43,17 +43,19 @@ export function ProfileSidebarSection({
         <div className="p-4 md:p-6 flex-1 overflow-y-auto">
           <div className="space-y-6 md:space-y-8">
             {/* WALLET Section */}
-            <div className="bg-white/10 rounded-2xl p-3 md:p-4 shadow-inner border border-white/20">
-              <h3 className="text-xs font-bold text-white/90 uppercase tracking-wider mb-2">
-                SALDO DOMPET
-              </h3>
-              <div className="flex items-end gap-2 text-white">
-                <span className="text-sm font-medium opacity-80 mb-1">Rp</span>
-                <span className="text-xl md:text-2xl font-black tracking-tight">
-                  {Number(user?.wallet_balance || 0).toLocaleString("id-ID")}
-                </span>
+            {role !== "admin" && (
+              <div className="bg-white/10 rounded-2xl p-3 md:p-4 shadow-inner border border-white/20">
+                <h3 className="text-xs font-bold text-white/90 uppercase tracking-wider mb-2">
+                  SALDO DOMPET
+                </h3>
+                <div className="flex items-end gap-2 text-white">
+                  <span className="text-sm font-medium opacity-80 mb-1">Rp</span>
+                  <span className="text-xl md:text-2xl font-black tracking-tight">
+                    {Number(user?.wallet_balance || 0).toLocaleString("id-ID")}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* PROFILE Section */}
             <div>
