@@ -191,26 +191,26 @@ export default function UserManagement() {
   };
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-5 sm:space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-[#1F1F1F] tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1F1F1F] tracking-tight">
             Managemen User
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 mt-1 leading-snug">
             Kelola pendaftaran dan status user seller di marketplace Anda.
           </p>
         </div>
       </header>
 
       {/* Search & Filter */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-5 sm:mb-6">
         <div className="relative flex-1">
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari Pembeli..."
-            className="w-full px-4 py-2 pr-10 border rounded-full border-gray-300 focus:ring-2 focus:ring-brand-red focus:border-brand-red outline-none"
+            className="w-full px-4 py-2 pr-10 border rounded-full border-gray-300 focus:ring-2 focus:ring-brand-red focus:border-brand-red outline-none text-sm sm:text-base"
             disabled={isLoading}
           />
           <button className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-brand-red text-white flex items-center justify-center">
@@ -234,22 +234,22 @@ export default function UserManagement() {
       {/* Users Table */}
       <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[760px]">
             <thead>
               <tr className="bg-gray-50/80 border-b border-gray-100">
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Name
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Email
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Roles
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Date
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Status
                 </th>
               </tr>
@@ -259,7 +259,7 @@ export default function UserManagement() {
                 <tr>
                   <td
                     colSpan="5"
-                    className="px-6 py-8 text-center text-gray-500"
+                    className="px-4 py-7 sm:px-6 sm:py-8 text-center text-gray-500"
                   >
                     Loading users...
                   </td>
@@ -268,7 +268,7 @@ export default function UserManagement() {
                 <tr>
                   <td
                     colSpan="5"
-                    className="px-6 py-8 text-center text-gray-500"
+                    className="px-4 py-7 sm:px-6 sm:py-8 text-center text-gray-500"
                   >
                     No users found.
                   </td>
@@ -279,38 +279,38 @@ export default function UserManagement() {
                     key={user.id}
                     className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/60 transition-colors"
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <div className="flex items-center gap-3">
                         <img
                           src={getProfilePictureUrl(
                             user.profile_picture || user.avatar
                           )}
                           alt={user.name || "User"}
-                          className="w-9 h-9 rounded-full object-cover shadow-sm"
+                          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shadow-sm"
                         />
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="text-sm font-medium text-gray-900 whitespace-nowrap">
                           {user.name || user.username}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <span className="text-sm text-gray-600">
                         {user.email}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <span className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-xs font-medium text-gray-700">
                         {user.role}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <span className="text-sm text-gray-600">
                         {user.created_at
                           ? new Date(user.created_at).toLocaleDateString()
                           : "-"}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <div className="flex flex-col items-start gap-2">
                         <div className="flex items-center gap-2">
                           {(["seller", "customer"].includes(user.role)) && (

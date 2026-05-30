@@ -3,7 +3,7 @@ import { useEffect, useState, useContext } from "react";
 import { ChatSkeleton } from "@/components/chat/ChatSkeleton";
 import { ChatSidebar } from "@/components/chat/chat-sidebar";
 import { ChatWindow } from "@/components/chat/chat-window";
-import { Menu, X } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AuthContext } from "@/context/AuthProvider";
 import { ChatContext } from "@/context/ChatProvider";
 
@@ -80,24 +80,29 @@ export function ChatInterface() {
 
   return (
     <div className="relative flex h-[calc(100vh-4rem)] bg-gray-100 overflow-hidden">
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="md:hidden absolute top-2 left-2 z-40 p-2 bg-white rounded-lg shadow-md border border-gray-200 hover:bg-gray-50"
-        aria-label="Toggle sidebar"
-      >
-        {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </button>
-
       <div
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 absolute md:relative top-0 left-0 bottom-0 md:inset-auto z-30 md:z-auto w-80 md:w-[30%] transition-transform duration-300 ease-in-out md:ml-4 md:my-4 md:h-[calc(100%-2rem)] md:rounded-3xl md:shadow-xl md:bg-white md:overflow-hidden hash-sidebar-floating`}
+        } md:translate-x-0 fixed md:absolute md:relative top-0 left-0 bottom-0 md:inset-auto z-30 md:z-auto w-[78vw] max-w-[320px] md:w-[30%] md:max-w-none rounded-r-3xl transition-transform duration-300 ease-in-out md:ml-4 md:my-4 md:h-[calc(100%-2rem)] md:rounded-3xl md:shadow-xl md:bg-white md:overflow-hidden hash-sidebar-floating`}
       >
-        <ChatSidebar
-          chats={chats}
-          selectedId={currentChat?.id}
-          onSelect={handleSelect}
-        />
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="md:hidden absolute right-0 top-1/2 z-40 translate-x-full -translate-y-1/2 rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-700 shadow-lg transition-colors hover:bg-gray-50 focus:outline-none"
+          aria-label="Toggle sidebar"
+        >
+          {sidebarOpen ? (
+            <ChevronLeft className="h-4 w-4" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
+          )}
+        </button>
+        <div className="h-full overflow-hidden rounded-r-3xl md:rounded-3xl">
+          <ChatSidebar
+            chats={chats}
+            selectedId={currentChat?.id}
+            onSelect={handleSelect}
+          />
+        </div>
       </div>
 
       {sidebarOpen && (

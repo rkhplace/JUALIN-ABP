@@ -1,7 +1,14 @@
 "use client";
 import React, { useContext, useEffect, useState, useRef, useCallback, Suspense } from "react";
 import { usePathname } from "next/navigation";
-import { BadgeCheck, Menu, X } from "lucide-react";
+import {
+  BadgeCheck,
+  LayoutDashboard,
+  Menu,
+  MessageSquareWarning,
+  Users,
+  X,
+} from "lucide-react";
 import Logo from "./Logo.jsx";
 import { AuthContext } from "../../context/AuthProvider.jsx";
 import SearchBar from "./SearchBar.jsx";
@@ -20,6 +27,23 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const drawerRef = useRef(null);
   const hamburgerRef = useRef(null);
+  const adminMobileNavItems = [
+    {
+      href: "/backoffice",
+      label: "Management User",
+      Icon: LayoutDashboard,
+    },
+    {
+      href: "/backoffice/super-admin",
+      label: "Super Admin",
+      Icon: Users,
+    },
+    {
+      href: "/backoffice/reports",
+      label: "Laporan",
+      Icon: MessageSquareWarning,
+    },
+  ];
 
   useEffect(() => {
     if (user?.role !== "seller") {
@@ -215,7 +239,28 @@ const Navbar = () => {
       >
         <nav className="flex flex-col px-4 py-3 gap-1">
           {/* Nav links */}
-          {user?.role !== "admin" && (
+          {user?.role === "admin" ? (
+            <div className="flex flex-col gap-1">
+              {adminMobileNavItems.map(({ href, label, Icon }) => {
+                const active = pathname === href;
+
+                return (
+                  <a
+                    key={href}
+                    href={href}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors duration-200 ${
+                      active
+                        ? "bg-red-50 text-[#E83030]"
+                        : "text-gray-700 hover:bg-red-50 hover:text-[#E83030]"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {label}
+                  </a>
+                );
+              })}
+            </div>
+          ) : (
             <>
               <a
                 href="/dashboard"

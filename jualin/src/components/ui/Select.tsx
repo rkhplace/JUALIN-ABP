@@ -58,7 +58,7 @@ const Select: React.FC<SelectProps> = ({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={`
-            w-full px-4 py-3 text-left bg-white border rounded-2xl shadow-sm 
+            w-full px-4 py-2.5 sm:py-3 text-left bg-white border rounded-2xl shadow-sm 
             focus:outline-none focus:ring-2 focus:ring-[#E83030] focus:border-[#E83030]
             transition-all duration-200 flex items-center justify-between
             ${disabled ? 'bg-gray-50 cursor-not-allowed opacity-50' : 'hover:border-gray-300 cursor-pointer'}

@@ -193,12 +193,12 @@ export default function ReportsPage() {
     };
 
     return (
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="p-0 sm:p-8 max-w-7xl mx-auto">
             {/* ... (keep header) ... */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6 sm:mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Laporan Pengguna</h1>
-                    <p className="text-gray-500 mt-1">Daftar laporan masalah dan feedback dari pengguna</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Laporan Pengguna</h1>
+                    <p className="text-sm sm:text-base text-gray-500 mt-1 leading-snug">Daftar laporan masalah dan feedback dari pengguna</p>
                 </div>
             </div>
 
@@ -212,36 +212,36 @@ export default function ReportsPage() {
                     {error}
                 </div>
             ) : (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="w-full">
+                        <table className="w-full min-w-[900px]">
                             <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tanggal</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Pelapor</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Akun Pelanggar / Terlapor</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipe</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Detail</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                    <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Pelapor</th>
+                                    <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Akun Pelanggar / Terlapor</th>
+                                    <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipe</th>
+                                    <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Detail</th>
+                                    <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {reports.length > 0 ? (
                                     reports.map((report) => (
                                         <tr key={report.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                                            <td className="px-4 py-3 sm:px-6 sm:py-4 text-sm text-gray-500 whitespace-nowrap">
                                                 {new Date(report.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                             </td>
-                                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                            <td className="px-4 py-3 sm:px-6 sm:py-4 text-sm font-medium text-gray-900">
                                                 {getReporterUsername(report)}
                                             </td>
-                                            <td className="px-6 py-4 text-sm font-medium text-orange-700">
+                                            <td className="px-4 py-3 sm:px-6 sm:py-4 text-sm font-medium text-orange-700">
                                                 {getReportedUsername(report) || "Tidak tersedia"}
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-4 py-3 sm:px-6 sm:py-4">
                                                 {getTypeBadge(report.type)}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600 max-w-xs">
+                                            <td className="px-4 py-3 sm:px-6 sm:py-4 text-sm text-gray-600 max-w-xs">
                                                 {(getReporterUsername(report) || getReportedUsername(report)) && (
                                                     <div className="mb-1 space-y-0.5 text-xs">
                                                         <div className="text-gray-500">Pelapor: <span className="font-semibold text-gray-700">{getReporterUsername(report)}</span></div>
@@ -258,7 +258,7 @@ export default function ReportsPage() {
                                                 )}
                                                 <p className="truncate" title={report.description}>{report.description}</p>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-4 py-3 sm:px-6 sm:py-4">
                                                 <select
                                                     value={statusSelections[report.id] ?? getUIStatusValue(report.status)}
                                                     onChange={(event) => handleUpdateStatus(report.id, event.target.value)}
@@ -280,7 +280,7 @@ export default function ReportsPage() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                        <td colSpan="6" className="px-4 py-10 sm:px-6 sm:py-12 text-center text-gray-500">
                                             <div className="flex flex-col items-center gap-3">
                                                 <div className="p-3 bg-gray-100 rounded-full">
                                                     <MessageSquareWarning size={24} className="text-gray-400" />
@@ -295,7 +295,7 @@ export default function ReportsPage() {
                     </div>
 
                     {/* Pagination */}
-                    <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+                    <div className="px-4 py-4 sm:px-6 border-t border-gray-100 flex items-center justify-between">
                         <button
                             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                             disabled={currentPage === 1}

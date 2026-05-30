@@ -66,17 +66,17 @@ export default function SellerMissionPopup() {
       role="dialog"
       aria-modal="true"
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[340px] sm:max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
 
         {/* ── MISSION POPUP ─────────────────────────────── */}
         {mode === "mission" && (
-          <div className="p-8">
+          <div className="p-5 sm:p-8">
             {/* Header */}
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="text-center mb-5 sm:mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
                 🎯 Misi Seller — Raih Badge Terverifikasi!
               </h2>
-              <p className="text-sm text-gray-500 leading-relaxed">
+              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
                 Selesaikan {target} penjualan untuk mendapat badge verified dan
                 tingkatkan kepercayaan pembelimu.
               </p>
@@ -91,7 +91,7 @@ export default function SellerMissionPopup() {
                     key={i}
                     title={`Penjualan ke-${i + 1}`}
                     className={[
-                      "w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all",
+                      "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all",
                       reached
                         ? "bg-red-500 border-red-500 text-white shadow-md"
                         : "bg-gray-100 border-gray-300 text-gray-400",
@@ -112,7 +112,7 @@ export default function SellerMissionPopup() {
             </div>
 
             {/* Count text */}
-            <p className="text-center text-sm text-gray-600 mb-8 font-medium">
+            <p className="text-center text-xs sm:text-sm text-gray-600 mb-6 sm:mb-8 font-medium">
               Kamu sudah menyelesaikan{" "}
               <span className="text-red-600 font-bold">{totalSales}</span>{" "}
               dari {target} penjualan
@@ -122,7 +122,7 @@ export default function SellerMissionPopup() {
             <button
               id="mission-popup-dismiss-btn"
               onClick={handleDismissMission}
-              className="w-full py-3 px-6 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-base transition-colors shadow-md hover:shadow-lg"
+              className="w-full py-2.5 sm:py-3 px-6 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm sm:text-base transition-colors shadow-md hover:shadow-lg"
             >
               Oke!
             </button>
@@ -131,13 +131,13 @@ export default function SellerMissionPopup() {
 
         {/* ── CONGRATS POPUP ────────────────────────────── */}
         {mode === "congrats" && (
-          <div className="p-8 text-center">
+          <div className="p-5 sm:p-8 text-center">
             {/* Celebration icon */}
-            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-red-100">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5 sm:mb-6 border-4 border-red-100">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
-                className="w-10 h-10 text-red-500"
+                className="w-8 h-8 sm:w-10 sm:h-10 text-red-500"
                 stroke="currentColor"
                 strokeWidth={2.5}
               >
@@ -149,10 +149,10 @@ export default function SellerMissionPopup() {
               </svg>
             </div>
 
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
               🎉 Selamat! Kamu Sekarang Seller Terverifikasi!
             </h2>
-            <p className="text-sm text-gray-500 leading-relaxed mb-8">
+            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed mb-6 sm:mb-8">
               Badge verified kamu sudah aktif. Pembeli bisa melihat tanda ini
               di setiap produkmu.
             </p>
@@ -160,7 +160,7 @@ export default function SellerMissionPopup() {
             <button
               id="congrats-popup-dismiss-btn"
               onClick={handleDismissCongrats}
-              className="w-full py-3 px-6 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-base transition-colors shadow-md hover:shadow-lg"
+              className="w-full py-2.5 sm:py-3 px-6 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm sm:text-base transition-colors shadow-md hover:shadow-lg"
             >
               Lihat Dashboard
             </button>

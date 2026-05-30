@@ -81,7 +81,7 @@ function ProductsPageContent() {
           />
 
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
               {[...Array(6)].map((_, idx) => (
                 <ProductCardSkeleton key={idx} />
               ))}
@@ -95,19 +95,19 @@ function ProductsPageContent() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
                 {products.map((p) => (
                   <button
                     key={p.id}
                     type="button"
                     onClick={() => handleCardClick(p.id)}
-                    className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-200 text-left group"
+                    className="flex h-full flex-col bg-white rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-2xl transition-all duration-200 text-left group"
                   >
                     <img
                       src={getProductImageUrl(p.image)}
                       alt={p.name}
                       loading="lazy"
-                      className="w-full h-60 object-cover rounded-xl mb-4 transition-transform duration-200 group-hover:scale-[1.02]"
+                      className="w-full h-36 sm:h-60 object-cover rounded-xl mb-4 transition-transform duration-200 group-hover:scale-[1.02]"
                       onError={(e) => {
                         e.target.src =
                           "https://via.placeholder.com/400x400?text=No+Image";
@@ -116,22 +116,20 @@ function ProductsPageContent() {
                     <span className="font-bold text-blue-700 uppercase text-sm mb-2 tracking-wide">
                       {p.brand || p.category}
                     </span>
-                    <h3 className="font-semibold text-xl mb-1 text-black">
+                    <h3 className="font-semibold text-base sm:text-xl mb-1 text-black">
                       {p.name}
                     </h3>
-                    <p className="text-gray-500 text-base mb-2 line-clamp-2 break-all text-ellipsis overflow-hidden">
+                    <p className="hidden sm:block h-12 text-gray-500 text-base leading-6 mb-2 overflow-hidden text-ellipsis break-all [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
                       {p.description || "Tidak ada informasi"}
                     </p>
-                    <div className="flex justify-start mb-3">
-                      <div className="flex items-center gap-1.5 bg-red-50 px-3 py-1.5 rounded-full border border-red-100">
-                        <User size={12} className="text-red-600" />
-                        <span className="text-xs text-red-800 font-medium">
-                          {p.seller?.username || "Unknown"}
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-1.5 mb-2 sm:mb-3 bg-red-50 px-3 py-1.5 rounded-full border border-red-100 self-start w-fit">
+                      <User size={12} className="text-red-600" />
+                      <span className="text-xs text-red-800 font-medium">
+                        {p.seller?.username || "Unknown"}
+                      </span>
                     </div>
-                    <div className="flex justify-between items-center mt-4">
-                      <span className="px-4 py-2 bg-brand-red text-white rounded-full text-sm font-medium">
+                    <div className="mt-auto flex justify-between items-center w-full">
+                      <span className="font-bold text-lg text-black">
                         {formatCurrency(p.price)}
                       </span>
                       <span className="text-sm text-gray-600 font-medium">
@@ -161,7 +159,7 @@ export default function ProductsPage() {
       fallback={
         <main className="bg-white min-h-screen">
           <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
               {[...Array(6)].map((_, idx) => (
                 <ProductCardSkeleton key={idx} />
               ))}
