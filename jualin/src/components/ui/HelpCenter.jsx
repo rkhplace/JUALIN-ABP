@@ -234,11 +234,11 @@ export default function HelpCenter() {
             {!loading && user && (
                 <button
                     onClick={handleHelpCenterClick}
-                    className={`fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 bg-[#E83030] text-white flex items-center justify-center`}
+                    className={`fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 p-3 sm:p-4 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 bg-[#E83030] text-white flex items-center justify-center`}
                     aria-label="Pusat Bantuan"
                     title="Pusat Bantuan - Hanya untuk pengguna yang login"
                 >
-                    {isOpen ? <X size={28} /> : <HelpCircle size={28} />}
+                    {isOpen ? <X className="h-5 w-5 sm:h-7 sm:w-7" /> : <HelpCircle className="h-5 w-5 sm:h-7 sm:w-7" />}
                 </button>
             )}
 
@@ -250,14 +250,14 @@ export default function HelpCenter() {
                 >
                     {/* Modal Content */}
                     <div
-                        className="relative w-full max-w-[500px] bg-white rounded-2xl shadow-2xl overflow-hidden animate-slide-in-from-bottom"
+                        className="relative w-full max-w-[340px] sm:max-w-[500px] bg-white rounded-2xl shadow-2xl overflow-hidden animate-slide-in-from-bottom"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Header */}
-                        <div className="bg-gradient-to-r from-gray-50 to-white px-6 py-5 border-b border-gray-100 flex justify-between items-start">
+                        <div className="bg-gradient-to-r from-gray-50 to-white px-5 py-4 sm:px-6 sm:py-5 border-b border-gray-100 flex justify-between items-start">
                             <div>
-                                <h2 className="text-xl font-bold text-gray-900">Pusat Bantuan</h2>
-                                <p className="text-sm text-gray-500 mt-1">Laporkan masalah atau berikan feedback</p>
+                                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Pusat Bantuan</h2>
+                                <p className="text-xs sm:text-sm text-gray-500 mt-1">Laporkan masalah atau berikan feedback</p>
                             </div>
                             <button
                                 onClick={toggleOpen}
@@ -268,8 +268,8 @@ export default function HelpCenter() {
                         </div>
 
                         {/* Form */}
-                        <form onSubmit={handleSubmit} className="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                            <div className="space-y-5">
+                        <form onSubmit={handleSubmit} className="p-5 sm:p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                            <div className="space-y-4 sm:space-y-5">
                                 {/* Username Pelapor */}
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
@@ -288,7 +288,7 @@ export default function HelpCenter() {
                                         name="username"
                                         value={formData.username}
                                         disabled
-                                        className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-600 cursor-not-allowed focus:outline-none transition-all"
+                                        className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm sm:text-base text-gray-600 cursor-not-allowed focus:outline-none transition-all"
                                         placeholder="Username akan terdeteksi otomatis"
                                     />
                                     <p className="text-xs text-gray-500 mt-1.5 ml-1">Username Anda telah terdeteksi otomatis dari akun yang login</p>
@@ -304,7 +304,7 @@ export default function HelpCenter() {
                                             name="type"
                                             value={formData.type}
                                             onChange={handleChange}
-                                            className={`w-full px-4 py-2.5 rounded-lg border ${errors.type ? 'border-red-500 bg-red-50' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 appearance-none bg-white cursor-pointer`}
+                                            className={`w-full px-4 py-2.5 rounded-lg border text-sm sm:text-base ${errors.type ? 'border-red-500 bg-red-50' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 appearance-none bg-white cursor-pointer`}
                                         >
                                             <option value="">Pilih tipe laporan...</option>
                                             <option value="Laporan Pengguna">🚨 Laporan Pengguna (Pelanggaran)</option>
@@ -323,10 +323,10 @@ export default function HelpCenter() {
 
                                 {/* Conditional Fields for "Laporan Pengguna" */}
                                 {isUserViolationReport && (
-                                    <div className="animate-fade-in space-y-5 bg-orange-50 p-4 rounded-xl border border-orange-100">
+                                    <div className="animate-fade-in space-y-4 sm:space-y-5 bg-orange-50 p-3 sm:p-4 rounded-xl border border-orange-100">
                                         <div className="flex items-center gap-3 text-orange-800 mb-2">
                                             <div className="p-2 bg-white rounded-full shadow-sm">
-                                                <User size={18} className="text-orange-600" />
+                                                <User className="h-4 w-4 sm:h-[18px] sm:w-[18px] text-orange-600" />
                                             </div>
                                             <div className="text-sm font-medium">Detail Pelanggaran User</div>
                                         </div>
@@ -341,7 +341,7 @@ export default function HelpCenter() {
                                                 value={formData.targetUsername}
                                                 onChange={handleChange}
                                                 onFocus={() => setShowSuggestions(true)}
-                                                className={`w-full px-4 py-2.5 rounded-lg border ${errors.targetUsername ? 'border-red-500' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 bg-white`}
+                                                className={`w-full px-4 py-2.5 rounded-lg border text-sm sm:text-base ${errors.targetUsername ? 'border-red-500' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 bg-white`}
                                                 placeholder="Cari username pelanggar..."
                                                 autoComplete="off"
                                             />
@@ -384,7 +384,7 @@ export default function HelpCenter() {
                                                 rows="3"
                                                 value={formData.description}
                                                 onChange={handleChange}
-                                                className={`w-full px-4 py-2.5 rounded-lg border ${errors.description ? 'border-red-500' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 bg-white resize-none`}
+                                                className={`w-full px-4 py-2.5 rounded-lg border text-sm sm:text-base ${errors.description ? 'border-red-500' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 bg-white resize-none`}
                                                 placeholder="Jelaskan detail pelanggaran..."
                                             />
                                             {errors.description && <p className="text-xs text-red-500 mt-1 ml-1">{errors.description}</p>}
@@ -403,7 +403,7 @@ export default function HelpCenter() {
                                             rows="4"
                                             value={formData.description}
                                             onChange={handleChange}
-                                            className={`w-full px-4 py-2.5 rounded-lg border ${errors.description ? 'border-red-500' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 resize-none`}
+                                            className={`w-full px-4 py-2.5 rounded-lg border text-sm sm:text-base ${errors.description ? 'border-red-500' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 resize-none`}
                                             placeholder="Ceritakan detail masalah atau saran Anda..."
                                         />
                                         {errors.description && <p className="text-xs text-red-500 mt-1 ml-1">{errors.description}</p>}
@@ -416,7 +416,7 @@ export default function HelpCenter() {
                                 <button
                                     type="button"
                                     onClick={toggleOpen}
-                                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors"
+                                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm sm:text-base text-gray-600 font-medium hover:bg-gray-50 transition-colors"
                                     disabled={isSubmitting}
                                 >
                                     Batal
@@ -424,13 +424,13 @@ export default function HelpCenter() {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="flex-1 px-4 py-2.5 rounded-xl bg-[#E83030] text-white font-medium shadow-lg shadow-red-200 hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="flex-1 px-4 py-2.5 rounded-xl bg-[#E83030] text-sm sm:text-base text-white font-medium shadow-lg shadow-red-200 hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {isSubmitting ? (
                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     ) : (
                                         <>
-                                            <Send size={18} /> Kirim Laporan
+                                            <Send className="h-4 w-4 sm:h-[18px] sm:w-[18px]" /> Kirim Laporan
                                         </>
                                     )}
                                 </button>
@@ -438,9 +438,9 @@ export default function HelpCenter() {
                         </form>
 
                         {/* Footer Info */}
-                        <div className="bg-gray-50 px-6 py-4 border-t border-gray-100">
+                        <div className="bg-gray-50 px-5 py-4 sm:px-6 border-t border-gray-100">
                             <div className="flex gap-3">
-                                <AlertTriangle size={20} className="text-amber-500 shrink-0 mt-0.5" />
+                                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500 shrink-0 mt-0.5" />
                                 <div className="text-xs text-gray-500 leading-relaxed">
                                     <strong className="text-gray-700 block mb-1">Informasi Penting</strong>
                                     Laporan Anda akan ditinjau oleh tim admin kami dalam waktu <strong>1-2 hari kerja</strong>. Terima kasih telah membantu menjaga komunitas Jualin tetap aman.

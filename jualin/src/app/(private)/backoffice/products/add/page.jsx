@@ -11,11 +11,11 @@ export default function BackofficeNewProductPage() {
   }, [router]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#F5F6FA]">
-      <div className="text-center p-8 bg-white rounded-2xl shadow-md border border-gray-100 max-w-sm">
-        <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+    <div className="flex min-h-[calc(100vh-160px)] items-center justify-center bg-[#F5F6FA] px-4 py-8">
+      <div className="w-full max-w-xs sm:max-w-sm text-center p-5 sm:p-8 bg-white rounded-xl sm:rounded-2xl shadow-md border border-gray-100">
+        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
           <svg
-            className="w-7 h-7 text-[#E83030]"
+            className="w-6 h-6 sm:w-7 sm:h-7 text-[#E83030]"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -28,7 +28,7 @@ export default function BackofficeNewProductPage() {
             />
           </svg>
         </div>
-        <h2 className="text-lg font-bold text-gray-800 mb-1">Akses Ditolak</h2>
+        <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-1">Akses Ditolak</h2>
         <p className="text-sm text-gray-500">
           Admin tidak memiliki izin untuk menambah produk baru.
         </p>

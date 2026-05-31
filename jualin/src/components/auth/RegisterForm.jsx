@@ -114,8 +114,8 @@ const RegisterForm = ({ onSuccess, onError }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         <Input
           label="Nama Lengkap"
           type="text"
@@ -161,7 +161,7 @@ const RegisterForm = ({ onSuccess, onError }) => {
         />
       </div>
 
-      <div className="mb-4">
+      <div className="mb-3 sm:mb-4">
         <Select
           label="Role"
           value={formData.role}

@@ -46,7 +46,7 @@ export default function SellerMissionBanner() {
   return (
     <div
       id="seller-mission-banner"
-      className="relative overflow-hidden rounded-2xl mx-auto w-full border border-red-100"
+      className="relative overflow-hidden rounded-xl sm:rounded-2xl mx-auto w-full border border-red-100"
       style={{
         background:
           "linear-gradient(135deg, #FFF5F5 0%, #FEE2E2 40%, #FECACA 100%)",
@@ -62,14 +62,14 @@ export default function SellerMissionBanner() {
         style={{ background: "#E83030" }}
       />
 
-      <div className="relative z-10 px-6 py-5 sm:px-8 sm:py-6">
+      <div className="relative z-10 px-4 py-4 sm:px-8 sm:py-6">
         {/* Title row */}
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 tracking-tight">
+        <h2 className="text-base sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 tracking-tight">
           🎯 Misi Seller — Raih Badge Terverifikasi!
         </h2>
 
         {/* Progress nodes */}
-        <div className="flex items-center gap-0 mb-4">
+        <div className="flex items-center gap-0 mb-3 sm:mb-4">
           {Array.from({ length: target }, (_, i) => {
             const reached = i < totalSales;
             const isLast = i === target - 1;
@@ -79,7 +79,7 @@ export default function SellerMissionBanner() {
                 {/* Node */}
                 <div
                   className={[
-                    "w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center",
+                    "w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center",
                     "text-sm font-bold border-2 transition-all duration-500",
                     "shadow-sm",
                     reached
@@ -109,7 +109,7 @@ export default function SellerMissionBanner() {
 
                 {/* Connector line between nodes */}
                 {!isLast && (
-                  <div className="w-8 sm:w-12 h-1 mx-0.5 rounded-full overflow-hidden bg-gray-200">
+                  <div className="w-6 sm:w-12 h-1 mx-0.5 rounded-full overflow-hidden bg-gray-200">
                     <div
                       className="h-full rounded-full transition-all duration-700"
                       style={{
@@ -127,7 +127,7 @@ export default function SellerMissionBanner() {
         {/* Bottom row: text + progress bar */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           {/* Sales count text */}
-          <p className="text-sm text-gray-600 font-medium whitespace-nowrap">
+          <p className="text-xs sm:text-sm text-gray-600 font-medium whitespace-normal sm:whitespace-nowrap">
             Kamu sudah menyelesaikan{" "}
             <span className="text-[#E83030] font-bold">{totalSales}</span> dari{" "}
             <span className="font-bold">{target}</span> penjualan
@@ -135,9 +135,9 @@ export default function SellerMissionBanner() {
 
           {/* Progress bar */}
           <div className="flex-1 min-w-0">
-            <div className="w-full bg-white/70 rounded-full h-2.5 shadow-inner">
+            <div className="w-full bg-white/70 rounded-full h-2 sm:h-2.5 shadow-inner">
               <div
-                className="h-2.5 rounded-full transition-all duration-700 ease-out"
+                className="h-2 sm:h-2.5 rounded-full transition-all duration-700 ease-out"
                 style={{
                   width: `${progressPct}%`,
                   background: "linear-gradient(90deg, #E83030, #EF4444)",

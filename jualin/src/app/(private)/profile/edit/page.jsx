@@ -17,6 +17,12 @@ export default function EditProfilePage() {
 
   const [activeTab, setActiveTab] = useState("edit");
   const [toast, setToast] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setIsSidebarOpen(false);
+  };
 
   const profileUpdate = useProfileUpdate();
   const passwordChange = usePasswordChange();
@@ -109,30 +115,41 @@ export default function EditProfilePage() {
       <Navbar />
 
       <div className="flex overflow-hidden h-[calc(100vh-80px)]">
+        {/* Mobile Backdrop */}
+        {isSidebarOpen && (
+          <div
+            className="md:hidden fixed inset-0 bg-black/40 z-30"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
         {/* Sidebar */}
         <ProfileSidebarSection
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
           onLogout={handleLogout}
           role={user?.role}
           user={user}
+          isSidebarOpen={isSidebarOpen}
+          onToggle={() => setIsSidebarOpen((prev) => !prev)}
         />
 
         {/* Main Content */}
         <div className="flex-1 bg-white overflow-y-auto">
-          <div className="max-w-5xl mx-auto p-8">
+          <div className="max-w-5xl mx-auto px-4 py-6 pb-24 md:p-8">
             {activeTab === "edit" ? (
               <>
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
-                  <h1 className="text-2xl font-semibold text-[#1F1F1F]">
+                <div className="flex items-center justify-between gap-3 mb-6 md:mb-8">
+                  <h1 className="text-xl sm:text-2xl font-semibold text-[#1F1F1F]">
                     Edit Profile
                   </h1>
                   <div className="flex gap-3">
                     <button
                       onClick={handleSaveProfile}
                       disabled={profileUpdate.isLoading}
-                      className="px-6 py-2 bg-[#E53935] hover:bg-[#D32F2F] text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg focus:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-md outline-none"
+                      className="px-4 py-2 text-sm sm:px-6 sm:text-base bg-[#E53935] hover:bg-[#D32F2F] text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg focus:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-md outline-none"
                     >
                       {profileUpdate.isLoading
                         ? "Saving..."

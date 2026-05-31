@@ -115,24 +115,24 @@ const IncomeSectionClientCached = ({ sellerId }) => {
         onConfirm={handleWithdraw}
         walletBalance={user?.wallet_balance || 0}
       />
-      <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-4">Dashboard Keuangan</h2>
+      <h2 className="text-xl sm:text-2xl font-bold text-[var(--color-text-primary)] mb-4">Dashboard Keuangan</h2>
       <div className="rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-shadow duration-200">
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
             <div className="flex-1 bg-red-50 rounded-xl p-4 border border-red-100">
               <p className="text-sm font-semibold text-red-800 uppercase tracking-wide">Saldo Dapat Dicairkan</p>
-              <div className="flex justify-between items-end mt-1">
+              <div className="flex flex-col gap-3 mt-1 sm:flex-row sm:items-end sm:justify-between">
                 {isLoading && !user ? (
                   <Skeleton className="h-8 w-32" />
                 ) : (
-                  <p className="text-3xl font-black text-brand-red">
+                  <p className="text-2xl sm:text-3xl font-black text-brand-red">
                     {formatCurrency(user?.wallet_balance || 0)}
                   </p>
                 )}
                 <button
                   onClick={() => setIsWithdrawModalOpen(true)}
                   disabled={!user || user.wallet_balance <= 0 || isWithdrawing}
-                  className="bg-red-600 hover:bg-red-700 text-white text-sm font-bold py-1.5 px-4 rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-bold py-2 px-4 rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto sm:py-1.5"
                 >
                   {isWithdrawing ? "Processing..." : "Tarik Saldo"}
                 </button>
@@ -144,7 +144,7 @@ const IncomeSectionClientCached = ({ sellerId }) => {
               {isLoading ? (
                 <Skeleton className="h-8 w-32 mt-1" />
               ) : (
-                <p className="text-3xl font-bold text-gray-800 mt-1">{formatCurrency(withdrawn)}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-800 mt-1">{formatCurrency(withdrawn)}</p>
               )}
               <p className="text-xs text-gray-400 mt-2">Akumulasi saldo yang sudah berhasil ditarik ke rekening</p>
             </div>
@@ -161,7 +161,7 @@ const IncomeSectionClientCached = ({ sellerId }) => {
               </button>
             </div>
           )}
-          <div className="flex gap-2 mb-4">
+          <div className="grid grid-cols-2 gap-2 mb-4 sm:flex">
             {[
               { value: "sales", label: "Grafik Penjualan" },
               { value: "withdraw", label: "Grafik Withdraw" },
@@ -170,7 +170,7 @@ const IncomeSectionClientCached = ({ sellerId }) => {
                 key={option.value}
                 type="button"
                 onClick={() => setSelectedGraph(option.value)}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${selectedGraph === option.value
+                className={`rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition ${selectedGraph === option.value
                   ? "bg-brand-red text-white"
                   : "bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-200)]"
                   }`}
@@ -180,7 +180,7 @@ const IncomeSectionClientCached = ({ sellerId }) => {
             ))}
           </div>
 
-          <div className="h-64 overflow-hidden">
+          <div className="h-56 overflow-hidden sm:h-64">
             {isLoading ? (
               <div className="h-full space-y-2">
                 <Skeleton className="h-full w-full" />
@@ -195,7 +195,7 @@ const IncomeSectionClientCached = ({ sellerId }) => {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 12, right: 20, left: 8, bottom: 20 }}>
+                <LineChart data={chartData} margin={{ top: 12, right: 8, left: -8, bottom: 16 }}>
                   <XAxis
                     dataKey="label"
                     axisLine={false}
@@ -205,7 +205,7 @@ const IncomeSectionClientCached = ({ sellerId }) => {
                     textAnchor="middle"
                     interval="preserveStartEnd"
                     ticks={visibleTicks}
-                    minTickGap={24}
+                    minTickGap={18}
                     tickMargin={10}
                     height={44}
                   />
@@ -216,7 +216,7 @@ const IncomeSectionClientCached = ({ sellerId }) => {
                     tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toString()}
                     domain={[yMin, yMax]}
                     ticks={yTicks}
-                    width={60}
+                    width={44}
                   />
                   <Tooltip content={<WithdrawTooltip formatCurrency={formatCurrency} />} />
                   <Line
@@ -249,13 +249,13 @@ const IncomeSectionClientCached = ({ sellerId }) => {
             </p>
           )}
 
-          <div className="flex mt-6 bg-[var(--color-neutral-100)] rounded-xl p-1">
+          <div className="grid grid-cols-4 mt-6 bg-[var(--color-neutral-100)] rounded-xl p-1">
             {["Year", "Month", "Week", "Day"].map((p) => (
               <button
                 key={p}
                 onClick={() => handlePeriodChange(p)}
                 disabled={isLoading}
-                className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${selectedPeriod === p
+                className={`rounded-lg px-2 py-2 text-xs sm:px-3 sm:text-sm font-medium transition-all duration-200 ${selectedPeriod === p
                   ? "bg-brand-red text-white shadow-md"
                   : "bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-200)]"
                   } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}

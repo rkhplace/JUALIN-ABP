@@ -26,19 +26,19 @@ export function ChatItem({ chat, isSelected, onClick }) {
   return (
     <div
       onClick={onClick}
-      className={`mx-3 my-2 p-4 rounded-2xl cursor-pointer transition-all duration-300 ease-in-out group relative overflow-hidden ${isSelected
+      className={`mx-2 md:mx-3 my-2 p-3 md:p-4 rounded-2xl cursor-pointer transition-all duration-300 ease-in-out group relative overflow-hidden ${isSelected
           ? 'bg-gradient-to-r from-red-50 via-white to-white shadow-md border-l-4 border-red-500 translate-x-1'
           : 'hover:bg-gray-50 border border-transparent hover:shadow-sm hover:translate-x-1'
         }`}
     >
-      <div className="flex items-start gap-4 relative z-10">
+      <div className="flex items-start gap-3 md:gap-4 relative z-10">
         {/* Avatar */}
         <div className="relative shrink-0">
-          <div className={`h-12 w-12 rounded-full overflow-hidden shadow-sm flex items-center justify-center ${!displayAvatar ? 'bg-gradient-to-br from-gray-100 to-gray-200' : 'bg-gray-100'}`}>
+          <div className={`h-10 w-10 md:h-12 md:w-12 rounded-full overflow-hidden shadow-sm flex items-center justify-center ${!displayAvatar ? 'bg-gradient-to-br from-gray-100 to-gray-200' : 'bg-gray-100'}`}>
             {displayAvatar ? (
               <img src={displayAvatar} alt={chat.name} className="h-full w-full object-cover" />
             ) : (
-              <span className="text-gray-500 font-bold text-lg">
+              <span className="text-gray-500 font-bold text-base md:text-lg">
                 {(chat.name && chat.name.length > 0 ? chat.name[0] : 'S').toUpperCase()}
               </span>
             )}

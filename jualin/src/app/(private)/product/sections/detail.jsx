@@ -75,7 +75,6 @@ export default function ProductDetailSection({ product, seller }) {
         message: "Please login first to chat with seller",
         type: "error",
       });
-      setTimeout(() => router.push("/login"), 2000);
       return;
     }
 
@@ -148,7 +147,6 @@ export default function ProductDetailSection({ product, seller }) {
         message: "Please login first to report this product",
         type: "error",
       });
-      setTimeout(() => router.push("/login"), 2000);
       return;
     }
 
@@ -275,7 +273,7 @@ export default function ProductDetailSection({ product, seller }) {
           </div>
         </div>
       )}
-      <div className="flex flex-col md:flex-row gap-8 items-start bg-white rounded-2xl shadow p-6">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-start bg-white rounded-2xl shadow p-4 md:p-6">
         {/* Image Gallery Section */}
         <div className="w-full md:w-1/2 flex flex-col gap-4">
           {/* Main Image */}
@@ -288,7 +286,7 @@ export default function ProductDetailSection({ product, seller }) {
               }
               alt={product.name}
               loading="lazy"
-              className="w-full h-80 object-cover"
+              className="w-full h-56 sm:h-72 md:h-80 object-cover"
               onError={(e) => {
                 e.target.src = "https://via.placeholder.com/400x400?text=No+Image";
               }}
@@ -303,16 +301,15 @@ export default function ProductDetailSection({ product, seller }) {
 
           {/* Thumbnail Gallery */}
           {Array.isArray(product.image) && product.image.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-2">
+            <div className="flex gap-2 overflow-x-auto pb-1 md:pb-2">
               {product.image.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedImageIndex(idx)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                    selectedImageIndex === idx
+                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === idx
                       ? "border-red-500 scale-105"
                       : "border-gray-300 hover:border-gray-400"
-                  }`}
+                    }`}
                 >
                   <img
                     src={getImageUrl(img)}
@@ -328,16 +325,16 @@ export default function ProductDetailSection({ product, seller }) {
           )}
         </div>
         <div className="flex-1">
-          <h2 className="text-3xl font-semibold mb-1 text-black">
+          <h2 className="text-2xl md:text-3xl font-semibold mb-1 text-black">
             {product.name}
           </h2>
-          <h1 className="text-2xl font-bold mb-6 text-blue-700">
+          <h1 className="text-lg md:text-2xl font-bold mb-4 md:mb-6 text-blue-700">
             {product.brand || product.category}
           </h1>
-          <p className="text-gray-600 mb-6 break-all w-full">{product.description}</p>
+          <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6 break-words w-full line-clamp-4">{product.description}</p>
 
           {/* Seller Info */}
-          <div className="flex items-center gap-3 mb-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+          <div className="flex items-center gap-3 mb-4 md:mb-6 p-3 md:p-4 bg-gray-50 rounded-xl border border-gray-100">
             <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
               {seller?.profile_picture ? (
                 <img src={getProfilePictureUrl(seller.profile_picture)} alt={seller.username} className="w-full h-full object-cover" />
@@ -354,7 +351,7 @@ export default function ProductDetailSection({ product, seller }) {
             </div>
           </div>
 
-          <div className="mb-6">
+          <div className="mb-4 md:mb-6">
             <span className="block font-bold text-xl text-black mb-1">
               {formatCurrency(product.price)}
             </span>
@@ -362,16 +359,15 @@ export default function ProductDetailSection({ product, seller }) {
               Stok tersedia: {product.stock} unit
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-3">
             <button
-              className="bg-red-500 text-white px-6 py-2 rounded-full font-semibold shadow hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto justify-center bg-red-500 text-white px-6 py-2 rounded-full font-semibold shadow hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
               onClick={() => {
                 if (!user) {
                   setToast({
                     message: "Please login first to buy",
                     type: "error",
                   });
-                  setTimeout(() => router.push("/login"), 2000);
                   return;
                 }
                 setIsModalOpen(true);
@@ -383,7 +379,7 @@ export default function ProductDetailSection({ product, seller }) {
             </button>
             <button
               onClick={handleChatSeller}
-              className="px-6 py-2 rounded-full font-semibold border border-gray-300 text-gray-800 bg-white hover:bg-gray-100 transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto justify-center px-6 py-2 rounded-full font-semibold border border-gray-300 text-gray-800 bg-white hover:bg-gray-100 transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
               aria-label="Open chat"
               disabled={isStartingChat}
             >
@@ -392,7 +388,7 @@ export default function ProductDetailSection({ product, seller }) {
             </button>
             <button
               onClick={handleReportClick}
-              className="px-5 py-2 rounded-full font-semibold border border-red-400 text-red-700 bg-white hover:bg-red-50 transition shadow disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto justify-center px-5 py-2 rounded-full font-semibold border border-red-400 text-red-700 bg-white hover:bg-red-50 transition shadow disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isOwnProduct}
               title={isOwnProduct ? "Tidak dapat melaporkan produk sendiri" : undefined}
             >
@@ -408,13 +404,13 @@ export default function ProductDetailSection({ product, seller }) {
           onClick={handleCloseReportModal}
         >
           <div
-            className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300"
+            className="w-full max-w-[340px] sm:max-w-2xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="px-6 py-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+            <div className="px-5 py-4 sm:px-6 sm:py-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">Laporkan Produk</h3>
-                <p className="text-sm text-gray-500 mt-1">Pilih jenis laporan dan jelaskan detailnya.</p>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Laporkan Produk</h3>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">Pilih jenis laporan dan jelaskan detailnya.</p>
               </div>
               <button
                 onClick={handleCloseReportModal}
@@ -424,7 +420,7 @@ export default function ProductDetailSection({ product, seller }) {
                 ✕
               </button>
             </div>
-            <form onSubmit={handleSubmitProductReport} className="px-6 py-6 space-y-5">
+            <form onSubmit={handleSubmitProductReport} className="px-5 py-5 sm:px-6 sm:py-6 space-y-4 sm:space-y-5">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Alasan Laporan <span className="text-red-500">*</span></label>
                 <select
@@ -433,7 +429,7 @@ export default function ProductDetailSection({ product, seller }) {
                     setReportType(event.target.value);
                     setReportErrors((prev) => ({ ...prev, type: "" }));
                   }}
-                  className={`w-full rounded-2xl border px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 ${reportErrors.type ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}
+                  className={`w-full rounded-xl sm:rounded-2xl border px-4 py-2.5 sm:py-3 text-sm sm:text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 ${reportErrors.type ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}
                 >
                   <option value="">Pilih alasan laporan...</option>
                   {reportReasons.map((reason) => (
@@ -450,9 +446,9 @@ export default function ProductDetailSection({ product, seller }) {
                     setReportDescription(event.target.value);
                     setReportErrors((prev) => ({ ...prev, description: "" }));
                   }}
-                  rows={5}
+                  rows={4}
                   placeholder={reportType === 'Lainnya' ? 'Jelaskan alasan custom Anda untuk laporan produk ini...' : 'Tuliskan detail masalah produk di sini...'}
-                  className={`w-full rounded-2xl border px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 ${reportErrors.description ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}
+                  className={`w-full rounded-xl sm:rounded-2xl border px-4 py-2.5 sm:py-3 text-sm sm:text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 ${reportErrors.description ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}
                 />
                 {reportErrors.description && <p className="text-xs text-red-500 mt-2">{reportErrors.description}</p>}
               </div>
@@ -460,14 +456,14 @@ export default function ProductDetailSection({ product, seller }) {
                 <button
                   type="button"
                   onClick={handleCloseReportModal}
-                  className="flex-1 rounded-2xl border border-gray-200 px-5 py-3 text-gray-700 font-semibold hover:bg-gray-50 transition"
+                  className="flex-1 rounded-xl sm:rounded-2xl border border-gray-200 px-5 py-2.5 sm:py-3 text-sm sm:text-base text-gray-700 font-semibold hover:bg-gray-50 transition"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isReportSubmitting}
-                  className="flex-1 rounded-2xl bg-red-600 text-white px-5 py-3 font-semibold shadow hover:bg-red-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="flex-1 rounded-xl sm:rounded-2xl bg-red-600 text-white px-5 py-2.5 sm:py-3 text-sm sm:text-base font-semibold shadow hover:bg-red-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {isReportSubmitting ? 'Mengirim...' : 'Kirim Laporan'}
                 </button>

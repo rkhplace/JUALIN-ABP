@@ -28,7 +28,7 @@ export default function SellerDashboardPage() {
       {/* Seller verification mission / congrats popup */}
       <SellerMissionPopup />
 
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-8">
+      <div className="max-w-6xl mx-auto px-4 py-5 pb-24 space-y-6 sm:py-6 sm:pb-10 sm:space-y-8">
         {/* Permanent mission progress banner (hidden when verified) */}
         <SellerMissionBanner />
 

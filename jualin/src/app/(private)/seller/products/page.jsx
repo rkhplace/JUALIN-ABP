@@ -108,12 +108,12 @@ export default function SellerProductsPage() {
 
   return (
     <main className="bg-white min-h-screen" ref={scrollRef}>
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 py-5 pb-24 space-y-6 sm:py-6 sm:pb-10">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Produk Saya</h1>
           <button
             onClick={() => router.push("/seller/products/new")}
-            className="px-4 py-2 bg-brand-red text-white rounded-lg hover:bg-red-600 hover:shadow-lg hover:shadow-red-200 transition-all duration-200 shadow-sm font-medium"
+            className="h-10 w-10 bg-brand-red text-white rounded-lg hover:bg-red-600 hover:shadow-lg hover:shadow-red-200 transition-all duration-200 shadow-sm font-bold"
           >
             +
           </button>
@@ -138,33 +138,33 @@ export default function SellerProductsPage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
               {products.map((p) => (
                 <div
                   key={p.id}
-                  className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-shadow"
+                  className="bg-white rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-2xl transition-shadow text-left"
                 >
                   <div className="flex justify-center mb-4">
                     <img
                       src={getProductImageUrl(p.image)}
                       alt={p.name}
-                      className="w-full h-60 object-cover rounded-xl mb-4 transition-transform duration-200 group-hover:scale-[1.02]"
+                      className="w-full h-36 sm:h-60 object-cover rounded-xl transition-transform duration-200 group-hover:scale-[1.02]"
                       onError={(e) => {
                         e.target.src = "/ProfilePhoto.png";
                       }}
                     />
                   </div>
-                  <h3 className="font-semibold text-gray-900 text-base text-center mb-2 line-clamp-2">
+                  <h3 className="font-semibold text-gray-900 text-base sm:text-xl mb-2 line-clamp-2">
                     {p.name}
                   </h3>
-                  <p className="text-sm text-gray-600 text-center mb-2">
+                  <p className="text-sm text-blue-600 font-medium uppercase tracking-wide mb-2">
                     {p.category || "Tidak ada kategori"}
                   </p>
-                  <p className="text-xs text-gray-500 text-center mb-4">
+                  <p className="text-xs sm:text-sm text-gray-500 mb-4">
                     Stok: {p.stock_quantity || 0} | Kondisi:{" "}
                     {p.condition === "new" ? "Baru" : "Bekas"}
                   </p>
-                  <div className="flex justify-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <button
                       onClick={() =>
                         router.push(`/seller/products/${p.id}/edit`)
