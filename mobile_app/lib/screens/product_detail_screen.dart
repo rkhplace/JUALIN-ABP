@@ -4,6 +4,7 @@ import '../services/product_service.dart';
 import '../services/chat_service.dart';
 import '../services/auth_service.dart';
 import '../models/product.dart';
+import '../widgets/ui/login_required_dialog.dart';
 import 'chat_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -22,18 +23,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _isChatLoading = false;
   String? _errorMessage;
 
-  Future<bool> requireLogin(BuildContext context) async {
+  Future<bool> requireLogin(
+    BuildContext context, {
+    String message = 'Silakan login terlebih dahulu untuk membeli produk.',
+  }) async {
     final isLoggedIn = await _authService.isLoggedIn();
     if (!context.mounted) return false;
-    
+
     if (!isLoggedIn) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Silakan login terlebih dahulu untuk membeli produk.'),
-          backgroundColor: Colors.red,
-        ),
+      final shouldLogin = await showLoginRequiredDialog(
+        context,
+        message: message,
       );
-      Navigator.pushNamed(context, '/login');
+      if (!context.mounted) return false;
+      if (shouldLogin) Navigator.pushNamed(context, '/login');
       return false;
     }
     return true;
@@ -78,6 +81,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Future<void> _handleChatPenjual() async {
     if (_product == null) return;
 
+    final loggedIn = await requireLogin(
+      context,
+      message: 'Silakan login terlebih dahulu untuk chat dengan penjual.',
+    );
+    if (!mounted || !loggedIn) return;
+
     final sellerId = _product!.sellerId;
     final productId = _product!.id;
 
@@ -91,8 +100,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     setState(() => _isChatLoading = true);
 
     try {
-      final roomId =
-          await _chatService.startRoom(sellerId, productId);
+      final roomId = await _chatService.startRoom(sellerId, productId);
 
       if (!mounted) return;
 
@@ -114,8 +122,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                e.toString().replaceFirst('Exception: ', 'Gagal membuka chat: ')),
+            content: Text(e
+                .toString()
+                .replaceFirst('Exception: ', 'Gagal membuka chat: ')),
             backgroundColor: Colors.red,
           ),
         );
@@ -168,8 +177,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   )
                 : _product == null
-                    ? const Center(
-                        child: Text('Data produk tidak ditemukan.'))
+                    ? const Center(child: Text('Data produk tidak ditemukan.'))
                     : SingleChildScrollView(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,8 +252,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       const CircleAvatar(
                                         backgroundColor: Color(0xFFF5F5F5),
                                         radius: 20,
-                                        child:
-                                            Icon(Icons.person, color: Colors.grey),
+                                        child: Icon(Icons.person,
+                                            color: Colors.grey),
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
@@ -255,7 +263,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                           children: [
                                             Text(_product!.sellerName,
                                                 style: const TextStyle(
-                                                    fontWeight: FontWeight.bold)),
+                                                    fontWeight:
+                                                        FontWeight.bold)),
                                             const Text('Penjual',
                                                 style: TextStyle(
                                                     fontSize: 12,
@@ -335,7 +344,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         onPressed: () async {
                           // Check if user is logged in using existing AuthService
                           final loggedIn = await requireLogin(context);
-                          
+
                           if (!context.mounted) return;
                           if (!loggedIn) return;
 

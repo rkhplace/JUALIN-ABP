@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/ui/app_chrome.dart';
+import '../widgets/ui/login_required_dialog.dart';
 import '../services/chat_service.dart';
 import '../models/chat_room.dart';
 import '../models/chat_message.dart';
@@ -39,7 +40,12 @@ class _ChatScreenState extends State<ChatScreen> {
     final token = prefs.getString('auth_token');
 
     if (token == null || token.isEmpty) {
-      if (mounted) setState(() { _isLoggedIn = false; _isLoading = false; });
+      if (mounted) {
+        setState(() {
+          _isLoggedIn = false;
+          _isLoading = false;
+        });
+      }
       return;
     }
 
@@ -47,7 +53,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       final rooms = await _chatService.getChatRooms();
-      if (mounted) setState(() { _rooms = rooms; _isLoading = false; });
+      if (mounted) {
+        setState(() {
+          _rooms = rooms;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -95,7 +106,14 @@ class _ChatScreenState extends State<ChatScreen> {
               style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFE83030),
                   foregroundColor: Colors.white),
-              onPressed: () => Navigator.pushNamed(context, '/login'),
+              onPressed: () async {
+                final shouldLogin = await showLoginRequiredDialog(
+                  context,
+                  message: 'Silakan login terlebih dahulu untuk membuka chat.',
+                );
+                if (!mounted || !shouldLogin) return;
+                Navigator.pushNamed(context, '/login');
+              },
               child: const Text('Masuk Sekarang'),
             ),
           ],
@@ -110,7 +128,8 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
             const SizedBox(height: 12),
-            Text(_errorMessage!, style: const TextStyle(color: Colors.black54),
+            Text(_errorMessage!,
+                style: const TextStyle(color: Colors.black54),
                 textAlign: TextAlign.center),
             const SizedBox(height: 12),
             TextButton.icon(
@@ -176,8 +195,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                    fontWeight:
-                        unread ? FontWeight.bold : FontWeight.normal)),
+                    fontWeight: unread ? FontWeight.bold : FontWeight.normal)),
           ),
           Text(time, style: TextStyle(color: Colors.grey[500], fontSize: 11)),
         ],
@@ -191,8 +209,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 style: TextStyle(
                     color: unread ? Colors.black87 : Colors.black45,
                     fontSize: 13,
-                    fontWeight:
-                        unread ? FontWeight.w600 : FontWeight.normal)),
+                    fontWeight: unread ? FontWeight.w600 : FontWeight.normal)),
           ),
           if (unread)
             Container(
@@ -268,7 +285,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final storedId = prefs.getInt('user_id');
 
     if (storedId != null) {
-      debugPrint('[Chat] Loaded currentUserId from SharedPreferences: $storedId');
+      debugPrint(
+          '[Chat] Loaded currentUserId from SharedPreferences: $storedId');
       if (mounted) setState(() => _currentUserId = storedId);
     } else {
       // ── Step 2: Fallback — call GET /me to retrieve the authenticated user ─
@@ -291,11 +309,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Future<void> _loadMessages() async {
-    setState(() { _isLoading = true; _errorMessage = null; });
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
     try {
       final messages = await _chatService.getMessages(widget.roomId);
       if (mounted) {
-        setState(() { _messages = messages; _isLoading = false; });
+        setState(() {
+          _messages = messages;
+          _isLoading = false;
+        });
         _scrollToBottom();
       }
     } catch (e) {
@@ -380,7 +404,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           children: [
             const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
             const SizedBox(height: 12),
-            Text(_errorMessage!, textAlign: TextAlign.center,
+            Text(_errorMessage!,
+                textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.black54)),
             TextButton.icon(
                 onPressed: _loadMessages,
@@ -414,7 +439,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   Widget _buildBubble(ChatMessage msg, bool isMe) {
     // ─── Debug: verify alignment logic ───────────────────────────────────────
-    debugPrint('[Chat] senderId: ${msg.senderId}  |  currentUserId: $_currentUserId  |  isMe: $isMe');
+    debugPrint(
+        '[Chat] senderId: ${msg.senderId}  |  currentUserId: $_currentUserId  |  isMe: $isMe');
     // ─────────────────────────────────────────────────────────────────────────
 
     final time = msg.sentAt != null
@@ -508,8 +534,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 decoration: InputDecoration(
                   hintText: 'Tulis pesan...',
                   hintStyle: TextStyle(color: Colors.grey[400]),
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   filled: true,
                   fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
@@ -538,8 +564,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         color: Color(0xFFE83030),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.send,
-                          color: Colors.white, size: 20),
+                      child:
+                          const Icon(Icons.send, color: Colors.white, size: 20),
                     ),
                   ),
           ],

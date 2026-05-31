@@ -3,6 +3,7 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/admin_home_screen.dart';
 import 'screens/auth_gate_screen.dart';
+import 'screens/auth_required_screen.dart';
 import 'screens/main_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/login_screen.dart';
@@ -66,29 +67,74 @@ class _MyAppState extends State<MyApp> {
         '/register': (context) => const RegisterScreen(),
         '/forgot_password': (context) => const ForgotPasswordScreen(),
         '/reset_password': (context) => const ResetPasswordScreen(),
-        '/admin_home': (context) => const AdminHomeScreen(),
+        '/admin_home': (context) => const AuthRequiredScreen(
+              message: 'Silakan login sebagai admin untuk melanjutkan.',
+              child: AdminHomeScreen(),
+            ),
         '/product_detail': (context) => const ProductDetailScreen(),
-        '/profile_edit': (context) => const ProfileEditScreen(),
-        '/purchase_history': (context) => const PurchaseHistoryScreen(),
+        '/profile_edit': (context) => const AuthRequiredScreen(
+              message: 'Silakan login terlebih dahulu untuk mengubah profil.',
+              child: ProfileEditScreen(),
+            ),
+        '/purchase_history': (context) => const AuthRequiredScreen(
+              message: 'Silakan login terlebih dahulu untuk melihat riwayat pembelian.',
+              child: PurchaseHistoryScreen(),
+            ),
 
         // ── Legacy seller routes (kept for backward compatibility) ──
-        '/seller_dashboard': (context) => const SellerDashboardScreen(),
-        '/seller_products': (context) => const SellerProductsScreen(),
-        '/seller_product_new': (context) => const SellerProductNewScreen(),
-        '/seller_product_edit': (context) => const SellerProductEditScreen(),
+        '/seller_dashboard': (context) => const AuthRequiredScreen(
+              message: 'Silakan login terlebih dahulu untuk mengakses dashboard penjual.',
+              child: SellerDashboardScreen(),
+            ),
+        '/seller_products': (context) => const AuthRequiredScreen(
+              message: 'Silakan login terlebih dahulu untuk mengelola produk.',
+              child: SellerProductsScreen(),
+            ),
+        '/seller_product_new': (context) => const AuthRequiredScreen(
+              message: 'Silakan login terlebih dahulu untuk menambah produk.',
+              child: SellerProductNewScreen(),
+            ),
+        '/seller_product_edit': (context) => const AuthRequiredScreen(
+              message: 'Silakan login terlebih dahulu untuk mengubah produk.',
+              child: SellerProductEditScreen(),
+            ),
 
         // ── Seller module routes ─────────────────────────────
-        '/seller_main': (context) => const SellerMainScreen(),
-        '/seller_orders': (context) => const SellerOrdersScreen(),
-        '/seller_stats': (context) => const SellerStatsScreen(),
-        '/seller_withdraw': (context) => const SellerWithdrawScreen(),
+        '/seller_main': (context) => const AuthRequiredScreen(
+              message: 'Silakan login terlebih dahulu untuk mengakses menu penjual.',
+              child: SellerMainScreen(),
+            ),
+        '/seller_orders': (context) => const AuthRequiredScreen(
+              message: 'Silakan login terlebih dahulu untuk melihat pesanan.',
+              child: SellerOrdersScreen(),
+            ),
+        '/seller_stats': (context) => const AuthRequiredScreen(
+              message: 'Silakan login terlebih dahulu untuk melihat statistik penjualan.',
+              child: SellerStatsScreen(),
+            ),
+        '/seller_withdraw': (context) => const AuthRequiredScreen(
+              message: 'Silakan login terlebih dahulu untuk menarik saldo.',
+              child: SellerWithdrawScreen(),
+            ),
       },
       onGenerateRoute: (settings) {
+        final routeName = settings.name ?? '';
+        if (routeName.startsWith('/reset_password') ||
+            routeName.startsWith('/auth/reset-password')) {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (context) => const ResetPasswordScreen(),
+          );
+        }
+
         if (settings.name == '/checkout') {
           // Expect a Product object
           final product = settings.arguments as Product;
           return MaterialPageRoute(
-            builder: (context) => CheckoutScreen(product: product),
+            builder: (context) => AuthRequiredScreen(
+              message: 'Silakan login terlebih dahulu untuk checkout.',
+              child: CheckoutScreen(product: product),
+            ),
           );
         }
         return null;
