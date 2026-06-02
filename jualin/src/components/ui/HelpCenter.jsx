@@ -11,6 +11,7 @@ import {
     LogIn
 } from "lucide-react";
 import { reportService } from "@/services/backoffice/reportService";
+import userService from "@/services/user/userService";
 import { useAuth } from "@/context/AuthProvider";
 import { toast } from "sonner";
 
@@ -21,11 +22,17 @@ export default function HelpCenter() {
     const [formData, setFormData] = useState({
         username: "",
         type: "",
+        reportedUserId: "",
         targetUsername: "",
         description: "",
     });
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [targetUserSuggestions, setTargetUserSuggestions] = useState([]);
+    const [selectedReportedUser, setSelectedReportedUser] = useState(null);
+    const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const isUserViolationReport = formData.type === "Laporan Pengguna" || formData.type === "Pelanggaran User";
 
     // Auto-populate username saat modal dibuka atau user berubah
     useEffect(() => {
@@ -36,6 +43,62 @@ export default function HelpCenter() {
             }));
         }
     }, [isOpen, user?.username, formData.username]);
+
+    useEffect(() => {
+        if (!isUserViolationReport) {
+            setTargetUserSuggestions([]);
+            setSelectedReportedUser(null);
+            setShowSuggestions(false);
+            setFormData((prev) => ({
+                ...prev,
+                reportedUserId: "",
+                targetUsername: "",
+            }));
+        }
+    }, [isUserViolationReport]);
+
+    useEffect(() => {
+        const query = formData.targetUsername.trim();
+
+        if (!isOpen || !isUserViolationReport || query.length < 2) {
+            setTargetUserSuggestions([]);
+            setIsSearchingUsers(false);
+            return;
+        }
+
+        if (selectedReportedUser?.username === query) {
+            setTargetUserSuggestions([]);
+            setIsSearchingUsers(false);
+            return;
+        }
+
+        let isCancelled = false;
+        const searchTimer = setTimeout(async () => {
+            setIsSearchingUsers(true);
+            try {
+                const suggestions = await userService.searchByUsername(query);
+                if (isCancelled) return;
+
+                setTargetUserSuggestions(
+                    suggestions.filter((suggestion) => String(suggestion.id) !== String(user?.id))
+                );
+                setShowSuggestions(true);
+            } catch (error) {
+                if (!isCancelled) {
+                    setTargetUserSuggestions([]);
+                }
+            } finally {
+                if (!isCancelled) {
+                    setIsSearchingUsers(false);
+                }
+            }
+        }, 300);
+
+        return () => {
+            isCancelled = true;
+            clearTimeout(searchTimer);
+        };
+    }, [formData.targetUsername, isOpen, isUserViolationReport, selectedReportedUser?.username, user?.id]);
 
     // Check authentication saat mencoba membuka help center
     // Redirect ke login jika user logout saat modal terbuka
@@ -65,11 +128,28 @@ export default function HelpCenter() {
         setFormData((prev) => ({
             ...prev,
             [name]: value,
+            ...(name === "targetUsername" ? { reportedUserId: "" } : {}),
         }));
+        if (name === "targetUsername") {
+            setSelectedReportedUser(null);
+            setShowSuggestions(true);
+        }
         // Clear error when user types
         if (errors[name]) {
             setErrors((prev) => ({ ...prev, [name]: "" }));
         }
+    };
+
+    const handleSelectReportedUser = (targetUser) => {
+        setSelectedReportedUser(targetUser);
+        setFormData((prev) => ({
+            ...prev,
+            reportedUserId: targetUser.id,
+            targetUsername: targetUser.username,
+        }));
+        setErrors((prev) => ({ ...prev, targetUsername: "" }));
+        setShowSuggestions(false);
+        setTargetUserSuggestions([]);
     };
 
     const validate = () => {
@@ -77,9 +157,15 @@ export default function HelpCenter() {
         // Username sudah auto-filled dari user yang login, skip validasi
         if (!formData.type) newErrors.type = "Tipe pelaporan wajib dipilih";
 
-        if (formData.type === "Laporan Pengguna") {
+        if (isUserViolationReport) {
             if (!formData.targetUsername.trim()) {
                 newErrors.targetUsername = "Username yang melanggar wajib diisi";
+            }
+            if (!formData.reportedUserId) {
+                newErrors.targetUsername = "Pilih username pelanggar dari daftar saran";
+            }
+            if (String(formData.reportedUserId) === String(user?.id)) {
+                newErrors.targetUsername = "Anda tidak dapat melaporkan akun sendiri";
             }
             if (!formData.description.trim()) {
                 newErrors.description = "Deskripsi pelanggaran wajib diisi";
@@ -100,7 +186,13 @@ export default function HelpCenter() {
 
         setIsSubmitting(true);
 
-        const promise = reportService.createReport(formData);
+        const promise = reportService.createReport({
+            type: formData.type,
+            description: formData.description,
+            reported_user_id: formData.reportedUserId || null,
+            reported_username: selectedReportedUser?.username || formData.targetUsername || null,
+            target_username: selectedReportedUser?.username || formData.targetUsername || null,
+        });
 
         toast.promise(promise, {
             loading: 'Mengirim laporan...',
@@ -109,14 +201,23 @@ export default function HelpCenter() {
                 setFormData({
                     username: "",
                     type: "",
+                    reportedUserId: "",
                     targetUsername: "",
                     description: "",
                 });
+                setSelectedReportedUser(null);
+                setTargetUserSuggestions([]);
                 return "Laporan berhasil dikirim! Terima kasih atas masukan Anda.";
             },
             error: (err) => {
-                console.error(err);
-                return "Gagal mengirim laporan. Silakan coba lagi.";
+                const targetError = err?.errors?.reported_user_id || err?.errors?.reported_username;
+                if (targetError) {
+                    setErrors((prev) => ({
+                        ...prev,
+                        targetUsername: Array.isArray(targetError) ? targetError[0] : targetError,
+                    }));
+                }
+                return err?.message || "Gagal mengirim laporan. Silakan coba lagi.";
             }
         });
 
@@ -133,11 +234,11 @@ export default function HelpCenter() {
             {!loading && user && (
                 <button
                     onClick={handleHelpCenterClick}
-                    className={`fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 bg-[#E83030] text-white flex items-center justify-center`}
+                    className={`fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 p-3 sm:p-4 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 bg-[#E83030] text-white flex items-center justify-center`}
                     aria-label="Pusat Bantuan"
                     title="Pusat Bantuan - Hanya untuk pengguna yang login"
                 >
-                    {isOpen ? <X size={28} /> : <HelpCircle size={28} />}
+                    {isOpen ? <X className="h-5 w-5 sm:h-7 sm:w-7" /> : <HelpCircle className="h-5 w-5 sm:h-7 sm:w-7" />}
                 </button>
             )}
 
@@ -149,14 +250,14 @@ export default function HelpCenter() {
                 >
                     {/* Modal Content */}
                     <div
-                        className="relative w-full max-w-[500px] bg-white rounded-2xl shadow-2xl overflow-hidden animate-slide-in-from-bottom"
+                        className="relative w-full max-w-[340px] sm:max-w-[500px] bg-white rounded-2xl shadow-2xl overflow-hidden animate-slide-in-from-bottom"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Header */}
-                        <div className="bg-gradient-to-r from-gray-50 to-white px-6 py-5 border-b border-gray-100 flex justify-between items-start">
+                        <div className="bg-gradient-to-r from-gray-50 to-white px-5 py-4 sm:px-6 sm:py-5 border-b border-gray-100 flex justify-between items-start">
                             <div>
-                                <h2 className="text-xl font-bold text-gray-900">Pusat Bantuan</h2>
-                                <p className="text-sm text-gray-500 mt-1">Laporkan masalah atau berikan feedback</p>
+                                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Pusat Bantuan</h2>
+                                <p className="text-xs sm:text-sm text-gray-500 mt-1">Laporkan masalah atau berikan feedback</p>
                             </div>
                             <button
                                 onClick={toggleOpen}
@@ -167,8 +268,8 @@ export default function HelpCenter() {
                         </div>
 
                         {/* Form */}
-                        <form onSubmit={handleSubmit} className="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                            <div className="space-y-5">
+                        <form onSubmit={handleSubmit} className="p-5 sm:p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                            <div className="space-y-4 sm:space-y-5">
                                 {/* Username Pelapor */}
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
@@ -187,7 +288,7 @@ export default function HelpCenter() {
                                         name="username"
                                         value={formData.username}
                                         disabled
-                                        className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-600 cursor-not-allowed focus:outline-none transition-all"
+                                        className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm sm:text-base text-gray-600 cursor-not-allowed focus:outline-none transition-all"
                                         placeholder="Username akan terdeteksi otomatis"
                                     />
                                     <p className="text-xs text-gray-500 mt-1.5 ml-1">Username Anda telah terdeteksi otomatis dari akun yang login</p>
@@ -203,7 +304,7 @@ export default function HelpCenter() {
                                             name="type"
                                             value={formData.type}
                                             onChange={handleChange}
-                                            className={`w-full px-4 py-2.5 rounded-lg border ${errors.type ? 'border-red-500 bg-red-50' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 appearance-none bg-white cursor-pointer`}
+                                            className={`w-full px-4 py-2.5 rounded-lg border text-sm sm:text-base ${errors.type ? 'border-red-500 bg-red-50' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 appearance-none bg-white cursor-pointer`}
                                         >
                                             <option value="">Pilih tipe laporan...</option>
                                             <option value="Laporan Pengguna">🚨 Laporan Pengguna (Pelanggaran)</option>
@@ -221,16 +322,16 @@ export default function HelpCenter() {
                                 </div>
 
                                 {/* Conditional Fields for "Laporan Pengguna" */}
-                                {formData.type === "Laporan Pengguna" && (
-                                    <div className="animate-fade-in space-y-5 bg-orange-50 p-4 rounded-xl border border-orange-100">
+                                {isUserViolationReport && (
+                                    <div className="animate-fade-in space-y-4 sm:space-y-5 bg-orange-50 p-3 sm:p-4 rounded-xl border border-orange-100">
                                         <div className="flex items-center gap-3 text-orange-800 mb-2">
                                             <div className="p-2 bg-white rounded-full shadow-sm">
-                                                <User size={18} className="text-orange-600" />
+                                                <User className="h-4 w-4 sm:h-[18px] sm:w-[18px] text-orange-600" />
                                             </div>
                                             <div className="text-sm font-medium">Detail Pelanggaran User</div>
                                         </div>
 
-                                        <div>
+                                        <div className="relative">
                                             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                                                 Username Pelanggar <span className="text-red-500">*</span>
                                             </label>
@@ -239,9 +340,37 @@ export default function HelpCenter() {
                                                 name="targetUsername"
                                                 value={formData.targetUsername}
                                                 onChange={handleChange}
-                                                className={`w-full px-4 py-2.5 rounded-lg border ${errors.targetUsername ? 'border-red-500' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 bg-white`}
-                                                placeholder="Contoh: user123"
+                                                onFocus={() => setShowSuggestions(true)}
+                                                className={`w-full px-4 py-2.5 rounded-lg border text-sm sm:text-base ${errors.targetUsername ? 'border-red-500' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 bg-white`}
+                                                placeholder="Cari username pelanggar..."
+                                                autoComplete="off"
                                             />
+                                            {showSuggestions && (isSearchingUsers || targetUserSuggestions.length > 0 || formData.targetUsername.trim().length >= 2) && (
+                                                <div className="absolute left-0 right-0 z-20 mt-2 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                                                    {isSearchingUsers ? (
+                                                        <div className="px-4 py-3 text-sm text-gray-500">Mencari username...</div>
+                                                    ) : targetUserSuggestions.length > 0 ? (
+                                                        targetUserSuggestions.map((targetUser) => (
+                                                            <button
+                                                                type="button"
+                                                                key={targetUser.id}
+                                                                onClick={() => handleSelectReportedUser(targetUser)}
+                                                                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-orange-50"
+                                                            >
+                                                                <span className="font-medium text-gray-900">{targetUser.username}</span>
+                                                                <span className="text-xs capitalize text-gray-500">{targetUser.role}</span>
+                                                            </button>
+                                                        ))
+                                                    ) : (
+                                                        <div className="px-4 py-3 text-sm text-gray-500">Username tidak ditemukan</div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {selectedReportedUser && (
+                                                <p className="text-xs text-green-700 mt-1 ml-1">
+                                                    Terpilih: {selectedReportedUser.username}
+                                                </p>
+                                            )}
                                             {errors.targetUsername && <p className="text-xs text-red-500 mt-1 ml-1">{errors.targetUsername}</p>}
                                         </div>
 
@@ -255,7 +384,7 @@ export default function HelpCenter() {
                                                 rows="3"
                                                 value={formData.description}
                                                 onChange={handleChange}
-                                                className={`w-full px-4 py-2.5 rounded-lg border ${errors.description ? 'border-red-500' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 bg-white resize-none`}
+                                                className={`w-full px-4 py-2.5 rounded-lg border text-sm sm:text-base ${errors.description ? 'border-red-500' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 bg-white resize-none`}
                                                 placeholder="Jelaskan detail pelanggaran..."
                                             />
                                             {errors.description && <p className="text-xs text-red-500 mt-1 ml-1">{errors.description}</p>}
@@ -274,7 +403,7 @@ export default function HelpCenter() {
                                             rows="4"
                                             value={formData.description}
                                             onChange={handleChange}
-                                            className={`w-full px-4 py-2.5 rounded-lg border ${errors.description ? 'border-red-500' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 resize-none`}
+                                            className={`w-full px-4 py-2.5 rounded-lg border text-sm sm:text-base ${errors.description ? 'border-red-500' : 'border-gray-200'} focus:outline-none focus:border-[#E83030] focus:ring-4 focus:ring-red-100 resize-none`}
                                             placeholder="Ceritakan detail masalah atau saran Anda..."
                                         />
                                         {errors.description && <p className="text-xs text-red-500 mt-1 ml-1">{errors.description}</p>}
@@ -287,7 +416,7 @@ export default function HelpCenter() {
                                 <button
                                     type="button"
                                     onClick={toggleOpen}
-                                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors"
+                                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm sm:text-base text-gray-600 font-medium hover:bg-gray-50 transition-colors"
                                     disabled={isSubmitting}
                                 >
                                     Batal
@@ -295,13 +424,13 @@ export default function HelpCenter() {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="flex-1 px-4 py-2.5 rounded-xl bg-[#E83030] text-white font-medium shadow-lg shadow-red-200 hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="flex-1 px-4 py-2.5 rounded-xl bg-[#E83030] text-sm sm:text-base text-white font-medium shadow-lg shadow-red-200 hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {isSubmitting ? (
                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     ) : (
                                         <>
-                                            <Send size={18} /> Kirim Laporan
+                                            <Send className="h-4 w-4 sm:h-[18px] sm:w-[18px]" /> Kirim Laporan
                                         </>
                                     )}
                                 </button>
@@ -309,9 +438,9 @@ export default function HelpCenter() {
                         </form>
 
                         {/* Footer Info */}
-                        <div className="bg-gray-50 px-6 py-4 border-t border-gray-100">
+                        <div className="bg-gray-50 px-5 py-4 sm:px-6 border-t border-gray-100">
                             <div className="flex gap-3">
-                                <AlertTriangle size={20} className="text-amber-500 shrink-0 mt-0.5" />
+                                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500 shrink-0 mt-0.5" />
                                 <div className="text-xs text-gray-500 leading-relaxed">
                                     <strong className="text-gray-700 block mb-1">Informasi Penting</strong>
                                     Laporan Anda akan ditinjau oleh tim admin kami dalam waktu <strong>1-2 hari kerja</strong>. Terima kasih telah membantu menjaga komunitas Jualin tetap aman.

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../widgets/ui/custom_button.dart';
 import '../widgets/ui/custom_input.dart';
+import '../widgets/ui/logo.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -19,6 +20,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _confirmPasswordController = TextEditingController();
 
   bool _isLoading = false;
+  bool _showPassword = false;
+  bool _showConfirmPassword = false;
   String _role = 'customer';
   String? _errorMessage;
 
@@ -44,6 +47,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     if (username.length < 3) {
       setState(() => _errorMessage = 'Nama menghasilkan username minimal 3 karakter.');
+      return;
+    }
+    if (!_isValidEmail(email)) {
+      setState(() => _errorMessage = 'Format email belum valid.');
       return;
     }
     if (password.length < 8) {
@@ -119,15 +126,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      'JUALIN',
-                      style: TextStyle(
-                        color: Color(0xFFE83030),
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+                    const Logo(width: 148, height: 76),
                     const SizedBox(height: 8),
                     const Text(
                       'Daftar akun baru',
@@ -151,15 +150,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     CustomInput(
                       label: 'Password',
                       hintText: 'minimal 8 karakter',
-                      obscureText: true,
+                      obscureText: !_showPassword,
                       controller: _passwordController,
+                      suffixIcon: _buildPasswordToggle(
+                        isVisible: _showPassword,
+                        onPressed: () {
+                          setState(() => _showPassword = !_showPassword);
+                        },
+                      ),
                     ),
                     const SizedBox(height: 18),
                     CustomInput(
                       label: 'Konfirmasi Password',
                       hintText: 'ulangi password',
-                      obscureText: true,
+                      obscureText: !_showConfirmPassword,
                       controller: _confirmPasswordController,
+                      suffixIcon: _buildPasswordToggle(
+                        isVisible: _showConfirmPassword,
+                        onPressed: () {
+                          setState(() => _showConfirmPassword = !_showConfirmPassword);
+                        },
+                      ),
                     ),
                     const SizedBox(height: 18),
                     _buildRoleSelect(),
@@ -198,6 +209,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  bool _isValidEmail(String value) {
+    return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value);
+  }
+
+  Widget _buildPasswordToggle({
+    required bool isVisible,
+    required VoidCallback onPressed,
+  }) {
+    return IconButton(
+      tooltip: isVisible ? 'Sembunyikan password' : 'Tampilkan password',
+      icon: Icon(
+        isVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+        color: Colors.grey[600],
+      ),
+      onPressed: onPressed,
+    );
+  }
+
   Widget _buildRoleSelect() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,7 +241,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _role,
+          initialValue: _role,
           decoration: InputDecoration(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(

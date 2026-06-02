@@ -5,6 +5,8 @@ function BannerSection({ banners, isLoading = false }) {
   const [active, setActive] = useState(0);
   const [animating, setAnimating] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [dragStartX, setDragStartX] = useState(null);
+  const [dragDeltaX, setDragDeltaX] = useState(0);
 
   const handlePrev = () => {
     if (animating) return;
@@ -18,6 +20,35 @@ function BannerSection({ banners, isLoading = false }) {
     setAnimating(true);
     setActive((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
     setTimeout(() => setAnimating(false), 300);
+  };
+
+  const handleDragStart = (event) => {
+    const point = event.touches?.[0] || event;
+    event.currentTarget?.setPointerCapture?.(event.pointerId);
+    setPaused(true);
+    setDragStartX(point.clientX);
+    setDragDeltaX(0);
+  };
+
+  const handleDragMove = (event) => {
+    if (dragStartX === null) return;
+    const point = event.touches?.[0] || event;
+    setDragDeltaX(point.clientX - dragStartX);
+  };
+
+  const handleDragEnd = () => {
+    if (dragStartX === null) return;
+
+    const threshold = 40;
+    if (dragDeltaX <= -threshold) {
+      handleNext();
+    } else if (dragDeltaX >= threshold) {
+      handlePrev();
+    }
+
+    setDragStartX(null);
+    setDragDeltaX(0);
+    setPaused(false);
   };
 
   useEffect(() => {
@@ -55,9 +86,13 @@ function BannerSection({ banners, isLoading = false }) {
   return (
     <section className="w-full mt-4 sm:mt-8 mb-6 px-2 sm:px-4">
       <div
-        className="w-full max-w-7xl mx-auto overflow-hidden relative h-[300px] sm:h-[420px] flex items-center justify-start bg-gray-100 rounded-2xl"
+        className="w-full max-w-7xl mx-auto overflow-hidden relative h-[300px] sm:h-[420px] flex items-center justify-start bg-gray-100 rounded-2xl cursor-grab active:cursor-grabbing select-none touch-pan-y"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
+        onPointerDown={handleDragStart}
+        onPointerMove={handleDragMove}
+        onPointerUp={handleDragEnd}
+        onPointerCancel={handleDragEnd}
       >
         <div
           className="absolute inset-0 h-full w-full flex"
@@ -71,7 +106,7 @@ function BannerSection({ banners, isLoading = false }) {
               <img
                 src={banner.src}
                 alt={banner.alt}
-                className={`absolute inset-0 w-full h-full object-cover rounded-2xl ${idx === active ? "" : ""}`}
+                className={`absolute inset-0 w-full h-full object-cover object-left sm:object-center rounded-2xl ${idx === active ? "" : ""}`}
                 style={idx === active ? undefined : { transform: "scale(0.995)" }}
               />
             </div>

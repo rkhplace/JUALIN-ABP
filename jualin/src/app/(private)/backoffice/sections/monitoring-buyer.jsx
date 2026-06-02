@@ -196,15 +196,15 @@ export default function BuyerMonitoring() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-[#1F1F1F]">
+        <h3 className="text-base sm:text-lg font-semibold text-[#1F1F1F]">
           Monitoring Buyer
         </h3>
       </div>
 
       {/* Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <div className="relative flex-1 max-w-md">
           <input
             type="text"
@@ -233,28 +233,28 @@ export default function BuyerMonitoring() {
       {/* Buyers Table */}
       <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[900px]">
             <thead>
               <tr className="bg-gray-50/80 border-b border-gray-100">
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Item
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Category
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Date
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Time
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Buyer
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Status
                 </th>
-                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Action
                 </th>
               </tr>
@@ -264,7 +264,7 @@ export default function BuyerMonitoring() {
                 <tr>
                   <td
                     colSpan="7"
-                    className="px-6 py-8 text-center text-gray-500"
+                    className="px-4 py-7 sm:px-6 sm:py-8 text-center text-gray-500"
                   >
                     Loading activities...
                   </td>
@@ -273,7 +273,7 @@ export default function BuyerMonitoring() {
                 <tr>
                   <td
                     colSpan="7"
-                    className="px-6 py-8 text-center text-gray-500"
+                    className="px-4 py-7 sm:px-6 sm:py-8 text-center text-gray-500"
                   >
                     No buyer activities found.
                   </td>
@@ -284,37 +284,37 @@ export default function BuyerMonitoring() {
                     key={buyer.id}
                     className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/60 transition-colors"
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <img
                         src={buyer.productImage}
                         alt="product"
-                        className="w-12 h-12 rounded-lg object-cover shadow-sm bg-gray-50"
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover shadow-sm bg-gray-50"
                         onError={(e) => {
                           e.target.src = "/placeholder.svg";
                         }}
                       />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <span className="text-sm font-medium text-gray-900">
                         {buyer.category}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <span className="text-sm text-gray-600">
                         {buyer.time.split(", ")[0]}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <span className="text-sm text-gray-600">
                         {buyer.time.split(", ")[1] || buyer.time}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <div className="flex items-center gap-3">
                         <img
                           src={buyer.buyerImage}
                           alt={buyer.buyer}
-                          className="w-9 h-9 rounded-full object-cover shadow-sm bg-gray-100"
+                          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shadow-sm bg-gray-100"
                           onError={(e) => {
                             e.target.src = "/ProfilePhoto.png";
                           }}
@@ -324,7 +324,7 @@ export default function BuyerMonitoring() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <span
                         className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                           getStatusBadge(buyer.status).class
@@ -333,7 +333,7 @@ export default function BuyerMonitoring() {
                         {getStatusBadge(buyer.status).text}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4 text-right">
                       <DropdownMenu
                         trigger={
                           <MoreHorizontal className="h-5 w-5 text-gray-400 hover:text-gray-600 cursor-pointer" />
@@ -387,10 +387,10 @@ export default function BuyerMonitoring() {
 
       {/* Edit Buyer (Order) Modal */}
       {showBuyerModal && editingBuyer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-xl p-5 sm:p-6 w-full max-w-[340px] sm:max-w-md">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                 Edit Order
               </h3>
               <button
@@ -466,10 +466,10 @@ export default function BuyerMonitoring() {
 
       {/* Delete Buyer (Order) Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-xl p-5 sm:p-6 w-full max-w-[340px] sm:max-w-md">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                 Delete Order
               </h3>
               <button

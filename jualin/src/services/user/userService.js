@@ -17,6 +17,25 @@ export const userService = {
     const response = await fetcher.get("/api/v1/users/me");
     return response?.data || response;
   },
+
+  async searchByUsername(query) {
+    const response = await fetcher.get("/api/v1/users/search", {
+      params: { q: query, limit: 8 },
+    });
+    return response?.data || [];
+  },
+
+  async banUser(id, durationDays) {
+    const response = await fetcher.patch(`/api/v1/users/${id}/ban`, {
+      duration_days: Number(durationDays),
+    });
+    return response?.data || response;
+  },
+
+  async unbanUser(id) {
+    const response = await fetcher.patch(`/api/v1/users/${id}/unban`);
+    return response?.data || response;
+  },
 };
 
 export default userService;

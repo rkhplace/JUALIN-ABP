@@ -18,6 +18,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _authService = AuthService();
   User? _user;
   bool _isLoading = true;
+  bool _isSendingResetLink = false;
   String _userRole = 'customer';
   String? _errorMessage;
 
@@ -32,29 +33,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _isLoading = true;
       _errorMessage = null;
     });
+
     try {
       debugPrint('[ProfileScreen] _fetchProfile: starting...');
       final user = await _profileService.getProfile();
       final idAndRole = await _authService.getUserIdAndRole();
-      if (mounted) {
-        setState(() {
-          _user = user;
-          _userRole = idAndRole['role'] as String? ?? user?.role ?? 'customer';
-          _isLoading = false;
-          _errorMessage = user == null
-              ? 'Profil tidak ditemukan. Pastikan Anda sudah login.'
-              : null;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _user = user;
+        _userRole = idAndRole['role'] as String? ?? user?.role ?? 'customer';
+        _isLoading = false;
+        _errorMessage = user == null
+            ? 'Profil tidak ditemukan. Pastikan Anda sudah login.'
+            : null;
+      });
     } catch (e) {
       debugPrint('[ProfileScreen] _fetchProfile ERROR: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = e.toString().replaceFirst('Exception: ', '');
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
     }
+  }
+
+  Future<void> _handlePasswordReset() async {
+    final email = _user?.email.trim() ?? '';
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email profil tidak ditemukan.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSendingResetLink = true);
+    final error = await _authService.sendResetLink(email);
+    if (!mounted) return;
+
+    setState(() => _isSendingResetLink = false);
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    await _authService.logout();
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Link reset telah dikirim ke email Anda. Silakan cek inbox.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
   @override
@@ -107,6 +146,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               _fetchProfile();
                             }
                           },
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          icon: _isSendingResetLink
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.lock_reset, size: 18),
+                          label: Text(
+                            _isSendingResetLink
+                                ? 'Mengirim link reset...'
+                                : 'Reset Password',
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFE83030),
+                            side: const BorderSide(color: Color(0xFFE83030)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed:
+                              _isSendingResetLink ? null : _handlePasswordReset,
                         ),
                         const SizedBox(height: 48),
                         CustomButton(

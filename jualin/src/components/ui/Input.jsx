@@ -21,7 +21,7 @@ const Input = ({
   const inputType = isPasswordField && showPassword ? "text" : type;
 
   return (
-    <div className={`mb-4 ${className}`}>
+    <div className={`mb-3 sm:mb-4 ${className}`}>
       <label
         htmlFor={name}
         className="block text-sm font-medium text-gray-700 mb-2"
@@ -38,7 +38,7 @@ const Input = ({
           placeholder={placeholder}
           required={required}
           className={`
-            w-full px-4 py-3 bg-white border border-gray-300 rounded-2xl shadow-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200
+            w-full px-4 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-2xl shadow-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200
             ${error ? "border-red-500" : "border-gray-200"}
             ${isPasswordField ? "pr-12" : ""}
           `}

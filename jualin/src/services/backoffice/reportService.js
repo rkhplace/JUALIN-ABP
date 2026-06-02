@@ -5,8 +5,16 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const API_URL = BASE_URL.endsWith('/api/v1') ? BASE_URL : `${BASE_URL}/api/v1`;
 
 const getAuthHeaders = () => {
-    const token = Cookies.get("token");
+    const token = (typeof window !== "undefined" ? localStorage.getItem("token") : null) || Cookies.get("token");
     return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+const throwServiceError = (error) => {
+    const data = error.response?.data;
+    const serviceError = new Error(data?.message || error.message || "Request failed");
+    serviceError.errors = data?.errors || null;
+    serviceError.statusCode = error.response?.status || data?.status_code || null;
+    throw serviceError;
 };
 
 export const reportService = {
@@ -21,8 +29,7 @@ export const reportService = {
             });
             return response.data;
         } catch (error) {
-            console.error("Report Service Error:", error);
-            throw error.response?.data || error.message;
+            throwServiceError(error);
         }
     },
 
@@ -34,7 +41,7 @@ export const reportService = {
             });
             return response.data;
         } catch (error) {
-            throw error.response?.data || error.message;
+            throwServiceError(error);
         }
     },
 
@@ -46,8 +53,7 @@ export const reportService = {
             });
             return response.data;
         } catch (error) {
-            console.error("Report Service Error:", error);
-            throw error.response?.data || error.message;
+            throwServiceError(error);
         }
     }
 };

@@ -40,7 +40,7 @@ export function PasswordChangeSection() {
   };
 
   return (
-    <div className="bg-white rounded-xl p-8 shadow-md hover:shadow-lg transition-all duration-200">
+    <div className="bg-white rounded-xl p-4 sm:p-6 md:p-8 shadow-md hover:shadow-lg transition-all duration-200">
       {toast && (
         <Toast
           message={toast.message}
@@ -49,13 +49,13 @@ export function PasswordChangeSection() {
         />
       )}
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-5 md:mb-6">
         <h2 className="text-lg font-semibold text-[#1F1F1F]">
           Ubah Kata Sandi
         </h2>
       </div>
 
-      <p className="text-sm text-gray-600 mb-4">
+      <p className="text-sm text-gray-600 mb-4 leading-relaxed">
         Untuk keamanan, kami akan mengirimkan tautan reset ke email profil Anda
         ({user?.email || "-"}).
       </p>

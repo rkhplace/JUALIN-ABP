@@ -1,8 +1,27 @@
 "use client"
 
+import { useEffect, useState } from 'react';
 import { getProfilePictureUrl } from '@/utils/imageHelper';
+import VerifiedBadge from '@/components/ui/VerifiedBadge';
+import { sellerService } from '@/services/seller/sellerService';
 
 export function ProfileHeaderSection({ user }) {
+  const [isVerified, setIsVerified] = useState(false);
+
+  // Fetch live verification status only for sellers
+  useEffect(() => {
+    if (user?.role !== 'seller') return;
+
+    sellerService
+      .getVerificationStatus()
+      .then((data) => {
+        setIsVerified(data?.is_verified ?? false);
+      })
+      .catch(() => {
+        // silently ignore
+      });
+  }, [user?.role]);
+
   const formatBirthday = (birthday) => {
     if (!birthday) return "Not set";
     const date = new Date(birthday);
@@ -37,7 +56,10 @@ export function ProfileHeaderSection({ user }) {
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700">Username</label>
-          <p className="mt-1 text-sm text-gray-900">{user?.username || "Not set"}</p>
+          <p className="mt-1 text-sm text-gray-900 flex items-center gap-1.5">
+            {user?.username || "Not set"}
+            {isVerified && <VerifiedBadge size="sm" />}
+          </p>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Email</label>
@@ -61,7 +83,12 @@ export function ProfileHeaderSection({ user }) {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Role</label>
-          <p className="mt-1 text-sm text-gray-900 capitalize">{user?.role || "Customer"}</p>
+          <p className="mt-1 text-sm text-gray-900 capitalize flex items-center gap-1.5">
+            {user?.role || "Customer"}
+            {user?.role === 'seller' && isVerified && (
+              <span className="text-xs text-blue-500 font-semibold">(Terverifikasi)</span>
+            )}
+          </p>
         </div>
       </div>
     </div>

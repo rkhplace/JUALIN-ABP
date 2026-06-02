@@ -13,7 +13,7 @@ export default function DashboardPage() {
         <Suspense
           fallback={
             <div className="w-full my-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
                 {[...Array(6)].map((_, idx) => (
                   <ProductCardSkeleton key={idx} />
                 ))}

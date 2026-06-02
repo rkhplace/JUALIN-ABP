@@ -10,7 +10,7 @@ const Button = ({
   loading = false,
   className = ''
 }) => {
-  const baseStyles = 'w-full py-3 px-4 rounded-2xl font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+  const baseStyles = 'w-full py-2.5 sm:py-3 px-4 rounded-2xl font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
 
   const variants = {
     primary: 'bg-brand-red text-white hover:bg-[var(--color-brand-primary-hover)] focus:ring-[var(--color-brand-primary)] shadow-lg hover:shadow-xl',

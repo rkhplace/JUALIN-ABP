@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Search } from "lucide-react";
+import { toast } from "sonner";
+import ConfirmationModal from "@/components/ui/ConfirmationModal";
 import { userService } from "@/services/user/userService";
 import { getProfilePictureUrl } from "@/utils/imageHelper";
 import Pagination from "@/components/ui/Pagination";
@@ -14,12 +16,19 @@ export default function UserManagement() {
   // const [totalPages, setTotalPages] = useState(1); // Now derived
   // const [totalItems, setTotalItems] = useState(0); // Now derived
   const [isLoading, setIsLoading] = useState(false);
-  const [userActions, setUserActions] = useState({});
 
   const [filterPeriod, setFilterPeriod] = useState("30days");
 
   // State for all raw users fetched from server
   const [allUsers, setAllUsers] = useState([]);
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    action: null,
+    user: null,
+  });
+  const [banDurations, setBanDurations] = useState({});
+  const [processingUserId, setProcessingUserId] = useState(null);
 
   // Fetch All Users (Once, or on mount)
   useEffect(() => {
@@ -87,33 +96,121 @@ export default function UserManagement() {
     setCurrentPage(1);
   }, [searchQuery, filterPeriod, itemsPerPage]);
 
-  const handleToggleStatus = (userId, currentAction) => {
-    const isSuspended = currentAction === "suspended";
-    const newStatus = isSuspended ? "active" : "suspended";
-    setUserActions((prev) => ({ ...prev, [userId]: newStatus }));
+  const closeConfirmModal = () => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const openConfirmModal = (user, action) => {
+    setConfirmModal({
+      isOpen: true,
+      action,
+      user,
+    });
+  };
+
+  const formatBannedUntil = (timestamp) => {
+    if (!timestamp) return null;
+    return `${new Date(timestamp).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })} ${new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
+  const executeBanUser = async (user) => {
+    const duration = banDurations[user.id] || "7";
+    if (!user || !duration) return;
+
+    setProcessingUserId(user.id);
+    const promise = userService.banUser(user.id, duration);
+
+    try {
+      const response = await toast.promise(promise, {
+        loading: `Memproses ban ${user.username}...`,
+        success: (result) => {
+          const bannedUntil = result?.banned_until || result?.data?.banned_until || result?.data?.user?.banned_until || null;
+          return bannedUntil
+            ? `User ${user.username} berhasil diban sampai ${formatBannedUntil(bannedUntil)}`
+            : `User ${user.username} berhasil diban`;
+        },
+        error: (err) => err.message || `Gagal mem-ban user ${user.username}`,
+      });
+
+      const updatedUser = response?.data?.user || response?.data || response;
+      const bannedUntil = response?.banned_until || response?.data?.banned_until || response?.data?.user?.banned_until || null;
+
+      setAllUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id
+            ? { ...u, is_banned: true, banned_until: bannedUntil || updatedUser?.banned_until }
+            : u
+        )
+      );
+    } catch (error) {
+      console.error("Failed to ban user:", error);
+    } finally {
+      setProcessingUserId(null);
+    }
+  };
+
+  const executeUnbanUser = async (user) => {
+    if (!user) return;
+
+    setProcessingUserId(user.id);
+    const promise = userService.unbanUser(user.id);
+
+    try {
+      await toast.promise(promise, {
+        loading: `Memproses unban ${user.username}...`,
+        success: () => `User ${user.username} berhasil di-unban`,
+        error: (err) => err.message || `Gagal unban user ${user.username}`,
+      });
+
+      setAllUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id
+            ? { ...u, is_banned: false, banned_until: null }
+            : u
+        )
+      );
+    } catch (error) {
+      console.error("Failed to unban user:", error);
+    } finally {
+      setProcessingUserId(null);
+    }
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmModal.user || !confirmModal.action) return;
+
+    const user = confirmModal.user;
+    const action = confirmModal.action;
+    closeConfirmModal();
+
+    if (action === "ban") {
+      await executeBanUser(user);
+    } else if (action === "unban") {
+      await executeUnbanUser(user);
+    }
   };
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-5 sm:space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-[#1F1F1F] tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1F1F1F] tracking-tight">
             Managemen User
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 mt-1 leading-snug">
             Kelola pendaftaran dan status user seller di marketplace Anda.
           </p>
         </div>
       </header>
 
       {/* Search & Filter */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-5 sm:mb-6">
         <div className="relative flex-1">
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari Pembeli..."
-            className="w-full px-4 py-2 pr-10 border rounded-full border-gray-300 focus:ring-2 focus:ring-brand-red focus:border-brand-red outline-none"
+            className="w-full px-4 py-2 pr-10 border rounded-full border-gray-300 focus:ring-2 focus:ring-brand-red focus:border-brand-red outline-none text-sm sm:text-base"
             disabled={isLoading}
           />
           <button className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-brand-red text-white flex items-center justify-center">
@@ -137,22 +234,22 @@ export default function UserManagement() {
       {/* Users Table */}
       <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[760px]">
             <thead>
               <tr className="bg-gray-50/80 border-b border-gray-100">
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Name
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Email
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Roles
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Date
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Status
                 </th>
               </tr>
@@ -162,7 +259,7 @@ export default function UserManagement() {
                 <tr>
                   <td
                     colSpan="5"
-                    className="px-6 py-8 text-center text-gray-500"
+                    className="px-4 py-7 sm:px-6 sm:py-8 text-center text-gray-500"
                   >
                     Loading users...
                   </td>
@@ -171,7 +268,7 @@ export default function UserManagement() {
                 <tr>
                   <td
                     colSpan="5"
-                    className="px-6 py-8 text-center text-gray-500"
+                    className="px-4 py-7 sm:px-6 sm:py-8 text-center text-gray-500"
                   >
                     No users found.
                   </td>
@@ -182,72 +279,90 @@ export default function UserManagement() {
                     key={user.id}
                     className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/60 transition-colors"
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <div className="flex items-center gap-3">
                         <img
                           src={getProfilePictureUrl(
                             user.profile_picture || user.avatar
                           )}
                           alt={user.name || "User"}
-                          className="w-9 h-9 rounded-full object-cover shadow-sm"
+                          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shadow-sm"
                         />
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="text-sm font-medium text-gray-900 whitespace-nowrap">
                           {user.name || user.username}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <span className="text-sm text-gray-600">
                         {user.email}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <span className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-xs font-medium text-gray-700">
                         {user.role}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <span className="text-sm text-gray-600">
                         {user.created_at
                           ? new Date(user.created_at).toLocaleDateString()
                           : "-"}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
+                      <div className="flex flex-col items-start gap-2">
                         <div className="flex items-center gap-2">
-                          {userActions[user.id] === "suspended" ? (
-                            <>
-                              <span className="inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-xs font-semibold text-red-700 min-w-[80px] justify-center">
-                                Suspended
-                              </span>
+                          {(["seller", "customer"].includes(user.role)) && (
+                            user.is_banned ? (
                               <button
                                 type="button"
-                                onClick={() =>
-                                  handleToggleStatus(user.id, "suspended")
-                                }
-                                className="text-xs text-blue-600 hover:text-blue-800 font-medium underline px-2"
+                                onClick={() => openConfirmModal(user, "unban")}
+                                disabled={processingUserId === user.id}
+                                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                               >
-                                Activate
+                                {processingUserId === user.id ? "Memproses..." : "Unban"}
                               </button>
-                            </>
-                          ) : (
-                            <>
-                              <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-xs font-semibold text-green-700 min-w-[80px] justify-center">
-                                Active
+                            ) : (
+                              <>
+                                <select
+                                  value={banDurations[user.id] || "7"}
+                                  onChange={(e) => setBanDurations((prev) => ({ ...prev, [user.id]: e.target.value }))}
+                                  className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium text-gray-700 focus:border-[#E83030] focus:outline-none"
+                                  disabled={processingUserId === user.id}
+                                >
+                                  <option value="1">1 hari</option>
+                                  <option value="7">7 hari</option>
+                                  <option value="30">30 hari</option>
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => openConfirmModal(user, "ban")}
+                                  disabled={processingUserId === user.id}
+                                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-red-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {processingUserId === user.id ? "Memproses..." : "Ban"}
+                                </button>
+                              </>
+                            )
+                          )}
+
+                          {!(["seller", "customer"].includes(user.role)) && (
+                            user.is_banned ? (
+                              <span className="inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-xs font-semibold text-red-700">
+                                Banned
                               </span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleToggleStatus(user.id, "active")
-                                } // "active" just means current state is active
-                                className="px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-xs font-medium text-gray-700 transition-colors border border-gray-200"
-                              >
-                                Suspend
-                              </button>
-                            </>
+                            ) : (
+                              <span className="text-sm text-gray-500">-</span>
+                            )
                           )}
                         </div>
+
+                        {user.banned_until && (
+                          <p className="mt-1 text-xs text-red-600">
+                            Dibanned sampai {`${new Date(user.banned_until).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })} ${new Date(user.banned_until).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`}
+                          </p>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -288,6 +403,24 @@ export default function UserManagement() {
           </select>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={closeConfirmModal}
+        onConfirm={handleConfirmAction}
+        title={
+          confirmModal.action === "ban"
+            ? `Ban user ${confirmModal.user?.username}`
+            : `Unban user ${confirmModal.user?.username}`
+        }
+        message={
+          confirmModal.action === "ban"
+            ? `Apakah Anda yakin ingin memban user ${confirmModal.user?.username} selama ${banDurations[confirmModal.user?.id] || "7"} hari?`
+            : `Apakah Anda yakin ingin meng-unban user ${confirmModal.user?.username}?`
+        }
+        confirmText={confirmModal.action === "unban" ? "Unban" : "Ban"}
+        isDanger={confirmModal.action === "ban"}
+      />
     </section>
   );
 }
