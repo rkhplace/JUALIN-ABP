@@ -23,13 +23,14 @@ class EscrowService {
 
   /// Claims a payment for the seller using the auth code provided by the buyer.
   /// API: POST /v1/escrow/{transactionId}/claim { auth_code }
-  Future<void> claimPayment(int transactionId, String authCode) async {
+  Future<Map<String, dynamic>> claimPayment(int transactionId, String authCode) async {
     final endpoint = ApiConfig.escrowClaim(transactionId);
     try {
-      await _client.post(
+      final response = await _client.post(
         endpoint,
         body: {'auth_code': authCode},
       );
+      return (response['data'] as Map<String, dynamic>?) ?? response;
     } on ApiException catch (e) {
       debugPrint(
         '[EscrowService] POST $endpoint failed (${e.statusCode}): ${e.message}',

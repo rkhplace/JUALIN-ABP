@@ -120,10 +120,30 @@ class ProductService {
     }
   }
 
+  /// Updates a seller product. Uses multipart so product images can be replaced.
+  Future<Product?> updateProduct(int id, Map<String, String> data,
+      {File? imageFile}) async {
+    try {
+      final response = await _client.postMultipart(
+        '${ApiConfig.products}/$id?_method=PATCH',
+        data,
+        imageFile: imageFile,
+      );
+
+      final productData = response['data'];
+      if (productData == null) return null;
+      return Product.fromJson(productData as Map<String, dynamic>);
+    } on ApiException catch (e) {
+      throw Exception('Gagal memperbarui produk: ${e.message}');
+    } catch (e) {
+      throw Exception('Tidak dapat terhubung ke server.');
+    }
+  }
+
   /// Deletes a product by ID (seller must own it, or be admin).
   Future<bool> deleteProduct(int id) async {
     try {
-      await _client.delete('${ApiConfig.products}/$id/delete');
+      await _client.delete('${ApiConfig.products}/$id');
       return true;
     } on ApiException catch (e) {
       throw Exception('Gagal menghapus produk: ${e.message}');
