@@ -126,12 +126,15 @@ class ApiClient {
   /// Multipart POST for file uploads (e.g. product images).
   Future<Map<String, dynamic>> postMultipart(
       String path, Map<String, String> fields,
-      {File? imageFile, String imageField = 'image'}) async {
+      {File? imageFile,
+      String imageField = 'image',
+      String method = 'POST'}) async {
+    final normalizedMethod = method.toUpperCase();
     final uri = Uri.parse('${ApiConfig.baseUrl}$path');
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
 
-    final request = http.MultipartRequest('POST', uri)
+    final request = http.MultipartRequest(normalizedMethod, uri)
       ..headers.addAll({
         'Accept': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',

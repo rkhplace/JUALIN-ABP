@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import 'api_client.dart';
@@ -63,22 +65,42 @@ class ProfileService {
 
   /// Updates the authenticated user's profile.
   ///
-  /// API: PATCH /v1/profile/update
+  /// API: PATCH /v1/users/{id}/update
   Future<bool> updateProfile({
-    String? fullName,
-    String? phone,
-    String? location,
+    required int userId,
+    String? username,
+    String? email,
+    String? gender,
+    String? birthday,
+    String? region,
+    String? city,
     String? bio,
+    File? profilePicture,
   }) async {
     try {
       final body = <String, dynamic>{};
-      if (fullName != null) body['fullName'] = fullName;
-      if (phone != null) body['phone'] = phone;
-      if (location != null) body['location'] = location;
+      if (username != null) body['username'] = username;
+      if (email != null) body['email'] = email;
+      if (gender != null) body['gender'] = gender;
+      if (birthday != null) body['birthday'] = birthday;
+      if (region != null) body['region'] = region;
+      if (city != null) body['city'] = city;
       if (bio != null) body['bio'] = bio;
 
       debugPrint('[ProfileService] updateProfile → body: $body');
-      await _client.patch(ApiConfig.profileUpdate, body: body);
+      if (profilePicture != null) {
+        final fields = body.map(
+          (key, value) => MapEntry(key, value?.toString() ?? ''),
+        );
+        await _client.postMultipart(
+          '${ApiConfig.userUpdate(userId)}?_method=PATCH',
+          fields,
+          imageFile: profilePicture,
+          imageField: 'profile_picture',
+        );
+      } else {
+        await _client.patch(ApiConfig.userUpdate(userId), body: body);
+      }
       debugPrint('[ProfileService] updateProfile: success');
       return true;
     } on ApiException catch (e) {

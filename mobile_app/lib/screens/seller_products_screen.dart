@@ -212,8 +212,11 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                                                 minimumSize:
                                                     const Size(0, 32)),
                                             onPressed: () {
-                                              Navigator.pushNamed(context,
-                                                  '/seller_product_edit');
+                                              Navigator.pushNamed(
+                                                context,
+                                                '/seller_product_edit',
+                                                arguments: product,
+                                              ).then((_) => _fetchProducts());
                                             },
                                             child: const Text('Edit',
                                                 style:

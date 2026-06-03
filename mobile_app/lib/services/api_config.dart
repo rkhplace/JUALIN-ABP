@@ -18,6 +18,7 @@ class ApiConfig {
 
   // ── Profile ─────────────────────────────────────
   static const String profileUpdate = '/profile/update';
+  static String userUpdate(int userId) => '/users/$userId/update';
 
   // ── Transactions & Payments ───────────────────────
   static const String transactions = '/transactions';

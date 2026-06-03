@@ -17,6 +17,8 @@ dependencies:
   url_launcher: ^6.3.2
   qr_flutter: ^4.0.0
   intl: ^0.18.0
+  image_picker: ^1.1.2
+  mobile_scanner: ^6.0.2
 
 dev_dependencies:
   flutter_test:

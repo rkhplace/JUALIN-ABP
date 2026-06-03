@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../services/seller_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/escrow_service.dart';
@@ -71,6 +72,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
       barrierDismissible: false,
       builder: (ctx) {
         return AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
           title: const Text('Klaim Pembayaran'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -87,6 +90,17 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                   border: OutlineInputBorder(),
                   counterText: '',
                 ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final scanned = await _scanAuthCode(ctx);
+                  if (scanned != null && scanned.isNotEmpty) {
+                    authCodeController.text = scanned.toUpperCase();
+                  }
+                },
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('Scan Kode'),
               ),
             ],
           ),
@@ -132,7 +146,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      _fetchOrders();
+      await _fetchOrders();
     } catch (e) {
       debugPrint('[SellerOrders] Escrow claim failed for transactionId=$transactionId: $e');
       if (!context.mounted) return;
@@ -149,6 +163,13 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     }
   }
 
+  Future<String?> _scanAuthCode(BuildContext context) async {
+    return showDialog<String>(
+      context: context,
+      builder: (_) => const _EscrowCodeScannerDialog(),
+    );
+  }
+
   Color _statusColor(String status) {
     switch (status) {
       case 'pending':
@@ -156,10 +177,10 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
       case 'waiting_cod':
         return const Color(0xFFE87D30);
       case 'verified':
-      case 'processing':
-        return Colors.blue;
       case 'completed':
         return Colors.green;
+      case 'processing':
+        return Colors.blue;
       case 'refunded':
         return Colors.purple;
       default:
@@ -174,7 +195,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
       case 'waiting_cod':
         return 'Tunggu COD';
       case 'verified':
-        return 'Terverifikasi';
+        return 'Selesai';
       case 'processing':
         return 'Diproses';
       case 'completed':
@@ -385,6 +406,198 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
         );
       },
     );
+  }
+}
+
+class _EscrowCodeScannerDialog extends StatefulWidget {
+  const _EscrowCodeScannerDialog();
+
+  @override
+  State<_EscrowCodeScannerDialog> createState() =>
+      _EscrowCodeScannerDialogState();
+}
+
+class _EscrowCodeScannerDialogState extends State<_EscrowCodeScannerDialog> {
+  late final MobileScannerController _scannerController;
+  bool _hasScanned = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scannerController = MobileScannerController(
+      detectionSpeed: DetectionSpeed.noDuplicates,
+    );
+  }
+
+  @override
+  void dispose() {
+    _scannerController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleDetect(BarcodeCapture capture) async {
+    if (_hasScanned) return;
+
+    String? value;
+    for (final barcode in capture.barcodes) {
+      final raw = barcode.rawValue?.trim();
+      if (raw != null && raw.isNotEmpty) {
+        value = raw;
+        break;
+      }
+    }
+
+    if (value == null || value.isEmpty) return;
+
+    _hasScanned = true;
+    await _scannerController.stop();
+    if (mounted) {
+      Navigator.pop(context, value);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 28),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 10, 10),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Scan Escrow Code',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Tutup',
+                    onPressed: () => Navigator.pop(context, null),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      MobileScanner(
+                        controller: _scannerController,
+                        fit: BoxFit.cover,
+                        onDetect: _handleDetect,
+                        placeholderBuilder: (context, child) => Container(
+                          color: Colors.black,
+                          alignment: Alignment.center,
+                          child: const CircularProgressIndicator(
+                            color: Colors.white,
+                          ),
+                        ),
+                        errorBuilder: (context, error, child) => Container(
+                          color: Colors.black,
+                          padding: const EdgeInsets.all(18),
+                          alignment: Alignment.center,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.no_photography_outlined,
+                                color: Colors.white,
+                                size: 44,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                _scannerErrorMessage(error),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      IgnorePointer(
+                        child: Center(
+                          child: Container(
+                            width: 210,
+                            height: 210,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 3,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(18, 12, 18, 4),
+              child: Text(
+                'Arahkan kamera ke QR/barcode escrow. Jika tidak terbaca, tutup scanner dan masukkan kode manual.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _scannerController.switchCamera(),
+                      icon: const Icon(Icons.cameraswitch_outlined),
+                      label: const Text('Ganti Kamera'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE83030),
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () => Navigator.pop(context, null),
+                      child: const Text('Input Manual'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _scannerErrorMessage(MobileScannerException error) {
+    return switch (error.errorCode) {
+      MobileScannerErrorCode.permissionDenied =>
+        'Izin kamera ditolak. Aktifkan izin kamera atau gunakan input manual.',
+      MobileScannerErrorCode.unsupported =>
+        'Kamera tidak didukung di perangkat ini. Gunakan input manual.',
+      _ => 'Kamera belum bisa dibuka. Coba lagi atau gunakan input manual.',
+    };
   }
 }
 
