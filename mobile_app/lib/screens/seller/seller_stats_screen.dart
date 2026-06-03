@@ -104,6 +104,9 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
 
   Widget _buildContent() {
     final balance = _stats?['balance'] ?? 0;
+    final totalSales = _stats?['total_sales'] ?? balance;
+    final completedTransactions =
+        _stats?['total_completed_transactions'] ?? _stats?['valid_order_count'] ?? 0;
     final transferred = _stats?['transferred'] ?? 0;
     final chartData = (_stats?['chart_data'] as List<dynamic>?) ?? [];
     final walletBalance = _stats?['wallet_balance'] ?? balance;
@@ -172,7 +175,7 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
             Expanded(
               child: _buildStatCard(
                 'Total Penjualan',
-                _formatCurrency(balance),
+                _formatCurrency(totalSales),
                 Icons.trending_up,
                 Colors.blue,
               ),
@@ -180,13 +183,20 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildStatCard(
-                'Sudah Ditransfer',
-                _formatCurrency(transferred),
+                'Transaksi Selesai',
+                completedTransactions.toString(),
                 Icons.check_circle_outline,
                 Colors.green,
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        _buildStatCard(
+          'Sudah Ditransfer',
+          _formatCurrency(transferred),
+          Icons.account_balance,
+          Colors.purple,
         ),
         const SizedBox(height: 16),
 

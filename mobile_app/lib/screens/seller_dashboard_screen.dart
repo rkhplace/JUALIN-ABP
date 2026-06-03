@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/seller_service.dart';
 import '../models/seller_product.dart';
 import '../services/auth_service.dart';
+import '../services/profile_service.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   const SellerDashboardScreen({super.key});
@@ -13,11 +14,14 @@ class SellerDashboardScreen extends StatefulWidget {
 class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   final SellerService _sellerService = SellerService();
   final AuthService _authService = AuthService();
+  final ProfileService _profileService = ProfileService();
 
   List<SellerProduct> _products = [];
   Map<String, dynamic>? _stats;
   bool _isLoading = true;
   String _sellerName = '';
+  double _profileWalletBalance = 0;
+  int _totalProducts = 0;
 
   @override
   void initState() {
@@ -26,30 +30,45 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   }
 
   Future<void> _fetchDashboardData() async {
+    var name = _sellerName;
+    var products = _products;
+    var totalProducts = _totalProducts;
+    var stats = _stats;
+    var profileWalletBalance = _profileWalletBalance;
+
     try {
       final idAndRole = await _authService.getUserIdAndRole();
-      final name = idAndRole['name'] as String? ?? '';
+      name = idAndRole['name'] as String? ?? '';
+    } catch (_) {}
 
-      final products = await _sellerService.getSellerProducts();
-      Map<String, dynamic>? stats;
-      try {
-        stats = await _sellerService.getSellerStats();
-      } catch (_) {
-        // Stats are optional — dashboard still works without them
-      }
+    try {
+      products = await _sellerService.getSellerProducts();
+      final productTotal = await _sellerService.getSellerProductTotal();
+      totalProducts = productTotal == 0 ? products.length : productTotal;
+    } catch (_) {
+      totalProducts = products.length;
+    }
 
-      if (mounted) {
-        setState(() {
-          _products = products;
-          _stats = stats;
-          _sellerName = name;
-          _isLoading = false;
-        });
+    try {
+      stats = await _sellerService.getSellerStats();
+    } catch (_) {}
+
+    try {
+      final user = await _profileService.getProfile();
+      if (user != null) {
+        profileWalletBalance = user.walletBalance;
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() {
+        _products = products;
+        _totalProducts = totalProducts;
+        _stats = stats;
+        _sellerName = name;
+        _profileWalletBalance = profileWalletBalance;
+        _isLoading = false;
+      });
     }
   }
 
@@ -72,8 +91,9 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       );
     }
 
-    final totalProducts = _products.length;
-    final walletBalance = _stats?['wallet_balance'] ?? _stats?['balance'] ?? 0;
+    final totalProducts = _totalProducts == 0 ? _products.length : _totalProducts;
+    final balance = _stats?['balance'];
+    final walletBalance = _stats?['wallet_balance'] ?? balance ?? _profileWalletBalance;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -92,41 +112,6 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Welcome banner
-              if (_sellerName.isNotEmpty) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFE83030), Color(0xFFE84444)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Selamat datang, $_sellerName!',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Kelola toko Anda dengan mudah',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-
               // Summary Cards Row
               Row(
                 children: [
@@ -178,8 +163,9 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                       Icons.list_alt_outlined,
                       'Daftar Produk',
                       'Lihat & kelola produk Anda',
-                      () {
-                        Navigator.pushNamed(context, '/seller_products');
+                      () async {
+                        await Navigator.pushNamed(context, '/seller_products');
+                        _fetchDashboardData();
                       },
                     ),
                     _divider(),
@@ -188,8 +174,9 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                       Icons.add_box_outlined,
                       'Tambah Produk',
                       'Upload produk baru',
-                      () {
-                        Navigator.pushNamed(context, '/seller_product_new');
+                      () async {
+                        await Navigator.pushNamed(context, '/seller_product_new');
+                        _fetchDashboardData();
                       },
                     ),
                     _divider(),
@@ -198,8 +185,9 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                       Icons.receipt_long_outlined,
                       'Pesanan Masuk',
                       'Monitor pesanan dari pembeli',
-                      () {
-                        Navigator.pushNamed(context, '/seller_orders');
+                      () async {
+                        await Navigator.pushNamed(context, '/seller_orders');
+                        _fetchDashboardData();
                       },
                     ),
                     _divider(),
@@ -208,8 +196,9 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                       Icons.bar_chart_outlined,
                       'Statistik Penjualan',
                       'Laporan pendapatan & grafik',
-                      () {
-                        Navigator.pushNamed(context, '/seller_stats');
+                      () async {
+                        await Navigator.pushNamed(context, '/seller_stats');
+                        _fetchDashboardData();
                       },
                     ),
                     _divider(),
@@ -218,8 +207,9 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                       Icons.account_balance_wallet_outlined,
                       'Tarik Saldo',
                       'Cairkan saldo ke rekening bank',
-                      () {
-                        Navigator.pushNamed(context, '/seller_withdraw');
+                      () async {
+                        await Navigator.pushNamed(context, '/seller_withdraw');
+                        _fetchDashboardData();
                       },
                     ),
                   ],
