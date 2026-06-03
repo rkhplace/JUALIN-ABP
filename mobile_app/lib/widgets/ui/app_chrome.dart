@@ -21,6 +21,7 @@ class AppChrome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: showNavbar
           ? CustomNavbar(showSearch: showSearch, onSearch: onSearch)
           : null,

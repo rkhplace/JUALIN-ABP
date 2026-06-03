@@ -72,10 +72,10 @@ class _CustomNavbarState extends State<CustomNavbar> {
             ),
           ),
           if (widget.showSearch) ...[
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: Container(
-                height: 40,
+                height: 34,
                 decoration: BoxDecoration(
                   color: const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(8),

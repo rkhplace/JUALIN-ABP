@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/formatters.dart';
 
 class ProductCard extends StatelessWidget {
   final int productId;
@@ -134,7 +135,7 @@ class ProductCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 8),
 
                     // Price Area
                     Row(
@@ -142,7 +143,7 @@ class ProductCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'Rp $price',
+                          formatCurrency(price),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,

@@ -124,7 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
                           color: _userRole == 'seller'
-                              ? const Color(0xFFFFF0F0)
+                              ? Colors.white
                               : const Color(0xFFF0F4FF),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
@@ -186,10 +186,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const Divider(height: 1),
                       _buildListTile(
-                          context, Icons.history, 'Riwayat Pembelian', () {}),
-                      const Divider(height: 1),
-                      _buildListTile(context, Icons.account_balance_wallet,
-                          'Saldo & Transaksi', () {}),
+                        context, 
+                        Icons.account_balance_wallet,
+                        'Saldo & Transaksi', 
+                        ()=> Navigator.pushNamed(context, '/wallet'),
+                      ),
                       const Divider(height: 1),
 
                       const SizedBox(height: 48),

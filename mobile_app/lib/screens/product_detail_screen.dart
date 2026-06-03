@@ -5,6 +5,7 @@ import '../services/chat_service.dart';
 import '../services/auth_service.dart';
 import '../models/product.dart';
 import 'chat_screen.dart';
+import '../../utils/formatters.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   const ProductDetailScreen({super.key});
@@ -25,7 +26,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Future<bool> requireLogin(BuildContext context) async {
     final isLoggedIn = await _authService.isLoggedIn();
     if (!context.mounted) return false;
-    
+
     if (!isLoggedIn) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -91,8 +92,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     setState(() => _isChatLoading = true);
 
     try {
-      final roomId =
-          await _chatService.startRoom(sellerId, productId);
+      final roomId = await _chatService.startRoom(sellerId, productId);
 
       if (!mounted) return;
 
@@ -114,8 +114,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                e.toString().replaceFirst('Exception: ', 'Gagal membuka chat: ')),
+            content: Text(e
+                .toString()
+                .replaceFirst('Exception: ', 'Gagal membuka chat: ')),
             backgroundColor: Colors.red,
           ),
         );
@@ -168,8 +169,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   )
                 : _product == null
-                    ? const Center(
-                        child: Text('Data produk tidak ditemukan.'))
+                    ? const Center(child: Text('Data produk tidak ditemukan.'))
                     : SingleChildScrollView(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,9 +200,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 children: [
                                   // Price
                                   Text(
-                                    'Rp ${_product!.price}',
+                                    formatCurrency(_product!.price),
                                     style: const TextStyle(
-                                      fontSize: 24,
+                                      fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                       color: Color(0xFFE83030),
                                     ),
@@ -244,8 +244,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       const CircleAvatar(
                                         backgroundColor: Color(0xFFF5F5F5),
                                         radius: 20,
-                                        child:
-                                            Icon(Icons.person, color: Colors.grey),
+                                        child: Icon(Icons.person,
+                                            color: Colors.grey),
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
@@ -255,7 +255,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                           children: [
                                             Text(_product!.sellerName,
                                                 style: const TextStyle(
-                                                    fontWeight: FontWeight.bold)),
+                                                    fontWeight:
+                                                        FontWeight.bold)),
                                             const Text('Penjual',
                                                 style: TextStyle(
                                                     fontSize: 12,
@@ -335,7 +336,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         onPressed: () async {
                           // Check if user is logged in using existing AuthService
                           final loggedIn = await requireLogin(context);
-                          
+
                           if (!context.mounted) return;
                           if (!loggedIn) return;
 

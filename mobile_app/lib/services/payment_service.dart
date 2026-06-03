@@ -98,4 +98,27 @@ class PaymentService {
       // original purchase history fetch can still run.
     }
   }
+    /// Creates an escrow transaction.
+  /// API: POST /v1/escrow { seller_id, items: [...] }
+  Future<Map<String, dynamic>> createEscrow(int sellerId, int productId) async {
+    try {
+      final response = await _client.post(
+        ApiConfig.escrow,
+        body: {
+          'seller_id': sellerId,
+          'items': [
+            {
+              'product_id': productId,
+              'quantity': 1,
+            }
+          ],
+        },
+      );
+      return response['data'] ?? response;
+    } on ApiException catch (e) {
+      throw Exception('Gagal membuat escrow: ${e.message}');
+    } catch (e) {
+      throw Exception('Terjadi kesalahan saat membuat escrow.');
+    }
+  }
 }

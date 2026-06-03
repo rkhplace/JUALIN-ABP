@@ -15,6 +15,7 @@ import 'screens/seller_dashboard_screen.dart';
 import 'screens/seller_products_screen.dart';
 import 'screens/seller_product_new_screen.dart';
 import 'screens/seller_product_edit_screen.dart';
+import 'screens/WalletScreen.dart';
 // Seller module screens
 import 'screens/seller/seller_main_screen.dart';
 import 'screens/seller/seller_orders_screen.dart';
@@ -51,6 +52,7 @@ class _MyAppState extends State<MyApp> {
       title: 'Jualin Mobile',
       theme: ThemeData(
         primaryColor: const Color(0xFFE83030),
+        scaffoldBackgroundColor: Colors.white,
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFE83030)),
         useMaterial3: true,
         textTheme: GoogleFonts.poppinsTextTheme(),
@@ -82,6 +84,7 @@ class _MyAppState extends State<MyApp> {
         '/seller_orders': (context) => const SellerOrdersScreen(),
         '/seller_stats': (context) => const SellerStatsScreen(),
         '/seller_withdraw': (context) => const SellerWithdrawScreen(),
+        '/wallet': (context) => const WalletScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/checkout') {
