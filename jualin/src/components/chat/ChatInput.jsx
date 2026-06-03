@@ -20,7 +20,7 @@ export function ChatInput({ onSend, disabled }) {
   };
 
   return (
-    <div className="px-6 py-5 bg-white m-4 rounded-2xl shadow-md">
+    <div className="px-4 py-3 md:px-6 md:py-5 bg-white m-4 rounded-2xl shadow-md">
       <div className="relative flex items-center bg-gray-50 rounded-full border border-gray-100 focus-within:ring-2 focus-within:ring-red-100 focus-within:bg-white focus-within:border-red-200 transition-all shadow-sm hover:shadow-md">
         <input
           type="text"
@@ -29,7 +29,7 @@ export function ChatInput({ onSend, disabled }) {
           onKeyDown={onKeyDown}
           placeholder="Ketik pesan..."
           disabled={disabled}
-          className="w-full pl-6 pr-14 py-3.5 bg-transparent border-none text-sm text-gray-900 placeholder-gray-400 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full pl-5 md:pl-6 pr-12 md:pr-14 py-3 md:py-3.5 bg-transparent border-none text-sm text-gray-900 placeholder-gray-400 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
         />
         <button
           onClick={submit}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Package, MessageSquareWarning } from "lucide-react";
+import { LayoutDashboard, Users, MessageSquareWarning } from "lucide-react";
 
 export default function BackofficeSidebar() {
   const pathname = usePathname();
@@ -10,7 +10,7 @@ export default function BackofficeSidebar() {
   const isActive = (path) => pathname === path;
 
   return (
-    <aside className="w-64 bg-[#E83030] min-h-screen flex flex-col rounded-r-3xl z-10 transition-all duration-300">
+    <aside className="hidden md:flex w-64 shrink-0 bg-[#E83030] min-h-[calc(100vh-64px)] flex-col rounded-r-3xl z-10 transition-all duration-300">
       <div className="p-6">
         <div className="mb-8">
           <h3 className="text-xs font-bold text-white/90 uppercase tracking-wider mb-4 px-1">

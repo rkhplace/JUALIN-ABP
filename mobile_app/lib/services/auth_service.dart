@@ -70,7 +70,7 @@ class AuthService {
     try {
       await _client.post(
         ApiConfig.passwordEmail,
-        body: {'email': email},
+        body: {'email': email.trim().toLowerCase()},
         requiresAuth: false,
       );
       return null;
@@ -93,7 +93,7 @@ class AuthService {
         ApiConfig.passwordReset,
         body: {
           'token': token,
-          'email': email,
+          'email': email.trim().toLowerCase(),
           'password': password,
           'password_confirmation': passwordConfirmation,
         },
@@ -172,10 +172,10 @@ class AuthService {
   }
 
   Future<String> resolveInitialRoute() async {
-    if (!await isLoggedIn()) return '/login';
+    if (!await isLoggedIn()) return '/main';
 
     final user = await me();
-    if (user == null) return '/login';
+    if (user == null) return '/main';
 
     return routeForRole(_normalizeRole(user['role']?.toString()));
   }

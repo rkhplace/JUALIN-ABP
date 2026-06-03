@@ -159,12 +159,12 @@ export default function ProductForm({
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="h-8 bg-gray-200 rounded-lg w-48 mb-8 animate-pulse"></div>
-        <div className="mb-8 p-8 border-2 border-gray-200 rounded-2xl bg-white shadow-lg">
-          <div className="flex items-start gap-6">
+      <div className="max-w-4xl mx-auto px-4 py-5 md:py-8">
+        <div className="h-7 md:h-8 bg-gray-200 rounded-lg w-44 md:w-48 mb-6 md:mb-8 animate-pulse"></div>
+        <div className="mb-6 md:mb-8 p-5 md:p-8 border-2 border-gray-200 rounded-xl md:rounded-2xl bg-white shadow-lg">
+          <div className="flex items-start gap-4 md:gap-6">
             <div className="flex-shrink-0">
-              <div className="w-32 h-32 rounded-full bg-gray-200 animate-pulse"></div>
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gray-200 animate-pulse"></div>
             </div>
             <div className="flex-1 space-y-3">
               <div className="h-10 bg-gray-200 rounded-lg w-40 animate-pulse"></div>
@@ -173,10 +173,10 @@ export default function ProductForm({
             </div>
           </div>
         </div>
-        <div className="mb-8 p-8 border-2 border-gray-200 rounded-2xl bg-white shadow-lg">
-          <div className="h-7 bg-gray-200 rounded-lg w-40 mb-6 animate-pulse"></div>
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="mb-8 p-5 md:p-8 border-2 border-gray-200 rounded-xl md:rounded-2xl bg-white shadow-lg">
+          <div className="h-6 md:h-7 bg-gray-200 rounded-lg w-36 md:w-40 mb-5 md:mb-6 animate-pulse"></div>
+          <div className="space-y-5 md:space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="space-y-2">
                 <div className="h-5 bg-gray-200 rounded w-32 animate-pulse"></div>
                 <div className="h-12 bg-gray-200 rounded-lg animate-pulse"></div>
@@ -202,16 +202,16 @@ export default function ProductForm({
   const error = localError || paramsError;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">{title}</h1>
+    <div className="max-w-4xl mx-auto px-4 py-5 pb-24 md:py-8 md:pb-8">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6 md:mb-8">{title}</h1>
 
       {/* Photo Upload Section */}
-      <div className="mb-8 p-8 border-2 border-gray-200 rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-shadow duration-200">
-        <div className="mb-6">
+      <div className="mb-6 md:mb-8 p-5 md:p-8 border-2 border-gray-200 rounded-xl md:rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-shadow duration-200">
+        <div className="mb-5 md:mb-6">
           <button
             type="button"
             onClick={handleUploadClick}
-            className="px-6 py-2 bg-brand-red text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium shadow-sm"
+            className="px-5 md:px-6 py-2 bg-brand-red text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium shadow-sm"
           >
             {imagePreviews.length > 0 ? "Add more photos" : "Upload photos"}
           </button>
@@ -223,15 +223,15 @@ export default function ProductForm({
             className="hidden"
             onChange={handleImageSelect}
           />
-          <p className="text-sm text-gray-600 mt-3">
+          <p className="text-sm text-gray-600 mt-3 leading-snug">
             Dengan 'Ctrl' atau 'Cmd', Anda bisa memilih banyak foto sekaligus.
           </p>
-          <p className="text-sm text-gray-600">JPG atau PNG (Min 800x800px, Max 2MB per gambar)</p>
+          <p className="text-sm text-gray-600 leading-snug">JPG atau PNG (Min 800x800px, Max 2MB per gambar)</p>
         </div>
 
         {/* Image Previews Gallery */}
         {imagePreviews.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
             {imagePreviews.map((preview, index) => (
               <div
                 key={index}
@@ -272,19 +272,19 @@ export default function ProductForm({
 
       {/* Error Message */}
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+        <div className="mb-6 p-3 md:p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
           {error}
         </div>
       )}
 
       {/* Product Details Form */}
-      <div className="mb-8 p-8 border-2 border-gray-200 rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-shadow duration-200">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">
+      <div className="mb-8 p-5 md:p-8 border-2 border-gray-200 rounded-xl md:rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-shadow duration-200">
+        <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-5 md:mb-6">
           Detail Produk
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             {/* Nama Produk */}
             <div>
               <label
@@ -300,7 +300,7 @@ export default function ProductForm({
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="Enter your product"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
+                className="w-full px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
                 required
               />
             </div>
@@ -321,7 +321,7 @@ export default function ProductForm({
                 value={formData.price}
                 onChange={handlePriceChange}
                 placeholder="Contoh: 5.000.000"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
+                className="w-full px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
                 required
               />
             </div>
@@ -343,7 +343,7 @@ export default function ProductForm({
                 placeholder="Enter stock quantity"
                 min="0"
                 step="1"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
+                className="w-full px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
                 required
               />
             </div>
@@ -361,7 +361,7 @@ export default function ProductForm({
                 name="category"
                 value={formData.category}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg ..."
+                className="w-full px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg ..."
               >
                 <option value="">Pilih kategori</option>
                 <option value="Elektronik">Elektronik</option>
@@ -386,7 +386,7 @@ export default function ProductForm({
                 name="condition"
                 value={formData.condition}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
+                className="w-full px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
               >
                 <option value="new">Baru</option>
                 <option value="used">Bekas</option>
@@ -406,7 +406,7 @@ export default function ProductForm({
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
+                className="w-full px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
               >
                 <option value="active">Aktif</option>
                 <option value="inactive">Tidak Aktif</option>
@@ -428,18 +428,18 @@ export default function ProductForm({
               value={formData.description}
               onChange={handleInputChange}
               placeholder="Enter your description product"
-              rows={6}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out resize-none"
+              rows={5}
+              className="w-full px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out resize-none"
               required
             />
           </div>
 
           {/* Save Button */}
-          <div className="pt-4">
+          <div className="pt-3 md:pt-4">
             <button
               type="submit"
               disabled={saving}
-              className="w-full bg-brand-red text-white py-3 rounded-lg font-medium hover:bg-red-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-brand-red text-white py-2.5 md:py-3 rounded-lg font-medium hover:bg-red-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? "Menyimpan..." : "Simpan"}
             </button>

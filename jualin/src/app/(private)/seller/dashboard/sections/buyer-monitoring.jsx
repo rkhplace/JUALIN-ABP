@@ -95,8 +95,6 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
         avatar: getProfilePictureUrl(order.customer?.profile_picture),
       }))
       : [];
-  const handleVerifyOrder = (orderId) =>
-    router.push(`/seller/orders/${orderId}/verify`);
 
   const handleChatBuyer = async (buyerId) => {
     if (!buyerId) {
@@ -162,7 +160,7 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
   const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
 
   return (
-    <div className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-200 p-6">
+    <div className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-200 p-4 sm:p-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">
         Monitoring Buyer
       </h2>
@@ -195,7 +193,7 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="text-sm text-gray-500">
@@ -303,15 +301,6 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
                           Chat
                         </button>
                       )}
-                      {activity.status === "pending" && (
-                        <button
-                          type="button"
-                          onClick={() => handleVerifyOrder(activity.id)}
-                          className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
-                        >
-                          Verifikasi
-                        </button>
-                      )}
                       {activity.status === "waiting_cod" && (
                         <button
                           type="button"
@@ -328,6 +317,98 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="space-y-3 md:hidden">
+        {isLoading ? (
+          [...Array(3)].map((_, index) => (
+            <div
+              key={index}
+              className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm"
+            >
+              <div className="flex gap-3">
+                <div className="h-14 w-14 shrink-0 animate-pulse rounded-xl bg-gray-200" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="h-4 w-28 animate-pulse rounded bg-gray-200" />
+                  <div className="h-3 w-20 animate-pulse rounded bg-gray-200" />
+                  <div className="h-8 w-full animate-pulse rounded bg-gray-100" />
+                </div>
+              </div>
+            </div>
+          ))
+        ) : filtered.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
+            Tidak ada data yang melakukan transaksi
+          </div>
+        ) : (
+          filtered.map((activity) => {
+            const statusBadge = getStatusBadge(activity.status);
+
+            return (
+              <div
+                key={activity.id}
+                className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm"
+              >
+                <div className="flex gap-3">
+                  <img
+                    src={activity.productImage}
+                    alt={activity.productName}
+                    className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-gray-900">
+                          {activity.productName}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {activity.category} - {activity.time.split(",")[0]}
+                        </p>
+                      </div>
+                      <img
+                        src={activity.avatar}
+                        alt={activity.buyerName}
+                        className="h-8 w-8 shrink-0 rounded-full object-cover"
+                      />
+                    </div>
+
+                    <p className="mt-2 truncate text-sm font-medium text-gray-800">
+                      {activity.buyerName}
+                    </p>
+
+                    <span
+                      className={`mt-2 inline-flex max-w-full items-center rounded-full px-3 py-1 text-xs font-medium ${statusBadge.class}`}
+                    >
+                      {statusBadge.text}
+                    </span>
+
+                    {["pending", "waiting_cod"].includes(activity.status) && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleChatBuyer(activity.buyerId)}
+                          disabled={!activity.buyerId}
+                          className="inline-flex h-9 items-center rounded-lg border border-brand-red bg-white px-3 text-xs font-semibold text-brand-red shadow-sm transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Chat
+                        </button>
+                        {activity.status === "waiting_cod" && (
+                          <button
+                            type="button"
+                            onClick={() => openClaimModal(activity.id)}
+                            className="inline-flex h-9 items-center rounded-lg bg-brand-red px-3 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-red-700"
+                          >
+                            Claim COD
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Pagination */}

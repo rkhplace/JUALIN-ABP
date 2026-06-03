@@ -4,6 +4,7 @@ import '../services/product_service.dart';
 import '../services/chat_service.dart';
 import '../services/auth_service.dart';
 import '../models/product.dart';
+import '../widgets/ui/login_required_dialog.dart';
 import 'chat_screen.dart';
 import '../../utils/formatters.dart';
 
@@ -23,18 +24,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _isChatLoading = false;
   String? _errorMessage;
 
-  Future<bool> requireLogin(BuildContext context) async {
+  Future<bool> requireLogin(
+    BuildContext context, {
+    String message = 'Silakan login terlebih dahulu untuk membeli produk.',
+  }) async {
     final isLoggedIn = await _authService.isLoggedIn();
     if (!context.mounted) return false;
 
     if (!isLoggedIn) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Silakan login terlebih dahulu untuk membeli produk.'),
-          backgroundColor: Colors.red,
-        ),
+      final shouldLogin = await showLoginRequiredDialog(
+        context,
+        message: message,
       );
-      Navigator.pushNamed(context, '/login');
+      if (!context.mounted) return false;
+      if (shouldLogin) Navigator.pushNamed(context, '/login');
       return false;
     }
     return true;
@@ -78,6 +81,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Future<void> _handleChatPenjual() async {
     if (_product == null) return;
+
+    final loggedIn = await requireLogin(
+      context,
+      message: 'Silakan login terlebih dahulu untuk chat dengan penjual.',
+    );
+    if (!mounted || !loggedIn) return;
 
     final sellerId = _product!.sellerId;
     final productId = _product!.id;

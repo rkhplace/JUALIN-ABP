@@ -6,6 +6,7 @@ use App\Http\Requests\TransactionStoreRequest;
 use App\Http\Responses\ApiResponse;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use App\Services\SellerVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -250,6 +251,43 @@ class TransactionController extends Controller
                 'Transaction not found',
                 null,
                 404
+            );
+        }
+    }
+
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $request->validate([
+            'status' => 'required|string',
+        ]);
+
+        try {
+            $transaction = Transaction::findOrFail($id);
+            $transaction->status = $request->status;
+            $transaction->save();
+
+            // Trigger seller verification whenever a transaction reaches 'completed'
+            if ($request->status === 'completed') {
+                app(SellerVerificationService::class)
+                    ->updateSellerVerification($transaction->seller_id);
+            }
+
+            return ApiResponse::success(
+                'Transaction status updated successfully',
+                $transaction,
+                200
+            );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return ApiResponse::error(
+                'Transaction not found',
+                null,
+                404
+            );
+        } catch (\Exception $e) {
+            return ApiResponse::error(
+                'Failed to update transaction status',
+                ['error' => $e->getMessage()],
+                500
             );
         }
     }

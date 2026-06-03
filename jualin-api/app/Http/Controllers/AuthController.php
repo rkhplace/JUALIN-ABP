@@ -48,7 +48,7 @@ class AuthController extends Controller
         $result = $this->authService->login($request->validated());
 
         if (!$result['success']) {
-            return ApiResponse::error('Invalid credentials', null, 401);
+            return ApiResponse::error($result['message'] ?? 'Invalid credentials', null, $result['status'] ?? 401);
         }
 
         // Generate Firebase Custom Token

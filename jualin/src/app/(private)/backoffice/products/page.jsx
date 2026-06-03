@@ -73,7 +73,7 @@ export default function BackofficeProductsPage() {
   const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
@@ -83,10 +83,10 @@ export default function BackofficeProductsPage() {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-[#1F1F1F] tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#1F1F1F] tracking-tight">
               Semua Produk
             </h1>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 mt-1 leading-snug">
               Kelola produk yang anda miliki
             </p>
           </div>
@@ -111,7 +111,7 @@ export default function BackofficeProductsPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
           {[...Array(6)].map((_, idx) => (
             <ProductCardSkeleton key={idx} />
           ))}
@@ -125,18 +125,18 @@ export default function BackofficeProductsPage() {
           <p className="text-sm mt-1">Try adjusting your search terms</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
           {products.map((p) => (
             <div
               key={p.id}
-              className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-200 text-center group border border-gray-100"
+              className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-2xl transition-all duration-200 text-left group border border-gray-100"
             >
               <div className="relative mb-4">
                 <img
                   src={getProductImageUrl(p.image || p.img)}
                   alt={p.name}
                   loading="lazy"
-                  className="w-full h-60 object-cover rounded-xl shadow-sm transition-transform duration-200 group-hover:scale-[1.02]"
+                  className="w-full h-36 sm:h-60 object-cover rounded-lg sm:rounded-xl shadow-sm transition-transform duration-200 group-hover:scale-[1.02]"
                   onError={(e) => {
                     if (e.target.src.includes("/placeholder.svg")) return;
                     e.target.src = "/placeholder.svg";
@@ -144,38 +144,38 @@ export default function BackofficeProductsPage() {
                 />
               </div>
 
-              <h3 className="font-bold text-xl mb-1 text-gray-900 line-clamp-1">
+              <h3 className="font-bold text-base sm:text-xl mb-1 text-gray-900 line-clamp-1">
                 {p.name}
               </h3>
 
-              <p className="text-blue-600 font-medium text-sm mb-2 uppercase tracking-wide">
+              <p className="text-blue-600 font-medium text-xs sm:text-sm mb-2 uppercase tracking-wide">
                 {p.brand || p.category || "Uncategorized"}
               </p>
 
-              <div className="text-sm text-gray-500 mb-6">
+              <div className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
                 Stok: {p.stock_quantity || p.stock || 0} | Kondisi:{" "}
                 {p.condition === "new" ? "Baru" : "Bekas"}
               </div>
 
-              <div className="flex items-center justify-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={() =>
                     router.push(`/backoffice/products/${p.id}/edit`)
                   }
-                  className="px-4 py-2 rounded-full border border-gray-200 text-gray-700 font-medium text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-gray-200 text-gray-700 font-medium text-xs sm:text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
                 >
                   Edit
                 </button>
 
-                <div className="px-4 py-2 bg-brand-red text-white rounded-full text-sm font-bold shadow-md shadow-red-200">
+                <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-brand-red text-white rounded-full text-xs sm:text-sm font-bold shadow-md shadow-red-200">
                   {formatCurrency(p.price)}
                 </div>
 
                 <button
                   type="button"
                   onClick={() => handleDelete(p.id)}
-                  className="px-4 py-2 rounded-full bg-red-50 text-red-600 font-medium text-sm hover:bg-red-100 transition-colors border border-red-100"
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-red-50 text-red-600 font-medium text-xs sm:text-sm hover:bg-red-100 transition-colors border border-red-100"
                 >
                   Hapus
                 </button>

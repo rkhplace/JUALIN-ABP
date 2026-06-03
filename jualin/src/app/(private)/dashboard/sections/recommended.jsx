@@ -62,7 +62,7 @@ export default function RecommendedSection() {
       className="w-full my-8 animate-fade-in scroll-mt-24"
       ref={sectionRef}
     >
-      <h2 className="text-2xl font-bold mb-4 text-center text-black">
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center text-black">
         Produk yang mungkin kamu suka
       </h2>
       <ProductFilter
@@ -80,26 +80,26 @@ export default function RecommendedSection() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
           {[...Array(6)].map((_, idx) => (
             <ProductCardSkeleton key={idx} />
           ))}
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
             {products.map((product, idx) => (
               <a
                 key={product.id}
                 href={`/product/${product.id}`}
-                className="group bg-white rounded-2xl shadow p-6 flex flex-col items-start transition-all duration-200 ease-out hover:shadow-xl hover:-translate-y-1 active:scale-95 focus:outline-none"
+                className="group bg-white rounded-2xl shadow p-4 sm:p-6 flex h-full flex-col items-start transition-all duration-200 ease-out hover:shadow-xl hover:-translate-y-1 active:scale-95 focus:outline-none"
                 style={{ cursor: "pointer" }}
                 tabIndex={0}
               >
                 <img
                   src={getProductImageUrl(product.img || product.image)}
                   alt={product.name || "Foto Produk"}
-                  className="w-full h-60 object-cover rounded-xl mb-4 transition-transform duration-200 group-hover:scale-[1.02]"
+                  className="w-full h-36 sm:h-60 object-cover rounded-xl mb-4 transition-transform duration-200 group-hover:scale-[1.02]"
                   onError={(e) => {
                     e.target.src =
                       "https://via.placeholder.com/400x400?text=No+Image";
@@ -108,19 +108,19 @@ export default function RecommendedSection() {
                 <span className="font-bold text-blue-700 uppercase text-sm mb-2 tracking-wide">
                   {product.brand || product.category}
                 </span>
-                <h3 className="font-semibold text-xl mb-1 text-black">
+                <h3 className="font-semibold text-base sm:text-xl mb-1 text-black">
                   {product.name}
                 </h3>
-                <p className="text-gray-500 text-base mb-2 line-clamp-2 break-all text-ellipsis overflow-hidden">
+                <p className="hidden sm:block h-12 text-gray-500 text-base leading-6 mb-2 overflow-hidden text-ellipsis break-all [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
                   {product.description}
                 </p>
-                <div className="flex items-center gap-1.5 mb-3 bg-red-50 px-3 py-1.5 rounded-full border border-red-100 self-start">
+                <div className="flex items-center gap-1.5 mb-2 sm:mb-3 bg-red-50 px-3 py-1.5 rounded-full border border-red-100 self-start">
                   <User size={12} className="text-red-600" />
                   <span className="text-xs text-red-800 font-medium">
                     {product.seller?.username || "Unknown"}
                   </span>
                 </div>
-                <div className="flex justify-between items-center w-full">
+                <div className="mt-auto flex justify-between items-center w-full">
                   <span className="font-bold text-lg text-black">
                     {formatCurrency(product.price)}
                   </span>

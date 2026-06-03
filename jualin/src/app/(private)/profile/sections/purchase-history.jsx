@@ -4,6 +4,7 @@ import useMidtransPayment from "@/app/(private)/product/hooks/useMidtransPayment
 import { useState } from "react";
 import { useAuth } from "@/context/AuthProvider";
 import { escrowService } from "@/services";
+import { Copy, Check } from "lucide-react";
 
 /**
  * PurchaseHistorySection
@@ -25,6 +26,14 @@ export function PurchaseHistorySection({
   const [escrowToast, setEscrowToast] = useState(null);
   const [refundModalOpen, setRefundModalOpen] = useState(false);
   const [refundOrderId, setRefundOrderId] = useState(null);
+  const [copiedId, setCopiedId] = useState(null);
+
+  const handleCopy = (code, orderId, e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(code);
+    setCopiedId(orderId);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const initiateRefund = (transactionId, e) => {
     e.stopPropagation(); // prevent row click
@@ -89,15 +98,15 @@ export function PurchaseHistorySection({
 
       <div className="mb-8">
 
-        <h1 className="text-2xl font-semibold text-[#1F1F1F] mb-4">
+        <h1 className="text-lg sm:text-2xl font-semibold text-[#1F1F1F] mb-4">
           Riwayat Pembelian
         </h1>
         <div className="flex items-center justify-between">
           <div />
-          <div className="flex gap-4">
+          <div className="flex gap-3 sm:gap-4">
             <button
               onClick={onExport}
-              className="group relative text-sm font-medium text-[#E53935] hover:text-[#D32F2F] transition-colors flex items-center gap-1"
+              className="group relative text-xs sm:text-sm font-medium text-[#E53935] hover:text-[#D32F2F] transition-colors flex items-center gap-1"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -109,7 +118,7 @@ export function PurchaseHistorySection({
             </button>
             <button
               onClick={onRefresh}
-              className="text-sm font-medium text-[#E53935] hover:text-[#D32F2F] transition-colors"
+              className="text-xs sm:text-sm font-medium text-[#E53935] hover:text-[#D32F2F] transition-colors"
             >
               {isLoading ? "Refreshing..." : "Refresh"}
             </button>
@@ -130,9 +139,9 @@ export function PurchaseHistorySection({
       )}
 
       {/* Total card */}
-      <div className="bg-white border border-gray-300 rounded-xl p-6 mb-8 shadow-md">
+      <div className="bg-white border border-gray-300 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-md">
         <p className="text-sm font-medium text-gray-500 mb-1">Total Amount</p>
-        <h2 className="text-3xl font-bold text-[#1F1F1F]">
+        <h2 className="text-2xl sm:text-3xl font-bold text-[#1F1F1F]">
           {formatCurrency(totalAmount)}
         </h2>
       </div>
@@ -189,7 +198,7 @@ export function PurchaseHistorySection({
             return (
               <div
                 key={p?.order_id}
-                className={`w-full text-left group bg-white border border-gray-300 p-5 rounded-xl transition-all relative shadow-md
+                className={`w-full text-left group bg-white border border-gray-300 p-4 sm:p-5 rounded-xl transition-all relative shadow-md
                   ${isPending
                     ? 'cursor-pointer hover:bg-[#F7F7F8] hover:shadow-lg hover:border-red-200 ring-1 ring-inset ring-transparent hover:ring-red-100'
                     : ''
@@ -207,19 +216,19 @@ export function PurchaseHistorySection({
                   </div>
                 )}
 
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start gap-3">
                   <div className="flex-1">
-                    <h3 className={`text-lg font-semibold text-[#1F1F1F] mb-1 ${isPending ? 'group-hover:text-[#E53935] transition-colors' : ''}`}>
+                    <h3 className={`text-base sm:text-lg font-semibold text-[#1F1F1F] mb-1 ${isPending ? 'group-hover:text-[#E53935] transition-colors' : ''}`}>
                       {title}
                     </h3>
 
                     {subtitle && (
-                      <p className="text-sm text-gray-600 mb-2">{subtitle}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 mb-2">{subtitle}</p>
                     )}
 
-                    <div className="flex items-center gap-2 text-gray-500 text-sm mt-2">
+                    <div className="flex flex-wrap items-center gap-2 text-gray-500 text-xs sm:text-sm mt-2">
                       <svg
-                        className="w-4 h-4"
+                        className="w-3.5 h-3.5 sm:w-4 sm:h-4"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -235,7 +244,7 @@ export function PurchaseHistorySection({
 
                       {/* Status Chip */}
                       <span
-                        className={`ml-2 px-3 py-0.5 rounded-full text-[10px] font-medium border ${statusStyles}`}
+                        className={`sm:ml-2 px-2.5 sm:px-3 py-0.5 rounded-full text-[10px] font-medium border ${statusStyles}`}
                       >
                         {displayStatus}
                       </span>
@@ -243,21 +252,41 @@ export function PurchaseHistorySection({
 
                     {/* Escrow COD Content */}
                     {isWaitingCOD && (
-                      <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                        <p className="text-sm font-medium text-orange-800 mb-2">
+                      <div className="mt-4 p-3 sm:p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                        <p className="text-xs sm:text-sm font-medium text-orange-800 mb-2">
                           Show this authentication code to the seller after confirming the product matches your expectations.
                         </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xl font-bold tracking-widest text-[#1F1F1F]">{p?.transaction?.auth_code || "N/A"}</span>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <span className="text-base sm:text-xl font-bold tracking-widest text-[#1F1F1F]">{p?.transaction?.auth_code || "N/A"}</span>
+                            {p?.transaction?.auth_code && (
+                              <button
+                                onClick={(e) => handleCopy(p.transaction.auth_code, p.order_id, e)}
+                                className="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 text-xs sm:text-sm flex items-center gap-1.5 transition-all duration-200"
+                              >
+                                {copiedId === p.order_id ? (
+                                  <>
+                                    <Check className="w-4 h-4 text-green-500" />
+                                    <span className="text-green-600 font-medium">Tersalin!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-4 h-4" />
+                                    <span>Salin</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
                           <button
                             onClick={(e) => initiateRefund(p?.transaction_id, e)}
                             disabled={escrowLoading}
-                            className="px-4 py-2 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50 text-sm font-medium transition-colors disabled:opacity-50"
+                            className="px-3 sm:px-4 py-2 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50 text-xs sm:text-sm font-medium transition-colors disabled:opacity-50"
                           >
                             {escrowLoading ? 'Processing...' : 'Refund to Wallet'}
                           </button>
                         </div>
-                        <p className="text-xs text-orange-600 mt-2">
+                        <p className="text-[11px] sm:text-xs text-orange-600 mt-2">
                           Only click refund if the product is rejected.
                         </p>
                       </div>
@@ -266,7 +295,7 @@ export function PurchaseHistorySection({
                   </div>
 
                   <div className="text-right">
-                    <span className="text-base font-semibold text-[#1F1F1F]">
+                    <span className="text-sm sm:text-base font-semibold text-[#1F1F1F] whitespace-nowrap">
                       {formatCurrency(p?.gross_amount)}
                     </span>
                   </div>
@@ -283,7 +312,7 @@ export function PurchaseHistorySection({
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-gray-200 pt-6 mt-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t border-gray-200 pt-6 mt-6">
           <div className="flex items-center gap-2">
             <button
               className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 disabled:opacity-50"
@@ -360,9 +389,9 @@ export function PurchaseHistorySection({
 
       {/* Refund Confirmation Modal */}
       {refundModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Request Refund</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-5 sm:p-6 relative">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Request Refund</h3>
             <p className="text-sm text-gray-600 mb-6 font-medium">
               Are you sure you want to refund this product? The total amount will be credited back instantly to your Virtual Wallet.
             </p>

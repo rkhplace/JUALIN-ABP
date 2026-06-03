@@ -18,7 +18,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-dvh bg-white flex items-center justify-center relative overflow-hidden p-4 sm:p-6">
       {/* Background paint splashes */}
       <div className="absolute top-0 -right-48 w-96 h-96 bg-[#E83030] rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
       <div className="absolute bottom-0 -left-24 w-48 h-48 bg-[#E83030] rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
@@ -31,11 +31,14 @@ export default function RegisterPage() {
         />
       )}
 
-      <div className="relative z-10 w-full max-w-4xl mx-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-10">
-          <Logo size="xl" className="mb-6" />
+      <div className="relative z-10 w-full max-w-[390px] md:max-w-4xl">
+        <div className="bg-white rounded-2xl shadow-2xl p-5 sm:p-8 md:p-10">
+          <Logo
+            size="xl"
+            className="mb-4 sm:mb-6 [&_img]:!h-20 [&_img]:!w-20 sm:[&_img]:!h-36 sm:[&_img]:!w-36"
+          />
 
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
               Daftar Akun
             </h1>
@@ -46,7 +49,7 @@ export default function RegisterPage() {
 
           <RegisterForm onSuccess={handleSuccess} onError={handleError} />
 
-          <p className="mt-6 text-center text-sm text-gray-600">
+          <p className="mt-4 sm:mt-6 text-center text-sm text-gray-600">
             Sudah Punya Akun?{' '}
             <Link href="/auth/login" className="text-[#E83030] hover:text-red-600 font-medium">
               Masuk disini
