@@ -145,7 +145,7 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
                 _formatCurrency(walletBalance),
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 28,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -213,7 +213,7 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
             children: [
               const Text(
                 'Grafik Pendapatan',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               // Period selector

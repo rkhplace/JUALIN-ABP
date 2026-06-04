@@ -138,7 +138,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               const SizedBox(height: 24),
               const Text(
                 'Kelola Toko',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
 
@@ -246,7 +246,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               style: const TextStyle(fontSize: 12, color: Colors.black54)),
           const SizedBox(height: 4),
           Text(value,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               overflow: TextOverflow.ellipsis),
         ],
       ),

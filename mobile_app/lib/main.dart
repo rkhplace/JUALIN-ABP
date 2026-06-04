@@ -32,6 +32,21 @@ void main() {
   runApp(const MyApp());
 }
 
+/// Globally disables Android overscroll stretch & forces ClampingScrollPhysics.
+class NoStretchScrollBehavior extends MaterialScrollBehavior {
+  const NoStretchScrollBehavior();
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) =>
+      child;
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const ClampingScrollPhysics();
+}
+
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -51,6 +66,21 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Jualin Mobile',
+      scrollBehavior: const NoStretchScrollBehavior(),
+      // ── Global font scaling ──────────────────────────────────────────────
+      // Reduces all text in the app by ~12% so it fits better on small screens.
+      // Overrides the system accessibility font-size setting to a safe cap.
+      builder: (context, child) {
+        final mq = MediaQuery.of(context);
+        return MediaQuery(
+          data: mq.copyWith(
+            textScaler: TextScaler.linear(
+              (mq.textScaler.scale(1.0)).clamp(0.0, 1.0) * 0.88,
+            ),
+          ),
+          child: child!,
+        );
+      },
       theme: ThemeData(
         primaryColor: const Color(0xFFE83030),
         scaffoldBackgroundColor: Colors.white,
