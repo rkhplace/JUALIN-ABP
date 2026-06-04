@@ -41,7 +41,7 @@ class ProductCard extends StatelessWidget {
           children: [
             // Image Area
             AspectRatio(
-              aspectRatio: 1.25,
+              aspectRatio: 1.35,
               child: Container(
                 width: double.infinity,
                 color: const Color(0xFFF8F9FA),
@@ -64,7 +64,7 @@ class ProductCard extends StatelessWidget {
             // Content Area
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -80,7 +80,7 @@ class ProductCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     // Title
                     Text(
                       title,
@@ -93,7 +93,7 @@ class ProductCard extends StatelessWidget {
                         height: 1.3,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     // Description
                     Text(
                       description,
@@ -105,7 +105,7 @@ class ProductCard extends StatelessWidget {
                         height: 1.4,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     // Seller Badge
                     Container(
                       padding: const EdgeInsets.symmetric(

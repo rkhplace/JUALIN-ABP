@@ -1,7 +1,11 @@
 class ApiConfig {
-  // Use http://10.0.2.2:8000/api/v1 for Android Emulator
-  // Use http://localhost:8000/api/v1 for iOS Simulator / Web / Desktop
-  static const String baseUrl = 'http://10.0.2.2:8000/api/v1';
+  static const String defaultBaseUrl =
+      'https://jualin-abp-production-cbe5.up.railway.app/api/v1';
+
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: defaultBaseUrl,
+  );
 
   // ── Auth ────────────────────────────────────────
   static const String login = '/login';
@@ -28,8 +32,10 @@ class ApiConfig {
   static const String sellerStats = '/transactions/income/statistics';
   static const String sellerWithdraw = '/transactions/withdraw';
   static const String escrow = '/escrow';
-  static String escrowRefund(int transactionId) => '$escrow/$transactionId/refund';
-  static String escrowClaim(int transactionId) => '$escrow/$transactionId/claim';
+  static String escrowRefund(int transactionId) =>
+      '$escrow/$transactionId/refund';
+  static String escrowClaim(int transactionId) =>
+      '$escrow/$transactionId/claim';
 
   // ── Chat ────────────────────────────────────────
   static const String chatRooms = '/chat/rooms';
