@@ -3,6 +3,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../services/seller_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/escrow_service.dart';
+import '../../widgets/ui/frosted_app_bar.dart';
 
 class SellerOrdersScreen extends StatefulWidget {
   const SellerOrdersScreen({super.key});
@@ -44,7 +45,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
       final all = await _sellerService.getSellerOrders();
       // Filter orders where current user is the seller
       final sellerOrders = all
-          .where((o) => _currentUserId == 0 || (o['seller_id'] as int?) == _currentUserId)
+          .where((o) =>
+              _currentUserId == 0 || (o['seller_id'] as int?) == _currentUserId)
           .toList();
       if (mounted) {
         setState(() {
@@ -62,8 +64,10 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     }
   }
 
-  Future<void> _handleClaimPayment(BuildContext context, int transactionId) async {
-    debugPrint('[SellerOrders] Claim button clicked for transactionId=$transactionId');
+  Future<void> _handleClaimPayment(
+      BuildContext context, int transactionId) async {
+    debugPrint(
+        '[SellerOrders] Claim button clicked for transactionId=$transactionId');
     final TextEditingController authCodeController = TextEditingController();
 
     debugPrint('[SellerOrders] Opening claim code dialog');
@@ -78,7 +82,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Masukkan 6 digit kode autentikasi yang diberikan oleh pembeli.'),
+              const Text(
+                  'Masukkan 6 digit kode autentikasi yang diberikan oleh pembeli.'),
               const SizedBox(height: 16),
               TextField(
                 controller: authCodeController,
@@ -110,7 +115,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
               child: const Text('Batal'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE83030)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE83030)),
               onPressed: () {
                 final code = authCodeController.text.trim();
                 debugPrint(
@@ -120,7 +126,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                 if (code.length == 6) {
                   Navigator.pop(ctx, code);
                 } else {
-                  debugPrint('[SellerOrders] Claim dialog ignored: code must be 6 chars');
+                  debugPrint(
+                      '[SellerOrders] Claim dialog ignored: code must be 6 chars');
                 }
               },
               child: const Text('Klaim', style: TextStyle(color: Colors.white)),
@@ -136,9 +143,11 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     setState(() => _isClaiming = true);
 
     try {
-      debugPrint('[SellerOrders] Sending escrow claim for transactionId=$transactionId');
+      debugPrint(
+          '[SellerOrders] Sending escrow claim for transactionId=$transactionId');
       await _escrowService.claimPayment(transactionId, authCode);
-      debugPrint('[SellerOrders] Escrow claim success for transactionId=$transactionId');
+      debugPrint(
+          '[SellerOrders] Escrow claim success for transactionId=$transactionId');
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -148,7 +157,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
       );
       await _fetchOrders();
     } catch (e) {
-      debugPrint('[SellerOrders] Escrow claim failed for transactionId=$transactionId: $e');
+      debugPrint(
+          '[SellerOrders] Escrow claim failed for transactionId=$transactionId: $e');
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -219,14 +229,9 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return FrostedScaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text('Pesanan Masuk'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-      ),
+      title: 'Pesanan Masuk',
       body: Stack(
         children: [
           RefreshIndicator(
@@ -248,7 +253,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFE83030)));
+      return const Center(
+          child: CircularProgressIndicator(color: Color(0xFFE83030)));
     }
     if (_errorMessage != null) {
       return Center(
@@ -259,7 +265,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
             children: [
               const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
               const SizedBox(height: 12),
-              Text(_errorMessage!, textAlign: TextAlign.center,
+              Text(_errorMessage!,
+                  textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.black54)),
               const SizedBox(height: 12),
               TextButton.icon(
@@ -298,7 +305,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
         final order = _orders[index];
         final customer = order['customer'] as Map<String, dynamic>? ?? {};
         final items = (order['items'] as List<dynamic>?) ?? [];
-        final firstItem = items.isNotEmpty ? (items[0] as Map<String, dynamic>?) ?? {} : {};
+        final firstItem =
+            items.isNotEmpty ? (items[0] as Map<String, dynamic>?) ?? {} : {};
         final product = firstItem['product'] as Map<String, dynamic>? ?? {};
         final status = (order['status'] as String?) ?? 'pending';
 
@@ -328,7 +336,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                     style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 14),
                   ),
-                  _StatusBadge(label: _statusLabel(status), color: _statusColor(status)),
+                  _StatusBadge(
+                      label: _statusLabel(status), color: _statusColor(status)),
                 ],
               ),
               const SizedBox(height: 10),
@@ -365,7 +374,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Total', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                  const Text('Total',
+                      style: TextStyle(color: Colors.black54, fontSize: 13)),
                   Text(
                     _formatCurrency(order['total_amount']),
                     style: const TextStyle(
@@ -376,7 +386,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                   ),
                 ],
               ),
-              
+
               if (status == 'waiting_cod') ...[
                 const SizedBox(height: 16),
                 SizedBox(
@@ -397,7 +407,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                             );
                             _handleClaimPayment(context, order['id']);
                           },
-                    child: const Text('Klaim Pembayaran (Input Kode)', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text('Klaim Pembayaran (Input Kode)',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],

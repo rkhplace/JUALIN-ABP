@@ -19,6 +19,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   User? _user;
   bool _isLoading = true;
   bool _isSendingResetLink = false;
+  bool _isAccountInfoExpanded = false;
   String _userRole = 'customer';
   String? _errorMessage;
 
@@ -89,7 +90,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Link reset telah dikirim ke email Anda. Silakan cek inbox.'),
+        content:
+            Text('Link reset telah dikirim ke email Anda. Silakan cek inbox.'),
         backgroundColor: Colors.green,
       ),
     );
@@ -99,95 +101,96 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return AppChrome(
-      showTopBar: false,
-      showNavbar: true,
-      showSearch: false,
-      child: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFE83030)),
-            )
-          : (_user == null || _errorMessage != null)
-              ? _buildErrorState(context)
-              : RefreshIndicator(
-                  color: const Color(0xFFE83030),
-                  onRefresh: _fetchProfile,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        _buildHeader(_user!),
-                        const SizedBox(height: 20),
-                        if (_userRole != 'seller') ...[
-                          _buildPurchaseHistoryMenu(),
-                          const SizedBox(height: 16),
-                        ] else ...[
-                          _buildVerificationMission(_user!),
-                          const SizedBox(height: 16),
+        showTopBar: false,
+        showNavbar: true,
+        showSearch: false,
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFFE83030)),
+              )
+            : (_user == null || _errorMessage != null)
+                ? _buildErrorState(context)
+                : RefreshIndicator(
+                    color: const Color(0xFFE83030),
+                    onRefresh: _fetchProfile,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          _buildHeader(_user!),
+                          const SizedBox(height: 20),
+                          if (_userRole != 'seller') ...[
+                            _buildPurchaseHistoryMenu(),
+                            const SizedBox(height: 16),
+                          ] else ...[
+                            _buildVerificationMission(_user!),
+                            const SizedBox(height: 16),
+                          ],
+                          _buildAccountInfo(_user!),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.edit, size: 18),
+                            label: const Text('Edit Profil'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.black87,
+                              elevation: 0,
+                              side: const BorderSide(color: Colors.black12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            onPressed: () async {
+                              final updated = await Navigator.pushNamed(
+                                  context, '/profile_edit');
+                              if (updated == true) {
+                                _fetchProfile();
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            icon: _isSendingResetLink
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.lock_reset, size: 18),
+                            label: Text(
+                              _isSendingResetLink
+                                  ? 'Mengirim link reset...'
+                                  : 'Reset Password',
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFE83030),
+                              side: const BorderSide(color: Color(0xFFE83030)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            onPressed: _isSendingResetLink
+                                ? null
+                                : _handlePasswordReset,
+                          ),
+                          const SizedBox(height: 48),
+                          CustomButton(
+                            text: 'Logout',
+                            isSecondary: true,
+                            onPressed: () async {
+                              await _authService.logout();
+                              if (context.mounted) {
+                                Navigator.pushReplacementNamed(
+                                    context, '/login');
+                              }
+                            },
+                          ),
                         ],
-                        _buildAccountInfo(_user!),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.edit, size: 18),
-                          label: const Text('Edit Profil'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black87,
-                            elevation: 0,
-                            side: const BorderSide(color: Colors.black12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onPressed: () async {
-                            final updated =
-                                await Navigator.pushNamed(context, '/profile_edit');
-                            if (updated == true) {
-                              _fetchProfile();
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          icon: _isSendingResetLink
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.lock_reset, size: 18),
-                          label: Text(
-                            _isSendingResetLink
-                                ? 'Mengirim link reset...'
-                                : 'Reset Password',
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFE83030),
-                            side: const BorderSide(color: Color(0xFFE83030)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onPressed:
-                              _isSendingResetLink ? null : _handlePasswordReset,
-                        ),
-                        const SizedBox(height: 48),
-                        CustomButton(
-                          text: 'Logout',
-                          isSecondary: true,
-                          onPressed: () async {
-                            await _authService.logout();
-                            if (context.mounted) {
-                              Navigator.pushReplacementNamed(context, '/login');
-                            }
-                          },
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-
-                )
-    );
+                  ));
   }
 
   Widget _buildPurchaseHistoryMenu() {
@@ -245,7 +248,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 8),
             TextButton(
-              onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+              onPressed: () =>
+                  Navigator.pushReplacementNamed(context, '/login'),
               child: const Text('Masuk / Daftar'),
             ),
           ],
@@ -291,7 +295,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: _userRole == 'seller' ? const Color(0xFFE83030) : Colors.blue,
+              color:
+                  _userRole == 'seller' ? const Color(0xFFE83030) : Colors.blue,
             ),
           ),
         ),
@@ -326,7 +331,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         children: [
           Icon(
-            isVerified ? Icons.verified_user : Icons.assignment_turned_in_outlined,
+            isVerified
+                ? Icons.verified_user
+                : Icons.assignment_turned_in_outlined,
             color: color,
           ),
           const SizedBox(width: 12),
@@ -351,7 +358,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildAccountInfo(User user) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -360,27 +366,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Informasi Akun',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+          InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              setState(() {
+                _isAccountInfoExpanded = !_isAccountInfoExpanded;
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Informasi Akun',
+                      style:
+                          TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: _isAccountInfoExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    child: const Icon(
+                      Icons.keyboard_arrow_down,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 12),
-          _buildInfoRow('Nama', user.name),
-          _buildInfoRow('Email', user.email),
-          _buildInfoRow('Nomor HP', user.phone),
-          _buildInfoRow('Alamat / Provinsi', user.region),
-          _buildInfoRow('Kota', user.city),
-          _buildInfoRow('Tempat Lahir', user.birthPlace),
-          _buildInfoRow('Tanggal Lahir', user.birthday),
-          _buildInfoRow('Role', _userRole == 'seller' ? 'Penjual' : 'Pembeli'),
-          _buildInfoRow('Status Akun', user.status),
-          _buildInfoRow(
-            'Status Verifikasi',
-            user.verificationStatus.isEmpty
-                ? 'Belum Terverifikasi'
-                : user.verificationStatus,
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                children: [
+                  const Divider(height: 1),
+                  const SizedBox(height: 10),
+                  _buildInfoRow('Nama', user.name),
+                  _buildInfoRow('Email', user.email),
+                  _buildInfoRow('Nomor HP', user.phone),
+                  _buildInfoRow('Alamat / Provinsi', user.region),
+                  _buildInfoRow('Kota', user.city),
+                  _buildInfoRow('Tempat Lahir', user.birthPlace),
+                  _buildInfoRow('Tanggal Lahir', user.birthday),
+                  _buildInfoRow(
+                      'Role', _userRole == 'seller' ? 'Penjual' : 'Pembeli'),
+                  _buildInfoRow('Status Akun', user.status),
+                  _buildInfoRow(
+                    'Status Verifikasi',
+                    user.verificationStatus.isEmpty
+                        ? 'Belum Terverifikasi'
+                        : user.verificationStatus,
+                  ),
+                  _buildInfoRow('Bio', user.bio),
+                ],
+              ),
+            ),
+            crossFadeState: _isAccountInfoExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 180),
+            firstCurve: Curves.easeOut,
+            secondCurve: Curves.easeOut,
+            sizeCurve: Curves.easeOut,
           ),
-          _buildInfoRow('Bio', user.bio),
         ],
       ),
     );

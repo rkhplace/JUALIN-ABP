@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import '../widgets/ui/frosted_app_bar.dart';
 
 class ProductScreen extends StatelessWidget {
   const ProductScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Product Screen")),
-      body: const Center(child: Text("Product Screen Screen")),
+    return const FrostedScaffold(
+      title: 'Product Screen',
+      body: Center(child: Text("Product Screen Screen")),
     );
   }
 }

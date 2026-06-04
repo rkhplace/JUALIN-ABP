@@ -127,19 +127,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     _fetchProducts();
   }
 
-  // Small nudge scroll helpers
-  void _scrollProdCategories(double delta) {
-    if (!_prodCategoryScrollController.hasClients) return;
-    final maxScroll = _prodCategoryScrollController.position.maxScrollExtent;
-    final target =
-        (_prodCategoryScrollController.offset + delta).clamp(0.0, maxScroll);
-    _prodCategoryScrollController.animateTo(
-      target,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeInOut,
-    );
-  }
-
   void _scrollProdToCategory(int index) {
     final ctx = _prodCategoryKeys[index].currentContext;
     if (ctx != null) {
@@ -171,104 +158,62 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   height: 48,
                   child: Row(
                     children: [
-                      // Left compact button
-                      Container(
-                        margin: const EdgeInsets.only(left: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.04),
-                                blurRadius: 4)
-                          ],
-                        ),
-                        child: IconButton(
-                          padding: const EdgeInsets.all(4),
-                          iconSize: 18,
-                          constraints: const BoxConstraints(),
-                          icon: const Icon(Icons.chevron_left,
-                              color: Color(0xFFE83030)),
-                          onPressed: () => _scrollProdCategories(-120),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // Scrollable pills
                       Expanded(
-                        child: SingleChildScrollView(
-                          controller: _prodCategoryScrollController,
-                          scrollDirection: Axis.horizontal,
-                          physics: const ClampingScrollPhysics(),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 8),
-                          child: Row(
-                            children: List.generate(
-                              _prodCategories.length,
-                              (index) {
-                                final label = _prodCategories[index];
-                                final isActive = _selectedLabel == label;
-                                return Container(
-                                  key: _prodCategoryKeys[index],
-                                  margin: const EdgeInsets.only(right: 8),
-                                  child: GestureDetector(
-                                    onTap: () => _onCategoryTap(label, index),
-                                    child: AnimatedContainer(
-                                      duration:
-                                          const Duration(milliseconds: 200),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 14, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: isActive
-                                            ? const Color(0xFFE83030)
-                                            : Colors.white,
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                            color: isActive
-                                                ? const Color(0xFFE83030)
-                                                : Colors.grey[300]!),
-                                      ),
-                                      child: Text(
-                                        label,
-                                        style: TextStyle(
+                        child: ScrollConfiguration(
+                          behavior: ScrollConfiguration.of(context)
+                              .copyWith(scrollbars: false),
+                          child: SingleChildScrollView(
+                            controller: _prodCategoryScrollController,
+                            scrollDirection: Axis.horizontal,
+                            physics: const ClampingScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            child: Row(
+                              children: List.generate(
+                                _prodCategories.length,
+                                (index) {
+                                  final label = _prodCategories[index];
+                                  final isActive = _selectedLabel == label;
+                                  return Container(
+                                    key: _prodCategoryKeys[index],
+                                    margin: const EdgeInsets.only(right: 8),
+                                    child: GestureDetector(
+                                      onTap: () => _onCategoryTap(label, index),
+                                      child: AnimatedContainer(
+                                        duration:
+                                            const Duration(milliseconds: 200),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 14, vertical: 6),
+                                        decoration: BoxDecoration(
                                           color: isActive
-                                              ? Colors.white
-                                              : Colors.black87,
-                                          fontWeight: isActive
-                                              ? FontWeight.w600
-                                              : FontWeight.w500,
-                                          fontSize: 13,
+                                              ? const Color(0xFFE83030)
+                                              : Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          border: Border.all(
+                                              color: isActive
+                                                  ? const Color(0xFFE83030)
+                                                  : Colors.grey[300]!),
+                                        ),
+                                        child: Text(
+                                          label,
+                                          style: TextStyle(
+                                            color: isActive
+                                                ? Colors.white
+                                                : Colors.black87,
+                                            fontWeight: isActive
+                                                ? FontWeight.w600
+                                                : FontWeight.w500,
+                                            fontSize: 13,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                );
-                              },
+                                  );
+                                },
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 8),
-                      // Right compact button
-                      Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.04),
-                                blurRadius: 4)
-                          ],
-                        ),
-                        child: IconButton(
-                          padding: const EdgeInsets.all(4),
-                          iconSize: 18,
-                          constraints: const BoxConstraints(),
-                          icon: const Icon(Icons.chevron_right,
-                              color: Color(0xFFE83030)),
-                          onPressed: () => _scrollProdCategories(120),
                         ),
                       ),
                     ],
@@ -349,7 +294,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                       : 2,
                               mainAxisSpacing: 16,
                               crossAxisSpacing: 16,
-                              mainAxisExtent: 340,
+                              mainAxisExtent: 300,
                             ),
                             itemCount: _products.length,
                             itemBuilder: (context, index) {

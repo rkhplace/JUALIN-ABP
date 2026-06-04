@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../widgets/ui/frosted_app_bar.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -9,14 +10,9 @@ class AdminHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final authService = AuthService();
 
-    return Scaffold(
+    return FrostedScaffold(
       backgroundColor: const Color(0xFFF7F7F8),
-      appBar: AppBar(
-        title: const Text('Admin'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
-      ),
+      title: 'Admin',
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),

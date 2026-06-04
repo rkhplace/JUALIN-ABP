@@ -5,6 +5,7 @@ import '../services/chat_service.dart';
 import '../services/auth_service.dart';
 import '../models/product.dart';
 import '../widgets/ui/login_required_dialog.dart';
+import '../widgets/ui/frosted_app_bar.dart';
 import 'chat_screen.dart';
 import '../../utils/formatters.dart';
 
@@ -137,13 +138,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_product?.title ?? 'Detail Produk'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
+    return FrostedScaffold(
+      title: _product?.title ?? 'Detail Produk',
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -184,26 +180,38 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Product Image
-                            Container(
-                              height: 300,
-                              width: double.infinity,
-                              color: Colors.grey[200],
-                              child: _product!.imagePath.isNotEmpty
-                                  ? Image.network(
-                                      _product!.imagePath,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Center(
-                                        child: Icon(Icons.image,
-                                            size: 80, color: Colors.grey[400]),
-                                      ),
-                                    )
-                                  : Center(
-                                      child: Icon(Icons.image,
-                                          size: 80, color: Colors.grey[400]),
-                                    ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(18),
+                                child: AspectRatio(
+                                  aspectRatio: 1.12,
+                                  child: Container(
+                                    width: double.infinity,
+                                    color: Colors.grey[200],
+                                    child: _product!.imagePath.isNotEmpty
+                                        ? Image.network(
+                                            _product!.imagePath,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                Center(
+                                              child: Icon(Icons.image,
+                                                  size: 72,
+                                                  color: Colors.grey[400]),
+                                            ),
+                                          )
+                                        : Center(
+                                            child: Icon(Icons.image,
+                                                size: 72,
+                                                color: Colors.grey[400]),
+                                          ),
+                                  ),
+                                ),
+                              ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.all(16.0),
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 14, 16, 16),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -216,7 +224,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       color: Color(0xFFE83030),
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 6),
                                   // Title
                                   Text(
                                     _product!.title,
@@ -226,10 +234,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       height: 1.3,
                                     ),
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 12),
                                   // Badges
                                   Wrap(
                                     spacing: 8,
+                                    runSpacing: 6,
                                     children: [
                                       _buildBadge(_product!.categoryName,
                                           Colors.grey[200]!, Colors.black87),
@@ -244,9 +253,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             Colors.blue[800]!),
                                     ],
                                   ),
-                                  const SizedBox(height: 24),
-                                  const Divider(),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 18),
+                                  const Divider(height: 1),
+                                  const SizedBox(height: 14),
                                   // Seller Info
                                   Row(
                                     children: [
@@ -275,9 +284,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 16),
-                                  const Divider(),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 14),
+                                  const Divider(height: 1),
+                                  const SizedBox(height: 14),
                                   // Description
                                   const Text('Deskripsi Produk',
                                       style: TextStyle(
@@ -289,9 +298,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                         ? 'Tidak ada deskripsi.'
                                         : _product!.description,
                                     style: const TextStyle(
-                                        color: Colors.black87, height: 1.5),
+                                      color: Colors.black87,
+                                      fontSize: 13,
+                                      height: 1.45,
+                                    ),
                                   ),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 6),
                                   Text(
                                     'Stok: ${_product!.stock}',
                                     style: TextStyle(

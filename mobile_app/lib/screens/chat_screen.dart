@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/ui/app_chrome.dart';
 import '../widgets/ui/login_required_dialog.dart';
+import '../widgets/ui/frosted_app_bar.dart';
 import '../services/chat_service.dart';
 import '../models/chat_room.dart';
 import '../models/chat_message.dart';
@@ -375,16 +376,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.roomName),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadMessages),
-        ],
-      ),
+    return FrostedScaffold(
+      title: widget.roomName,
+      actions: [
+        IconButton(icon: const Icon(Icons.refresh), onPressed: _loadMessages),
+      ],
       body: Column(
         children: [
           Expanded(child: _buildMessageList()),
