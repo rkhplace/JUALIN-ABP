@@ -269,7 +269,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 16),
         Text(
           user.name,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         Text(user.email, style: const TextStyle(color: Colors.black54)),
         const SizedBox(height: 8),
@@ -362,7 +362,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           const Text(
             'Informasi Akun',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           _buildInfoRow('Nama', user.name),

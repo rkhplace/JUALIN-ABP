@@ -81,7 +81,7 @@ class _ChatScreenState extends State<ChatScreen> {
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text('Pesan',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
           Expanded(child: _buildBody()),
         ],
@@ -149,7 +149,7 @@ class _ChatScreenState extends State<ChatScreen> {
             Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
             SizedBox(height: 16),
             Text('Tidak ada pesan',
-                style: TextStyle(fontSize: 16, color: Colors.black54)),
+                style: TextStyle(fontSize: 14, color: Colors.black54)),
             SizedBox(height: 8),
             Text('Mulai percakapan dengan penjual.',
                 style: TextStyle(color: Colors.black38, fontSize: 13)),

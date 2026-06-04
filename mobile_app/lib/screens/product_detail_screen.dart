@@ -211,7 +211,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   Text(
                                     formatCurrency(_product!.price),
                                     style: const TextStyle(
-                                      fontSize: 20,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                       color: Color(0xFFE83030),
                                     ),
@@ -221,7 +221,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   Text(
                                     _product!.title,
                                     style: const TextStyle(
-                                      fontSize: 18,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w500,
                                       height: 1.3,
                                     ),
@@ -281,7 +281,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   // Description
                                   const Text('Deskripsi Produk',
                                       style: TextStyle(
-                                          fontSize: 16,
+                                          fontSize: 13,
                                           fontWeight: FontWeight.bold)),
                                   const SizedBox(height: 8),
                                   Text(

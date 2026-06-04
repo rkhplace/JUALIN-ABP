@@ -179,7 +179,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: [
                             BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
+                                color: Colors.black.withValues(alpha: 0.04),
                                 blurRadius: 4)
                           ],
                         ),
@@ -199,7 +199,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         child: SingleChildScrollView(
                           controller: _prodCategoryScrollController,
                           scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
+                          physics: const ClampingScrollPhysics(),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 8),
                           child: Row(
@@ -258,7 +258,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: [
                             BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
+                                color: Colors.black.withValues(alpha: 0.04),
                                 blurRadius: 4)
                           ],
                         ),
@@ -283,7 +283,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           style: TextStyle(color: Colors.black54, fontSize: 13))
                       : Text(
                           _searchQuery.isNotEmpty
-                              ? '${_products.length} produk untuk \"$_searchQuery\"'
+                              ? '${_products.length} produk untuk "$_searchQuery"'
                               : '${_products.length} produk ditemukan',
                           style: const TextStyle(
                               color: Colors.black54, fontSize: 13),
@@ -331,7 +331,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 const SizedBox(height: 12),
                                 Text(
                                   _searchQuery.isNotEmpty
-                                      ? 'Produk \"$_searchQuery\" tidak ditemukan.'
+                                      ? 'Produk "$_searchQuery" tidak ditemukan.'
                                       : 'Tidak ada produk dalam kategori ini.',
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(color: Colors.black54),
