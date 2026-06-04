@@ -16,6 +16,7 @@ import 'screens/seller_dashboard_screen.dart';
 import 'screens/seller_products_screen.dart';
 import 'screens/seller_product_new_screen.dart';
 import 'screens/seller_product_edit_screen.dart';
+import 'screens/WalletScreen.dart';
 // Seller module screens
 import 'screens/seller/seller_main_screen.dart';
 import 'screens/seller/seller_orders_screen.dart';
@@ -52,6 +53,7 @@ class _MyAppState extends State<MyApp> {
       title: 'Jualin Mobile',
       theme: ThemeData(
         primaryColor: const Color(0xFFE83030),
+        scaffoldBackgroundColor: Colors.white,
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFE83030)),
         useMaterial3: true,
         textTheme: GoogleFonts.poppinsTextTheme(),
@@ -100,22 +102,30 @@ class _MyAppState extends State<MyApp> {
             ),
 
         // ── Seller module routes ─────────────────────────────
-        '/seller_main': (context) => const AuthRequiredScreen(
-              message: 'Silakan login terlebih dahulu untuk mengakses menu penjual.',
-              child: SellerMainScreen(),
-            ),
-        '/seller_orders': (context) => const AuthRequiredScreen(
-              message: 'Silakan login terlebih dahulu untuk melihat pesanan.',
-              child: SellerOrdersScreen(),
-            ),
-        '/seller_stats': (context) => const AuthRequiredScreen(
-              message: 'Silakan login terlebih dahulu untuk melihat statistik penjualan.',
-              child: SellerStatsScreen(),
-            ),
-        '/seller_withdraw': (context) => const AuthRequiredScreen(
-              message: 'Silakan login terlebih dahulu untuk menarik saldo.',
-              child: SellerWithdrawScreen(),
-            ),
+'/seller_main': (context) => const AuthRequiredScreen(
+      message: 'Silakan login terlebih dahulu untuk mengakses menu penjual.',
+      child: SellerMainScreen(),
+),
+
+'/seller_orders': (context) => const AuthRequiredScreen(
+      message: 'Silakan login terlebih dahulu untuk melihat pesanan.',
+      child: SellerOrdersScreen(),
+),
+
+'/seller_stats': (context) => const AuthRequiredScreen(
+      message: 'Silakan login terlebih dahulu untuk melihat statistik penjualan.',
+      child: SellerStatsScreen(),
+),
+
+'/seller_withdraw': (context) => const AuthRequiredScreen(
+      message: 'Silakan login terlebih dahulu untuk menarik saldo.',
+      child: SellerWithdrawScreen(),
+),
+
+'/wallet': (context) => const AuthRequiredScreen(
+      message: 'Silakan login terlebih dahulu untuk mengakses dompet.',
+      child: WalletScreen(),
+),
       },
       onGenerateRoute: (settings) {
         final routeName = settings.name ?? '';

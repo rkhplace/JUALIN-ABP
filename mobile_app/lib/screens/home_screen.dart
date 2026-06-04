@@ -37,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _fetchProducts();
     _startBannerAutoSlide();
+    _categoryKeys.addAll(List.generate(_categories.length, (_) => GlobalKey()));
   }
 
   void _startBannerAutoSlide() {
@@ -55,6 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _bannerTimer?.cancel();
     _bannerController.dispose();
+    _categoryScrollController.dispose();
     super.dispose();
   }
 
@@ -81,12 +83,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _onCategoryPillTap(String label) {
-    widget.onNavigateToProducts?.call(
-      category: label == 'Semua' ? null : label,
-    );
-  }
-
   void _onSearch(String query) {
     if (query.isEmpty) return;
     widget.onNavigateToProducts?.call(search: query);
@@ -99,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
         screenWidth > 800 ? 5 : (screenWidth > 600 ? 4 : 2);
 
     return AppChrome(
-      showTopBar: true,
+      showTopBar: false,
       showNavbar: true,
       showSearch: true,
       onSearch: _onSearch,
@@ -108,18 +104,19 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             // 1. Hero Banner — Auto-Sliding
             Container(
-              height: 180,
               margin: const EdgeInsets.all(16),
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: PageView.builder(
-                      controller: _bannerController,
-                      itemCount: _bannerImages.length,
-                      onPageChanged: (index) {
-                        setState(() => _currentBannerPage = index);
-                      },
+              child: AspectRatio(
+                aspectRatio: 16 / 7,
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: PageView.builder(
+                        controller: _bannerController,
+                        itemCount: _bannerImages.length,
+                        onPageChanged: (index) {
+                          setState(() => _currentBannerPage = index);
+                        },
                       itemBuilder: (context, index) {
                         return Image.asset(
                           _bannerImages[index],
@@ -157,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-
+            ),
             // 2. Section Title
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
@@ -173,20 +170,76 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             // 3. Category Pills — tapping navigates to Products tab with filter
+            // --- Category row with compact left/right buttons ---
             SizedBox(
               height: 48,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 8),
+              child: Row(
                 children: [
-                  _buildCategoryPill('Semua'),
-                  _buildCategoryPill('Elektronik'),
-                  _buildCategoryPill('Fashion'),
-                  _buildCategoryPill('Hobi & Olahraga'),
-                  _buildCategoryPill('Rumah Tangga'),
-                  _buildCategoryPill('Aksesoris'),
-                  _buildCategoryPill('Otomotif'),
+                  // Left button (compact)
+                  Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 4)
+                      ],
+                    ),
+                    child: IconButton(
+                      padding: const EdgeInsets.all(4),
+                      iconSize: 18,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.chevron_left,
+                          color: Color(0xFFE83030)),
+                      onPressed: () => _scrollCategories(-120),
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // Scrollable pills
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: _categoryScrollController,
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 8),
+                      child: Row(
+                        children: List.generate(
+                          _categories.length,
+                          (index) =>
+                              _buildCategoryPill(_categories[index], index),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // Right button (compact)
+                  Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 4)
+                      ],
+                    ),
+                    child: IconButton(
+                      padding: const EdgeInsets.all(4),
+                      iconSize: 18,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.chevron_right,
+                          color: Color(0xFFE83030)),
+                      onPressed: () => _scrollCategories(120),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -251,7 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisCount: crossAxisCount,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
-                  childAspectRatio: 0.52,
+                  mainAxisExtent: 340,
                 ),
                 itemCount: _products.length,
                 itemBuilder: (context, index) {
@@ -289,28 +342,80 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCategoryPill(String label) {
+  Widget _buildCategoryPill(String label, int index) {
+    final bool isSelected = _selectedCategoryIndex == index;
+
     return GestureDetector(
-      onTap: () => _onCategoryPillTap(label),
+      onTap: () => _onCategoryPillTap(label, index),
       child: Container(
+        key: _categoryKeys[index],
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isSelected ? const Color(0xFFE83030) : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey[300]!),
+          border: Border.all(
+            color: isSelected ? const Color(0xFFE83030) : Colors.grey[300]!,
+          ),
         ),
         child: Center(
           child: Text(
             label,
-            style: const TextStyle(
-              color: Colors.black87,
-              fontWeight: FontWeight.w500,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.black87,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               fontSize: 13,
             ),
           ),
         ),
       ),
+    );
+  }
+
+  final ScrollController _categoryScrollController = ScrollController();
+  final List<String> _categories = [
+    'Semua',
+    'Elektronik',
+    'Fashion',
+    'Hobi & Olahraga',
+    'Rumah Tangga',
+    'Aksesoris',
+    'Otomotif',
+  ];
+  final List<GlobalKey> _categoryKeys = [];
+  int _selectedCategoryIndex = 0;
+  void _scrollToCategory(int index) {
+    final context = _categoryKeys[index].currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 250),
+        alignment: 0.5,
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _onCategoryPillTap(String label, int index) {
+    setState(() {
+      _selectedCategoryIndex = index;
+    });
+    _scrollToCategory(index);
+
+    widget.onNavigateToProducts?.call(
+      category: label == 'Semua' ? null : label,
+    );
+  }
+
+  void _scrollCategories(double delta) {
+    if (!_categoryScrollController.hasClients) return;
+    final maxScroll = _categoryScrollController.position.maxScrollExtent;
+    final target =
+        (_categoryScrollController.offset + delta).clamp(0.0, maxScroll);
+    _categoryScrollController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
     );
   }
 }

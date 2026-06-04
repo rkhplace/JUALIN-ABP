@@ -383,7 +383,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: _selectedMethod == 'wallet'
-                            ? const Color(0xFFFFF0F0)
+                            ? Colors.white
                             : Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
@@ -465,7 +465,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: _selectedMethod == 'gateway'
-                            ? const Color(0xFFFFF0F0)
+                            ? Colors.white
                             : Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(

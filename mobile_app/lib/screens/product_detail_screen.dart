@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 import '../models/product.dart';
 import '../widgets/ui/login_required_dialog.dart';
 import 'chat_screen.dart';
+import '../../utils/formatters.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   const ProductDetailScreen({super.key});
@@ -208,9 +209,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 children: [
                                   // Price
                                   Text(
-                                    'Rp ${_product!.price}',
+                                    formatCurrency(_product!.price),
                                     style: const TextStyle(
-                                      fontSize: 24,
+                                      fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                       color: Color(0xFFE83030),
                                     ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/payment_service.dart';
 import '../services/escrow_service.dart';
+import 'escrow_qr_screen.dart';
 
 class PurchaseHistoryScreen extends StatefulWidget {
   const PurchaseHistoryScreen({super.key});
@@ -10,7 +11,8 @@ class PurchaseHistoryScreen extends StatefulWidget {
   State<PurchaseHistoryScreen> createState() => _PurchaseHistoryScreenState();
 }
 
-class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> with WidgetsBindingObserver {
+class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
+    with WidgetsBindingObserver {
   final PaymentService _paymentService = PaymentService();
   final EscrowService _escrowService = EscrowService();
 
@@ -18,7 +20,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> with Widg
   bool _isLoading = true;
   String? _errorMessage;
   bool _isProcessingAction = false;
-  
+
   bool _isWaitingForPayment = false;
   String? _currentOrderId;
 
@@ -126,7 +128,8 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> with Widg
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Ya, Refund', style: TextStyle(color: Colors.white)),
+            child:
+                const Text('Ya, Refund', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -141,7 +144,8 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> with Widg
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Refund berhasil diproses! Dana telah kembali ke Saldo.'),
+            content:
+                Text('Refund berhasil diproses! Dana telah kembali ke Saldo.'),
             backgroundColor: Colors.green,
           ),
         );
@@ -159,6 +163,32 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> with Widg
     } finally {
       if (mounted) setState(() => _isProcessingAction = false);
     }
+  }
+
+  void _showQrCode(String? authCode, String? orderId, dynamic amount) {
+    if (authCode == null || authCode.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kode tidak tersedia')),
+      );
+      return;
+    }
+
+    final parsedAmount = amount is num
+        ? amount.toInt()
+        : int.tryParse(amount?.toString() ?? '') ?? 0;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EscrowQrScreen(
+          transactionId: orderId ?? 'unknown',
+          amount: parsedAmount,
+          sellerId: 'buyer',
+          authCode: authCode,
+          expiresAt: null,
+        ),
+      ),
+    );
   }
 
   Color _statusColor(String status) {
@@ -294,15 +324,17 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> with Widg
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final p = _purchases[index];
-        final String status = p['transaction_status']?.toString().toLowerCase() ?? 'pending';
-        
+        final String status =
+            p['transaction_status']?.toString().toLowerCase() ?? 'pending';
+
         // Wait COD overrides regular status visually
         final bool isWaitingCod = status == 'waiting_cod';
         final String displayStatus = isWaitingCod ? 'waiting_cod' : status;
 
         final bool isPending = displayStatus == 'pending';
 
-        final String title = p['first_item_name']?.toString() ?? 'Order #${p['order_id']}';
+        final String title =
+            p['first_item_name']?.toString() ?? 'Order #${p['order_id']}';
         final String subtitle = p['seller_name']?.toString() ?? 'Penjual';
         final transactionInfo = p['transaction'] as Map<String, dynamic>? ?? {};
 
@@ -351,25 +383,31 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> with Widg
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: isPending ? const Color(0xFFE83030) : Colors.black87,
+                              color: isPending
+                                  ? const Color(0xFFE83030)
+                                  : Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             subtitle,
-                            style: const TextStyle(fontSize: 13, color: Colors.black54),
+                            style: const TextStyle(
+                                fontSize: 13, color: Colors.black54),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _statusColor(displayStatus).withValues(alpha: 0.12),
+                        color:
+                            _statusColor(displayStatus).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                            color: _statusColor(displayStatus).withValues(alpha: 0.4)),
+                            color: _statusColor(displayStatus)
+                                .withValues(alpha: 0.4)),
                       ),
                       child: Text(
                         _statusLabel(displayStatus),
@@ -383,7 +421,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> with Widg
                   ],
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Content Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -396,9 +434,12 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> with Widg
                         const SizedBox(width: 6),
                         Text(
                           p['transaction_time'] != null
-                              ? p['transaction_time'].toString().substring(0, 10)
+                              ? p['transaction_time']
+                                  .toString()
+                                  .substring(0, 10)
                               : '-',
-                          style: const TextStyle(fontSize: 13, color: Colors.black54),
+                          style: const TextStyle(
+                              fontSize: 13, color: Colors.black54),
                         ),
                       ],
                     ),
@@ -455,16 +496,41 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> with Widg
                                 letterSpacing: 4,
                               ),
                             ),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.red,
-                                side: const BorderSide(color: Colors.red),
-                                elevation: 0,
-                                visualDensity: VisualDensity.compact,
-                              ),
-                              onPressed: () => _handleRefund(p['transaction_id']),
-                              child: const Text('Refund Dana', style: TextStyle(fontWeight: FontWeight.bold)),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFE83030),
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                  onPressed: () => _showQrCode(
+                                    transactionInfo['auth_code']?.toString(),
+                                    p['order_id']?.toString(),
+                                    p['gross_amount'],
+                                  ),
+                                  child: const Text('QR Code',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                ),
+                                const SizedBox(height: 8),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: Colors.red,
+                                    side: const BorderSide(color: Colors.red),
+                                    elevation: 0,
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                  onPressed: () =>
+                                      _handleRefund(p['transaction_id']),
+                                  child: const Text('Refund Dana',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                ),
+                              ],
                             ),
                           ],
                         ),
