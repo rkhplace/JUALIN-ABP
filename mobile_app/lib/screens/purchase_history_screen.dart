@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/payment_service.dart';
 import '../services/escrow_service.dart';
+import '../widgets/ui/frosted_app_bar.dart';
 import 'escrow_qr_screen.dart';
 
 class PurchaseHistoryScreen extends StatefulWidget {
@@ -245,14 +246,9 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return FrostedScaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text('Riwayat Pembelian'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-      ),
+      title: 'Riwayat Pembelian',
       body: Stack(
         children: [
           RefreshIndicator(

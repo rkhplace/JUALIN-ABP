@@ -3,6 +3,7 @@ import '../services/seller_service.dart';
 import '../models/seller_product.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
+import '../widgets/ui/frosted_app_bar.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   const SellerDashboardScreen({super.key});
@@ -87,22 +88,20 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Color(0xFFF5F5F5),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFFE83030))),
+        body:
+            Center(child: CircularProgressIndicator(color: Color(0xFFE83030))),
       );
     }
 
-    final totalProducts = _totalProducts == 0 ? _products.length : _totalProducts;
+    final totalProducts =
+        _totalProducts == 0 ? _products.length : _totalProducts;
     final balance = _stats?['balance'];
-    final walletBalance = _stats?['wallet_balance'] ?? balance ?? _profileWalletBalance;
+    final walletBalance =
+        _stats?['wallet_balance'] ?? balance ?? _profileWalletBalance;
 
-    return Scaffold(
+    return FrostedScaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text('Dashboard Penjual'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-      ),
+      title: 'Dashboard Penjual',
       body: RefreshIndicator(
         color: const Color(0xFFE83030),
         onRefresh: _fetchDashboardData,
@@ -175,7 +174,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                       'Tambah Produk',
                       'Upload produk baru',
                       () async {
-                        await Navigator.pushNamed(context, '/seller_product_new');
+                        await Navigator.pushNamed(
+                            context, '/seller_product_new');
                         _fetchDashboardData();
                       },
                     ),
@@ -222,7 +222,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     );
   }
 
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
+  Widget _buildSummaryCard(
+      String title, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

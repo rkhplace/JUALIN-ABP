@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/seller_service.dart';
+import '../../widgets/ui/frosted_app_bar.dart';
 
 class SellerWithdrawScreen extends StatefulWidget {
   const SellerWithdrawScreen({super.key});
@@ -74,14 +75,9 @@ class _SellerWithdrawScreenState extends State<SellerWithdrawScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return FrostedScaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Tarik Saldo'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-      ),
+      title: 'Tarik Saldo',
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -96,16 +92,19 @@ class _SellerWithdrawScreenState extends State<SellerWithdrawScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFF0F0),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE83030).withValues(alpha: 0.3)),
+                    border: Border.all(
+                        color: const Color(0xFFE83030).withValues(alpha: 0.3)),
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.info_outline, color: Color(0xFFE83030), size: 20),
+                      Icon(Icons.info_outline,
+                          color: Color(0xFFE83030), size: 20),
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'Penarikan akan diproses dalam 1-3 hari kerja ke rekening bank yang terdaftar.',
-                          style: TextStyle(fontSize: 13, color: Color(0xFFE83030)),
+                          style:
+                              TextStyle(fontSize: 13, color: Color(0xFFE83030)),
                         ),
                       ),
                     ],
@@ -124,7 +123,9 @@ class _SellerWithdrawScreenState extends State<SellerWithdrawScreen> {
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Jumlah wajib diisi.';
                     final n = double.tryParse(v);
-                    if (n == null || n <= 0) return 'Masukkan jumlah yang valid.';
+                    if (n == null || n <= 0) {
+                      return 'Masukkan jumlah yang valid.';
+                    }
                     return null;
                   },
                 ),
@@ -136,8 +137,9 @@ class _SellerWithdrawScreenState extends State<SellerWithdrawScreen> {
                 TextFormField(
                   controller: _bankNameController,
                   decoration: _inputDecoration('Contoh: BCA, Mandiri, BNI'),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Nama bank wajib diisi.' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Nama bank wajib diisi.'
+                      : null,
                 ),
                 const SizedBox(height: 20),
 
@@ -149,8 +151,9 @@ class _SellerWithdrawScreenState extends State<SellerWithdrawScreen> {
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: _inputDecoration('Contoh: 1234567890'),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Nomor rekening wajib diisi.' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Nomor rekening wajib diisi.'
+                      : null,
                 ),
                 const SizedBox(height: 20),
 
@@ -160,8 +163,9 @@ class _SellerWithdrawScreenState extends State<SellerWithdrawScreen> {
                 TextFormField(
                   controller: _accountNameController,
                   decoration: _inputDecoration('Sesuai buku tabungan'),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Nama pemilik wajib diisi.' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Nama pemilik wajib diisi.'
+                      : null,
                 ),
                 const SizedBox(height: 16),
 
@@ -184,7 +188,9 @@ class _SellerWithdrawScreenState extends State<SellerWithdrawScreen> {
 
                 const SizedBox(height: 8),
                 _isLoading
-                    ? const Center(child: CircularProgressIndicator(color: Color(0xFFE83030)))
+                    ? const Center(
+                        child:
+                            CircularProgressIndicator(color: Color(0xFFE83030)))
                     : SizedBox(
                         height: 50,
                         child: ElevatedButton(
@@ -198,7 +204,8 @@ class _SellerWithdrawScreenState extends State<SellerWithdrawScreen> {
                           ),
                           child: const Text(
                             'Tarik Saldo',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),

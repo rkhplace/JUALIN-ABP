@@ -3,6 +3,7 @@ import 'package:mobile_app/screens/home_screen.dart';
 import 'package:mobile_app/screens/products_screen.dart';
 import 'package:mobile_app/screens/chat_screen.dart';
 import 'package:mobile_app/screens/profile_screen.dart';
+import 'package:mobile_app/screens/purchase_history_screen.dart';
 import 'package:mobile_app/services/auth_service.dart';
 import 'package:mobile_app/widgets/ui/login_required_dialog.dart';
 
@@ -17,28 +18,30 @@ class _MainScreenState extends State<MainScreen> {
   final AuthService _authService = AuthService();
   int _currentIndex = 0;
 
-  // Shared filter state for ProductsScreen — set by HomeScreen
-  String? _productsCategory;
-  String? _productsSearch;
-
-  /// Called by HomeScreen when a category pill or search is triggered.
+  /// Opens the product list from Home search/category entry points.
   void _navigateToProducts({String? category, String? search}) {
-    setState(() {
-      _productsCategory = category;
-      _productsSearch = search;
-      _currentIndex = 1; // switch to Products tab
-    });
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductsScreen(
+          initialCategory: category,
+          initialSearch: search,
+        ),
+      ),
+    );
   }
 
   Future<void> _handleTabTap(int index) async {
-    if (index == 2 || index == 3) {
+    if (index == 1 || index == 2 || index == 3) {
       final isLoggedIn = await _authService.isLoggedIn();
       if (!mounted) return;
 
       if (!isLoggedIn) {
-        final message = index == 2
-            ? 'Silakan login terlebih dahulu untuk membuka chat.'
-            : 'Silakan login terlebih dahulu untuk mengakses akun.';
+        final message = switch (index) {
+          1 => 'Silakan login terlebih dahulu untuk melihat riwayat transaksi.',
+          2 => 'Silakan login terlebih dahulu untuk membuka chat.',
+          _ => 'Silakan login terlebih dahulu untuk mengakses akun.',
+        };
         final shouldLogin = await showLoginRequiredDialog(
           context,
           message: message,
@@ -50,10 +53,6 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     setState(() {
-      if (index == 1) {
-        _productsCategory = null;
-        _productsSearch = null;
-      }
       _currentIndex = index;
     });
   }
@@ -62,11 +61,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final List<Widget> screens = [
       HomeScreen(onNavigateToProducts: _navigateToProducts),
-      ProductsScreen(
-        key: ValueKey('${_productsCategory}_$_productsSearch'),
-        initialCategory: _productsCategory,
-        initialSearch: _productsSearch,
-      ),
+      _currentIndex == 1 ? const PurchaseHistoryScreen() : const SizedBox(),
       const ChatScreen(),
       const ProfileScreen(),
     ];
@@ -89,9 +84,9 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.category_outlined),
-            activeIcon: Icon(Icons.category),
-            label: 'Products',
+            icon: Icon(Icons.receipt_long_outlined),
+            activeIcon: Icon(Icons.receipt_long),
+            label: 'Riwayat',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.chat_bubble_outline),

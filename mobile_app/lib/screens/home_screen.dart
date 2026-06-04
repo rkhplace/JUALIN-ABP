@@ -117,43 +117,43 @@ class _HomeScreenState extends State<HomeScreen> {
                         onPageChanged: (index) {
                           setState(() => _currentBannerPage = index);
                         },
-                      itemBuilder: (context, index) {
-                        return Image.asset(
-                          _bannerImages[index],
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: const Color(0xFF910A0A),
-                            child: const Center(
-                              child: Text(
-                                'JUALIN',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold),
+                        itemBuilder: (context, index) {
+                          return Image.asset(
+                            _bannerImages[index],
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: const Color(0xFF910A0A),
+                              child: const Center(
+                                child: Text(
+                                  'JUALIN',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold),
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  // Dot indicators
-                  Positioned(
-                    bottom: 12,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        _bannerImages.length,
-                        (index) => _buildDot(index == _currentBannerPage),
+                          );
+                        },
                       ),
                     ),
-                  ),
-                ],
+                    // Dot indicators
+                    Positioned(
+                      bottom: 12,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          _bannerImages.length,
+                          (index) => _buildDot(index == _currentBannerPage),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
             ),
             // 2. Section Title
             const Padding(
@@ -175,69 +175,24 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 48,
               child: Row(
                 children: [
-                  // Left button (compact)
-                  Container(
-                    margin: const EdgeInsets.only(left: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 4)
-                      ],
-                    ),
-                    child: IconButton(
-                      padding: const EdgeInsets.all(4),
-                      iconSize: 18,
-                      constraints: const BoxConstraints(),
-                      icon: const Icon(Icons.chevron_left,
-                          color: Color(0xFFE83030)),
-                      onPressed: () => _scrollCategories(-120),
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  // Scrollable pills
                   Expanded(
-                    child: SingleChildScrollView(
-                      controller: _categoryScrollController,
-                      scrollDirection: Axis.horizontal,
-                      physics: const ClampingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 8),
-                      child: Row(
-                        children: List.generate(
-                          _categories.length,
-                          (index) =>
-                              _buildCategoryPill(_categories[index], index),
+                    child: ScrollConfiguration(
+                      behavior: ScrollConfiguration.of(context)
+                          .copyWith(scrollbars: false),
+                      child: SingleChildScrollView(
+                        controller: _categoryScrollController,
+                        scrollDirection: Axis.horizontal,
+                        physics: const ClampingScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: Row(
+                          children: List.generate(
+                            _categories.length,
+                            (index) =>
+                                _buildCategoryPill(_categories[index], index),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  // Right button (compact)
-                  Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 4)
-                      ],
-                    ),
-                    child: IconButton(
-                      padding: const EdgeInsets.all(4),
-                      iconSize: 18,
-                      constraints: const BoxConstraints(),
-                      icon: const Icon(Icons.chevron_right,
-                          color: Color(0xFFE83030)),
-                      onPressed: () => _scrollCategories(120),
                     ),
                   ),
                 ],
@@ -304,7 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisCount: crossAxisCount,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
-                  mainAxisExtent: 340,
+                  mainAxisExtent: 300,
                 ),
                 itemCount: _products.length,
                 itemBuilder: (context, index) {
@@ -404,18 +359,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     widget.onNavigateToProducts?.call(
       category: label == 'Semua' ? null : label,
-    );
-  }
-
-  void _scrollCategories(double delta) {
-    if (!_categoryScrollController.hasClients) return;
-    final maxScroll = _categoryScrollController.position.maxScrollExtent;
-    final target =
-        (_categoryScrollController.offset + delta).clamp(0.0, maxScroll);
-    _categoryScrollController.animateTo(
-      target,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeInOut,
     );
   }
 }
