@@ -4,6 +4,7 @@ import '../../services/seller_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/escrow_service.dart';
 import '../../widgets/ui/frosted_app_bar.dart';
+import '../../widgets/ui/logo_loader.dart';
 
 class SellerOrdersScreen extends StatefulWidget {
   const SellerOrdersScreen({super.key});
@@ -65,7 +66,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
   }
 
   Future<void> _handleClaimPayment(
-      BuildContext context, int transactionId) async {
+      BuildContext context, Map<String, dynamic> order) async {
+    final transactionId = _parseInt(order['id']);
     debugPrint(
         '[SellerOrders] Claim button clicked for transactionId=$transactionId');
     final TextEditingController authCodeController = TextEditingController();
@@ -149,12 +151,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
       debugPrint(
           '[SellerOrders] Escrow claim success for transactionId=$transactionId');
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pembayaran berhasil diklaim ke saldo Anda!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      _showClaimSuccessDialog(context, order);
       await _fetchOrders();
     } catch (e) {
       debugPrint(
@@ -227,6 +224,116 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     return 'Rp ${val.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
   }
 
+  int _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  void _showClaimSuccessDialog(
+      BuildContext context, Map<String, dynamic> order) {
+    final orderId = order['order_id']?.toString() ?? order['id']?.toString();
+    final amount = _formatCurrency(order['total_amount']);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Icon(
+          Icons.check_circle,
+          color: Colors.green,
+          size: 64,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Text(
+              'Transaksi Berhasil Diklaim!',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Dana transaksi telah masuk ke saldo dompet Anda.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black54, fontSize: 13),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Column(
+                children: [
+                  if (orderId != null && orderId.isNotEmpty) ...[
+                    _buildDetailRow('Order ID', orderId),
+                    const SizedBox(height: 8),
+                  ],
+                  _buildDetailRow('Total Pembayaran', amount),
+                  const SizedBox(height: 8),
+                  _buildDetailRow(
+                    'Status',
+                    'DIKLAIM',
+                    valueColor: Colors.green[800],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE83030),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text(
+                'Tutup',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: const TextStyle(color: Colors.black54, fontSize: 13)),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: valueColor ?? Colors.black87,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FrostedScaffold(
@@ -253,8 +360,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
-          child: CircularProgressIndicator(color: Color(0xFFE83030)));
+      return const JualinLogoLoader(size: 64);
     }
     if (_errorMessage != null) {
       return Center(
@@ -405,7 +511,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                             debugPrint(
                               '[SellerOrders] Claim CTA pressed for orderId=${order['id']}',
                             );
-                            _handleClaimPayment(context, order['id']);
+                            _handleClaimPayment(context, order);
                           },
                     child: const Text('Klaim Pembayaran (Input Kode)',
                         style: TextStyle(fontWeight: FontWeight.bold)),

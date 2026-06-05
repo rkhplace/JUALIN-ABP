@@ -76,140 +76,146 @@ class _SellerWithdrawScreenState extends State<SellerWithdrawScreen> {
   @override
   Widget build(BuildContext context) {
     return FrostedScaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF5F5F5),
       title: 'Tarik Saldo',
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Header
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF0F0),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: const Color(0xFFE83030).withValues(alpha: 0.3)),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.info_outline,
-                          color: Color(0xFFE83030), size: 20),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Penarikan akan diproses dalam 1-3 hari kerja ke rekening bank yang terdaftar.',
-                          style:
-                              TextStyle(fontSize: 13, color: Color(0xFFE83030)),
-                        ),
-                      ),
-                    ],
-                  ),
+          padding: const EdgeInsets.all(16),
+          child: Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.black12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
-                const SizedBox(height: 28),
-
-                // Amount
-                _buildLabel('Jumlah Penarikan (Rp)'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _amountController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: _inputDecoration('Contoh: 100000'),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Jumlah wajib diisi.';
-                    final n = double.tryParse(v);
-                    if (n == null || n <= 0) {
-                      return 'Masukkan jumlah yang valid.';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-
-                // Bank Name
-                _buildLabel('Nama Bank'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _bankNameController,
-                  decoration: _inputDecoration('Contoh: BCA, Mandiri, BNI'),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Nama bank wajib diisi.'
-                      : null,
-                ),
-                const SizedBox(height: 20),
-
-                // Account Number
-                _buildLabel('Nomor Rekening'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _accountNumberController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: _inputDecoration('Contoh: 1234567890'),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Nomor rekening wajib diisi.'
-                      : null,
-                ),
-                const SizedBox(height: 20),
-
-                // Account Name
-                _buildLabel('Nama Pemilik Rekening'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _accountNameController,
-                  decoration: _inputDecoration('Sesuai buku tabungan'),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Nama pemilik wajib diisi.'
-                      : null,
-                ),
-                const SizedBox(height: 16),
-
-                // Error display
-                if (_errorMessage != null) ...[
+              ],
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.red[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red[200]!),
+                      color: const Color(0xFFFFF0F0),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFE83030).withValues(alpha: 0.3),
+                      ),
                     ),
-                    child: Text(
-                      _errorMessage!,
-                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline,
+                            color: Color(0xFFE83030), size: 20),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Penarikan akan diproses dalam 1-3 hari kerja ke rekening bank yang terdaftar.',
+                            style: TextStyle(
+                                fontSize: 13, color: Color(0xFFE83030)),
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  const SizedBox(height: 28),
+                  _buildLabel('Jumlah Penarikan (Rp)'),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _amountController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: _inputDecoration('Contoh: 100000'),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Jumlah wajib diisi.';
+                      final n = double.tryParse(v);
+                      if (n == null || n <= 0) {
+                        return 'Masukkan jumlah yang valid.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  _buildLabel('Nama Bank'),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _bankNameController,
+                    decoration: _inputDecoration('Contoh: BCA, Mandiri, BNI'),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Nama bank wajib diisi.'
+                        : null,
+                  ),
+                  const SizedBox(height: 20),
+                  _buildLabel('Nomor Rekening'),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _accountNumberController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: _inputDecoration('Contoh: 1234567890'),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Nomor rekening wajib diisi.'
+                        : null,
+                  ),
+                  const SizedBox(height: 20),
+                  _buildLabel('Nama Pemilik Rekening'),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _accountNameController,
+                    decoration: _inputDecoration('Sesuai buku tabungan'),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Nama pemilik wajib diisi.'
+                        : null,
                   ),
                   const SizedBox(height: 16),
-                ],
-
-                const SizedBox(height: 8),
-                _isLoading
-                    ? const Center(
-                        child:
-                            CircularProgressIndicator(color: Color(0xFFE83030)))
-                    : SizedBox(
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: _handleWithdraw,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE83030),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                  if (_errorMessage != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red[200]!),
+                      ),
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red, fontSize: 13),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  const SizedBox(height: 8),
+                  _isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                              color: Color(0xFFE83030)))
+                      : SizedBox(
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: _handleWithdraw,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE83030),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 3,
+                            ),
+                            child: const Text(
+                              'Tarik Saldo',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                           ),
-                          child: const Text(
-                            'Tarik Saldo',
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
                         ),
-                      ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

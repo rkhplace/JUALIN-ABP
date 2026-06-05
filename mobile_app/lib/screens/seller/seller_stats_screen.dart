@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/seller_service.dart';
 import '../../widgets/ui/frosted_app_bar.dart';
+import '../../widgets/ui/logo_loader.dart';
 
 class SellerStatsScreen extends StatefulWidget {
   const SellerStatsScreen({super.key});
@@ -65,8 +66,7 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
         color: const Color(0xFFE83030),
         onRefresh: _fetchStats,
         child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFFE83030)))
+            ? const JualinLogoLoader(size: 64)
             : _errorMessage != null
                 ? _buildError()
                 : _buildContent(),

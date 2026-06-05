@@ -2,10 +2,12 @@ import 'dart:io';
 import '../models/seller_product.dart';
 import 'api_client.dart';
 import 'api_config.dart';
+import 'auth_service.dart';
 import 'product_service.dart';
 
 class SellerService {
   final ApiClient _client = ApiClient();
+  final AuthService _authService = AuthService();
   final ProductService _productService = ProductService();
 
   // ── Products ─────────────────────────────────────────────────────────────
@@ -15,21 +17,28 @@ class SellerService {
   /// API: GET /v1/seller/products → { products: [...], ... }
   Future<List<SellerProduct>> getSellerProducts() async {
     try {
-      final response = await _client.get(ApiConfig.sellerProducts);
-      final rawList = _extractList(response, ['products']);
-      return rawList
-          .whereType<Map>()
-          .map((json) => SellerProduct.fromJson(Map<String, dynamic>.from(json)))
-          .toList();
+      final response = await _client.get(
+        ApiConfig.sellerProducts,
+        queryParams: {'per_page': '200'},
+      );
+      final products = _parseSellerProducts(response);
+      if (products.isNotEmpty) return products;
+
+      return await _getSellerProductsByCurrentUserId();
     } on ApiException catch (e) {
+      final fallback = await _getSellerProductsByCurrentUserId();
+      if (fallback.isNotEmpty) return fallback;
       throw Exception('Gagal memuat produk: ${e.message}');
     } catch (e) {
+      final fallback = await _getSellerProductsByCurrentUserId();
+      if (fallback.isNotEmpty) return fallback;
       throw Exception('Tidak dapat terhubung ke server.');
     }
   }
 
   /// Creates a new product for the authenticated seller.
-  Future<bool> createProduct(Map<String, String> data, {File? imageFile}) async {
+  Future<bool> createProduct(Map<String, String> data,
+      {File? imageFile}) async {
     try {
       await _productService.createProduct(data, imageFile: imageFile);
       return true;
@@ -52,21 +61,22 @@ class SellerService {
   /// Fetches the total product count for the authenticated seller.
   Future<int> getSellerProductTotal() async {
     try {
-      final response = await _client.get(ApiConfig.sellerProducts);
-      final total = response['totalProducts'] ??
-          response['total_products'] ??
-          response['data']?['totalProducts'] ??
-          response['data']?['total_products'] ??
-          response['pagination']?['total'];
-      if (total is num) return total.toInt();
-      final parsed = int.tryParse(total?.toString() ?? '');
-      if (parsed != null) return parsed;
+      final response = await _client.get(
+        ApiConfig.sellerProducts,
+        queryParams: {'per_page': '1'},
+      );
+      final total = _extractTotal(response);
+      if (total != null) return total;
 
       final rawList = _extractList(response, ['products']);
       return rawList.length;
     } on ApiException catch (e) {
+      final fallbackTotal = await _getSellerProductTotalByCurrentUserId();
+      if (fallbackTotal != null) return fallbackTotal;
       throw Exception('Gagal memuat total produk: ${e.message}');
     } catch (e) {
+      final fallbackTotal = await _getSellerProductTotalByCurrentUserId();
+      if (fallbackTotal != null) return fallbackTotal;
       throw Exception('Tidak dapat terhubung ke server.');
     }
   }
@@ -134,8 +144,10 @@ class SellerService {
         stats['total_completed_transactions'] ??= 0;
         stats['valid_order_count'] ??= 0;
       }
-      stats['wallet_balance'] =
-          stats['current_balance'] ?? stats['wallet_balance'] ?? stats['balance'] ?? 0;
+      stats['wallet_balance'] = stats['current_balance'] ??
+          stats['wallet_balance'] ??
+          stats['balance'] ??
+          0;
       return stats;
     } on ApiException catch (e) {
       throw Exception('Gagal memuat statistik: ${e.message}');
@@ -183,6 +195,64 @@ class SellerService {
   }
 
   // ── Withdraw ──────────────────────────────────────────────────────────────
+
+  List<SellerProduct> _parseSellerProducts(Map<String, dynamic> response) {
+    final rawList = _extractList(response, ['products']);
+    return rawList
+        .whereType<Map>()
+        .map((json) => SellerProduct.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
+  }
+
+  int? _extractTotal(Map<String, dynamic> response) {
+    final data = response['data'];
+    final total = response['totalProducts'] ??
+        response['total_products'] ??
+        (data is Map ? data['totalProducts'] : null) ??
+        (data is Map ? data['total_products'] : null) ??
+        response['pagination']?['total'];
+    if (total is num) return total.toInt();
+    return int.tryParse(total?.toString() ?? '');
+  }
+
+  Future<int> _currentUserId() async {
+    final idAndRole = await _authService.getUserIdAndRole();
+    final id = idAndRole['id'];
+    if (id is int) return id;
+    if (id is num) return id.toInt();
+    return int.tryParse(id?.toString() ?? '') ?? 0;
+  }
+
+  Future<List<SellerProduct>> _getSellerProductsByCurrentUserId() async {
+    final sellerId = await _currentUserId();
+    if (sellerId <= 0) return [];
+
+    final response = await _client.get(
+      ApiConfig.products,
+      requiresAuth: false,
+      queryParams: {
+        'seller_id': sellerId.toString(),
+        'per_page': '200',
+      },
+    );
+    return _parseSellerProducts(response);
+  }
+
+  Future<int?> _getSellerProductTotalByCurrentUserId() async {
+    final sellerId = await _currentUserId();
+    if (sellerId <= 0) return null;
+
+    final response = await _client.get(
+      ApiConfig.products,
+      requiresAuth: false,
+      queryParams: {
+        'seller_id': sellerId.toString(),
+        'per_page': '1',
+      },
+    );
+    return _extractTotal(response) ??
+        _extractList(response, ['products']).length;
+  }
 
   /// Requests a wallet withdrawal for the seller.
   ///

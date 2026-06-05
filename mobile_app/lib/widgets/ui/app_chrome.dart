@@ -7,6 +7,7 @@ class AppChrome extends StatefulWidget {
   final bool showTopBar;
   final bool showNavbar;
   final bool showSearch;
+  final bool showLogo;
   final ValueChanged<String>? onSearch;
 
   const AppChrome({
@@ -15,6 +16,7 @@ class AppChrome extends StatefulWidget {
     this.showTopBar = false,
     this.showNavbar = true,
     this.showSearch = false,
+    this.showLogo = true,
     this.onSearch,
   });
 
@@ -41,6 +43,7 @@ class _AppChromeState extends State<AppChrome> {
       appBar: widget.showNavbar
           ? CustomNavbar(
               showSearch: widget.showSearch,
+              showLogo: widget.showLogo,
               onSearch: widget.onSearch,
               scrolled: _scrolled,
             )

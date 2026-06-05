@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/ui/app_chrome.dart';
+import '../widgets/ui/logo_loader.dart';
 import '../widgets/product/product_card.dart';
 import '../services/product_service.dart';
 import '../models/product.dart';
@@ -103,58 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             // 1. Hero Banner — Auto-Sliding
-            Container(
-              margin: const EdgeInsets.all(16),
-              child: AspectRatio(
-                aspectRatio: 16 / 7,
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: PageView.builder(
-                        controller: _bannerController,
-                        itemCount: _bannerImages.length,
-                        onPageChanged: (index) {
-                          setState(() => _currentBannerPage = index);
-                        },
-                        itemBuilder: (context, index) {
-                          return Image.asset(
-                            _bannerImages[index],
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            errorBuilder: (_, __, ___) => Container(
-                              color: const Color(0xFF910A0A),
-                              child: const Center(
-                                child: Text(
-                                  'JUALIN',
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    // Dot indicators
-                    Positioned(
-                      bottom: 12,
-                      left: 0,
-                      right: 0,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(
-                          _bannerImages.length,
-                          (index) => _buildDot(index == _currentBannerPage),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            _buildHeroBanner(),
             // 2. Section Title
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
@@ -199,30 +149,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // 4. "Lihat semua" link
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: GestureDetector(
-                  onTap: () => widget.onNavigateToProducts?.call(),
-                  child: const Text(
-                    'Lihat semua',
-                    style: TextStyle(
-                      color: Color(0xFFE83030),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            const SizedBox(height: 16),
 
-            // 5. Product Grid (top 8 featured)
+            // 4. Product Grid (top 8 featured)
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.all(48.0),
-                child: Center(child: CircularProgressIndicator()),
+                child: JualinLogoLoader(size: 64),
               )
             else if (_errorMessage != null)
               Padding(
@@ -277,9 +210,130 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
 
+            if (!_isLoading && _errorMessage == null && _products.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                child: Center(
+                  child: TextButton(
+                    onPressed: () => widget.onNavigateToProducts?.call(),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFE83030),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
+                    child: const Text(
+                      'Lihat semua produk',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
             const SizedBox(height: 48),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeroBanner() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: -18,
+            right: 34,
+            top: 18,
+            bottom: -10,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xFFE83030).withValues(alpha: 0.08),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(34),
+                  topRight: Radius.circular(90),
+                  bottomLeft: Radius.circular(90),
+                  bottomRight: Radius.circular(34),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: -10,
+            top: -6,
+            child: Container(
+              width: 118,
+              height: 74,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE83030).withValues(alpha: 0.06),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(64),
+                  topRight: Radius.circular(24),
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(64),
+                ),
+              ),
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.all(4),
+            child: AspectRatio(
+              aspectRatio: 16 / 7,
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: PageView.builder(
+                      controller: _bannerController,
+                      itemCount: _bannerImages.length,
+                      onPageChanged: (index) {
+                        setState(() => _currentBannerPage = index);
+                      },
+                      itemBuilder: (context, index) {
+                        return Image.asset(
+                          _bannerImages[index],
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: const Color(0xFF910A0A),
+                            child: const Center(
+                              child: Text(
+                                'JUALIN',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 12,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        _bannerImages.length,
+                        (index) => _buildDot(index == _currentBannerPage),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

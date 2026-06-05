@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/ui/app_chrome.dart';
+import '../widgets/ui/logo_loader.dart';
 import '../widgets/product/product_card.dart';
 import '../services/product_service.dart';
 import '../models/product.dart';
@@ -145,6 +146,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       showTopBar: false,
       showNavbar: true,
       showSearch: true,
+      showLogo: false,
       onSearch: _onSearch,
       child: Column(
         children: [
@@ -234,7 +236,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               color: Colors.black54, fontSize: 13),
                         ),
                 ),
-                Container(height: 1, color: Colors.black12),
               ],
             ),
           ),
@@ -242,7 +243,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           // ── Product Grid ─────────────────────────────────────────────────
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const JualinLogoLoader(size: 64)
                 : _errorMessage != null
                     ? Center(
                         child: Padding(
