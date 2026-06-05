@@ -15,11 +15,15 @@ class ProductService {
   /// API response: { products: [...], totalProducts, totalPages, currentPage }
   Future<List<Product>> getProducts({
     int page = 1,
+    int perPage = 200,
     String? category,
     String? search,
   }) async {
     try {
-      final queryParams = <String, String>{'page': page.toString()};
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'per_page': perPage.toString(),
+      };
       if (category != null && category.isNotEmpty) {
         queryParams['category'] = category;
       }

@@ -7,6 +7,7 @@ import '../widgets/ui/custom_input.dart';
 import '../models/seller_product.dart';
 import '../services/seller_service.dart';
 import '../widgets/ui/frosted_app_bar.dart';
+import '../widgets/ui/logo_loader.dart';
 
 // Shared form used by both New and Edit screens
 class SellerProductFormScreen extends StatefulWidget {
@@ -263,7 +264,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
 
               const SizedBox(height: 16),
               _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const JualinLogoLoader(size: 44)
                   : CustomButton(
                       text: 'Simpan Produk',
                       onPressed: _handleSave,

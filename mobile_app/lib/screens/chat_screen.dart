@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/ui/app_chrome.dart';
 import '../widgets/ui/login_required_dialog.dart';
 import '../widgets/ui/frosted_app_bar.dart';
+import '../widgets/ui/logo_loader.dart';
 import '../services/chat_service.dart';
 import '../models/chat_room.dart';
 import '../models/chat_message.dart';
@@ -91,7 +92,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildBody() {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isLoading) return const JualinLogoLoader(size: 64);
 
     if (!_isLoggedIn) {
       return Center(
@@ -391,7 +392,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Widget _buildMessageList() {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isLoading) return const JualinLogoLoader(size: 64);
 
     if (_errorMessage != null) {
       return Center(

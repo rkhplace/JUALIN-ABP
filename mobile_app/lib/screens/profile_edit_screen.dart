@@ -7,6 +7,7 @@ import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 import '../widgets/ui/frosted_app_bar.dart';
+import '../widgets/ui/logo_loader.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   const ProfileEditScreen({super.key});
@@ -213,8 +214,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         ),
       ],
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFE83030)))
+          ? const JualinLogoLoader(size: 64)
           : _errorMessage != null && _user == null
               ? _buildError()
               : Form(

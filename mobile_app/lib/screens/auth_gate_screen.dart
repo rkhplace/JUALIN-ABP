@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../widgets/ui/logo_loader.dart';
 
 class AuthGateScreen extends StatefulWidget {
   const AuthGateScreen({super.key});
@@ -28,29 +29,7 @@ class _AuthGateScreenState extends State<AuthGateScreen> {
   Widget build(BuildContext context) {
     return const Scaffold(
       backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 42,
-              height: 42,
-              child: CircularProgressIndicator(
-                color: Color(0xFFE83030),
-                strokeWidth: 3,
-              ),
-            ),
-            SizedBox(height: 18),
-            Text(
-              'Memeriksa sesi...',
-              style: TextStyle(
-                color: Colors.black54,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
+      body: JualinLogoLoader(),
     );
   }
 }

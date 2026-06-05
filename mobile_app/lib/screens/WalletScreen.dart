@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/profile_service.dart';
 import '../services/payment_service.dart';
 import '../widgets/ui/frosted_app_bar.dart';
+import '../widgets/ui/logo_loader.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -60,8 +61,7 @@ class _WalletScreenState extends State<WalletScreen> {
       title: 'Saldo & Transaksi',
       backgroundColor: Colors.white,
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFE83030)))
+          ? const JualinLogoLoader(size: 64)
           : RefreshIndicator(
               onRefresh: _loadData,
               child: ListView(

@@ -3,9 +3,11 @@ import '../widgets/ui/custom_button.dart';
 import '../services/product_service.dart';
 import '../services/chat_service.dart';
 import '../services/auth_service.dart';
+import '../services/report_service.dart';
 import '../models/product.dart';
 import '../widgets/ui/login_required_dialog.dart';
 import '../widgets/ui/frosted_app_bar.dart';
+import '../widgets/ui/logo_loader.dart';
 import 'chat_screen.dart';
 import '../../utils/formatters.dart';
 
@@ -20,6 +22,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final ProductService _productService = ProductService();
   final ChatService _chatService = ChatService();
   final AuthService _authService = AuthService();
+  final ReportService _reportService = ReportService();
   Product? _product;
   bool _isLoading = true;
   bool _isChatLoading = false;
@@ -136,13 +139,351 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
+  Future<void> _handleReportProduct() async {
+    if (_product == null) return;
+
+    final loggedIn = await requireLogin(
+      context,
+      message: 'Silakan login terlebih dahulu untuk melaporkan produk.',
+    );
+    if (!mounted || !loggedIn) return;
+
+    final idAndRole = await _authService.getUserIdAndRole();
+    if (!mounted) return;
+
+    final currentUserId = idAndRole['id'] as int? ?? 0;
+    if (_product!.sellerId != 0 && currentUserId == _product!.sellerId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Anda tidak bisa melaporkan produk Anda sendiri.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    _showReportDialog();
+  }
+
+  void _showReportDialog() {
+    const reportReasons = [
+      'Produk Terlarang',
+      'Penipuan',
+      'Pornografi',
+      'Hak Cipta',
+      'Kategori Tidak Sesuai',
+      'Lainnya',
+    ];
+
+    String selectedReason = '';
+    String description = '';
+    String? reasonError;
+    String? descriptionError;
+    bool isSubmitting = false;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          Future<void> pickReportReason() async {
+            if (isSubmitting) return;
+
+            final picked = await showModalBottomSheet<String>(
+              context: context,
+              backgroundColor: Colors.white,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              builder: (sheetContext) => SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 44,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.black12,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Pilih Alasan Laporan',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...reportReasons.map(
+                        (reason) {
+                          final isSelected = selectedReason == reason;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Material(
+                              color: isSelected
+                                  ? const Color(0xFFFFEFEF)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(14),
+                                onTap: () =>
+                                    Navigator.pop(sheetContext, reason),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 13,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? const Color(0xFFE83030)
+                                          : Colors.black12,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          reason,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: isSelected
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                            color: isSelected
+                                                ? const Color(0xFFE83030)
+                                                : Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                      if (isSelected)
+                                        const Icon(
+                                          Icons.check_circle,
+                                          color: Color(0xFFE83030),
+                                          size: 20,
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+
+            if (picked == null || !context.mounted) return;
+            setDialogState(() {
+              selectedReason = picked;
+              reasonError = null;
+            });
+          }
+
+          Future<void> submitReport() async {
+            setDialogState(() {
+              reasonError = selectedReason.isEmpty
+                  ? 'Pilih alasan laporan produk.'
+                  : null;
+              descriptionError = description.trim().isEmpty
+                  ? 'Deskripsi laporan wajib diisi.'
+                  : null;
+            });
+            if (reasonError != null || descriptionError != null) return;
+
+            setDialogState(() => isSubmitting = true);
+            try {
+              await _reportService.createProductReport(
+                productId: _product!.id,
+                type: selectedReason,
+                description: description.trim(),
+                reportedUserId:
+                    _product!.sellerId == 0 ? null : _product!.sellerId,
+                reportedUsername: _product!.sellerName,
+              );
+              if (!context.mounted) return;
+              Navigator.pop(dialogContext);
+              _showReportSuccessDialog();
+            } catch (e) {
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(e.toString().replaceFirst('Exception: ', '')),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              setDialogState(() => isSubmitting = false);
+            }
+          }
+
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            title: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Laporkan Produk',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                IconButton(
+                  onPressed:
+                      isSubmitting ? null : () => Navigator.pop(dialogContext),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Pilih jenis laporan dan jelaskan detailnya.',
+                    style: TextStyle(color: Colors.black54, fontSize: 13),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Alasan Laporan',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildReportReasonField(
+                    selectedReason: selectedReason,
+                    hint: 'Pilih alasan laporan...',
+                    enabled: !isSubmitting,
+                    errorText: reasonError,
+                    onTap: pickReportReason,
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Detail Laporan',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    enabled: !isSubmitting,
+                    minLines: 4,
+                    maxLines: 5,
+                    onChanged: (value) {
+                      description = value;
+                      if (descriptionError != null) {
+                        setDialogState(() => descriptionError = null);
+                      }
+                    },
+                    decoration: _reportInputDecoration(
+                      selectedReason == 'Lainnya'
+                          ? 'Jelaskan alasan custom Anda...'
+                          : 'Tuliskan detail masalah produk di sini...',
+                      errorText: descriptionError,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
+            actions: [
+              OutlinedButton(
+                onPressed:
+                    isSubmitting ? null : () => Navigator.pop(dialogContext),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.black87,
+                  side: const BorderSide(color: Colors.black12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: isSubmitting ? null : submitReport,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE83030),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(isSubmitting ? 'Mengirim...' : 'Kirim Laporan'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showReportSuccessDialog() {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Icon(Icons.check_circle, color: Colors.green, size: 64),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Laporan Berhasil Dikirim',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Laporan produk Anda telah diterima dan akan ditinjau oleh admin.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black54, fontSize: 13),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE83030),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: const Text(
+                'Tutup',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FrostedScaffold(
       title: _product?.title ?? 'Detail Produk',
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const JualinLogoLoader(size: 64)
             : _errorMessage != null
                 ? Center(
                     child: Padding(
@@ -309,6 +650,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     style: TextStyle(
                                         color: Colors.grey[600], fontSize: 13),
                                   ),
+                                  const SizedBox(height: 14),
+                                  OutlinedButton.icon(
+                                    onPressed: _handleReportProduct,
+                                    icon: const Icon(Icons.flag_outlined,
+                                        size: 18),
+                                    label: const Text('Laporkan Produk'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFFE83030),
+                                      side: const BorderSide(
+                                          color: Color(0xFFE83030)),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14, vertical: 10),
+                                      textStyle: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -388,6 +750,103 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         style: TextStyle(
             fontSize: 12, color: textColor, fontWeight: FontWeight.w600),
       ),
+    );
+  }
+
+  InputDecoration _reportInputDecoration(String hint, {String? errorText}) {
+    return InputDecoration(
+      hintText: hint,
+      errorText: errorText,
+      hintStyle: const TextStyle(color: Colors.black38, fontSize: 13),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.black12),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.black12),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE83030)),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red),
+      ),
+    );
+  }
+
+  Widget _buildReportReasonField({
+    required String selectedReason,
+    required String hint,
+    required bool enabled,
+    required VoidCallback onTap,
+    String? errorText,
+  }) {
+    final hasError = errorText != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: enabled ? onTap : null,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              decoration: BoxDecoration(
+                color: enabled ? Colors.white : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: hasError ? Colors.red : Colors.black12,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      selectedReason.isEmpty ? hint : selectedReason,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: selectedReason.isEmpty
+                            ? Colors.black38
+                            : Colors.black87,
+                        fontWeight: selectedReason.isEmpty
+                            ? FontWeight.w400
+                            : FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: enabled ? const Color(0xFFE83030) : Colors.black26,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (hasError) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Text(
+              errorText,
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

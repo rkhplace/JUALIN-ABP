@@ -4,6 +4,7 @@ import '../models/product.dart';
 import '../services/payment_service.dart';
 import '../services/profile_service.dart';
 import '../widgets/ui/frosted_app_bar.dart';
+import '../widgets/ui/logo_loader.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final Product product;
@@ -202,6 +203,8 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Icon(
           pending ? Icons.access_time_filled : Icons.check_circle,
@@ -316,8 +319,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       backgroundColor: const Color(0xFFF5F5F5),
       title: 'Checkout',
       body: _isLoadingWallet
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFE83030)))
+          ? const JualinLogoLoader(size: 64)
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(

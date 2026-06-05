@@ -19,13 +19,26 @@ class SellerProduct {
 
   factory SellerProduct.fromJson(Map<String, dynamic> json) {
     return SellerProduct(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? json['title'] ?? '',
-      price: json['price'] != null ? int.tryParse(json['price'].toString()) ?? 0 : 0,
-      stock: json['stock'] ?? 0,
-      imagePath: json['image_path'] ?? json['image'] ?? '',
-      views: json['views'] ?? 0,
-      status: json['status'] ?? 'active',
+      id: _parseInt(json['id']),
+      name: json['name']?.toString() ?? json['title']?.toString() ?? '',
+      price: _parseInt(json['price']),
+      stock: _parseInt(json['stock_quantity'] ?? json['stock']),
+      imagePath: _parseImagePath(json['image_path'] ?? json['image']),
+      views: _parseInt(json['views']),
+      status: json['status']?.toString() ?? 'active',
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static String _parseImagePath(dynamic value) {
+    if (value is List && value.isNotEmpty) {
+      return value.first?.toString() ?? '';
+    }
+    return value?.toString() ?? '';
   }
 }

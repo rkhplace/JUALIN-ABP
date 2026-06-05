@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/seller_service.dart';
 import '../models/seller_product.dart';
 import '../widgets/ui/frosted_app_bar.dart';
+import '../widgets/ui/logo_loader.dart';
 
 class SellerProductsScreen extends StatefulWidget {
   const SellerProductsScreen({super.key});
@@ -104,7 +105,7 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
       ],
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const JualinLogoLoader(size: 64)
             : _errorMessage != null
                 ? Center(
                     child: Padding(

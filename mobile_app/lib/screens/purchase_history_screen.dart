@@ -1,8 +1,11 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/payment_service.dart';
 import '../services/escrow_service.dart';
 import '../widgets/ui/frosted_app_bar.dart';
+import '../widgets/ui/logo_loader.dart';
 import 'escrow_qr_screen.dart';
 
 class PurchaseHistoryScreen extends StatefulWidget {
@@ -117,22 +120,48 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
   Future<void> _handleRefund(int transactionId) async {
     final bool? confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Request Refund'),
-        content: const Text(
-            'Apakah Anda yakin ingin membatalkan pesanan ini? Dana akan dikembalikan ke saldo Jualin Anda.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child:
-                const Text('Ya, Refund', style: TextStyle(color: Colors.white)),
+          title: const Text(
+            'Request Refund',
+            style: TextStyle(fontWeight: FontWeight.w700),
           ),
-        ],
+          content: const Text(
+            'Apakah Anda yakin ingin membatalkan pesanan ini? Dana akan dikembalikan ke saldo Jualin Anda.',
+            style: TextStyle(fontSize: 13, height: 1.4),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFE83030),
+              ),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE83030),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+              ),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Ya, Refund'),
+            ),
+          ],
+        ),
       ),
     );
 
@@ -143,13 +172,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
     try {
       await _escrowService.refundPayment(transactionId);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text('Refund berhasil diproses! Dana telah kembali ke Saldo.'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        _showRefundSuccessDialog(context);
       }
       _fetchHistory();
     } catch (e) {
@@ -187,6 +210,66 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
           sellerId: 'buyer',
           authCode: authCode,
           expiresAt: null,
+        ),
+      ),
+    );
+  }
+
+  void _showRefundSuccessDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          title: const Icon(
+            Icons.check_circle,
+            color: Colors.green,
+            size: 64,
+          ),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Transaksi Berhasil Dibatalkan',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 12),
+              Text(
+                'Dana refund telah dikembalikan ke saldo Jualin Anda.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.black54, fontSize: 13),
+              ),
+            ],
+          ),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE83030),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text(
+                  'Tutup',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -270,8 +353,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
-          child: CircularProgressIndicator(color: Color(0xFFE83030)));
+      return const JualinLogoLoader(size: 64);
     }
     if (_errorMessage != null) {
       return Center(

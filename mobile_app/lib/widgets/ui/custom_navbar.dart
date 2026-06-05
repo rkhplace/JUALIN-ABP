@@ -6,12 +6,14 @@ import 'logo.dart';
 
 class CustomNavbar extends StatefulWidget implements PreferredSizeWidget {
   final bool showSearch;
+  final bool showLogo;
   final ValueChanged<String>? onSearch;
   final bool scrolled;
 
   const CustomNavbar({
     super.key,
     this.showSearch = true,
+    this.showLogo = true,
     this.onSearch,
     this.scrolled = false,
   });
@@ -100,13 +102,14 @@ class _CustomNavbarState extends State<CustomNavbar> {
       ),
       title: Row(
         children: [
-          const Logo(
-            width: 88,
-            height: 38,
-            alignment: Alignment.centerLeft,
-          ),
+          if (widget.showLogo)
+            const Logo(
+              width: 88,
+              height: 38,
+              alignment: Alignment.centerLeft,
+            ),
           if (widget.showSearch) ...[
-            const SizedBox(width: 8),
+            if (widget.showLogo) const SizedBox(width: 8),
             Expanded(
               child: Container(
                 height: 32,
