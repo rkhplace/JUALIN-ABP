@@ -31,6 +31,7 @@ class ApiConfig {
   static const String paymentHistory = '/payments/history';
   static const String sellerStats = '/transactions/income/statistics';
   static const String sellerWithdraw = '/transactions/withdraw';
+  static const String sellerVerificationStatus = '/seller/verification-status';
   static const String reports = '/reports';
   static const String escrow = '/escrow';
   static String escrowRefund(int transactionId) =>
@@ -42,4 +43,7 @@ class ApiConfig {
   static const String chatRooms = '/chat/rooms';
   static const String chatRoomsStart = '/chat/rooms/start';
   static String chatMessages(int roomId) => '/chat/rooms/$roomId/messages';
+
+  // ── Notifications ───────────────────────────────
+  static const String notifications = '/notifications';
 }
