@@ -3,6 +3,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/product.dart';
 import '../services/payment_service.dart';
 import '../services/profile_service.dart';
+import '../widgets/ui/frosted_app_bar.dart';
+import '../widgets/ui/logo_loader.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final Product product;
@@ -12,7 +14,8 @@ class CheckoutScreen extends StatefulWidget {
   State<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
-class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObserver {
+class _CheckoutScreenState extends State<CheckoutScreen>
+    with WidgetsBindingObserver {
   final PaymentService _paymentService = PaymentService();
   final ProfileService _profileService = ProfileService();
 
@@ -61,9 +64,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
       if (history.isNotEmpty) {
         // The most recent transaction is the first item
         final latest = history.first;
-        final status = latest['transaction_status']?.toString().toLowerCase() ?? 'pending';
+        final status =
+            latest['transaction_status']?.toString().toLowerCase() ?? 'pending';
 
-        if (['verified', 'processing', 'completed', 'waiting_cod'].contains(status)) {
+        if (['verified', 'processing', 'completed', 'waiting_cod']
+            .contains(status)) {
           _showSuccessModal(pending: false, transactionData: latest);
         } else {
           _showSuccessModal(pending: true, transactionData: latest);
@@ -83,10 +88,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
       final user = await _profileService.getProfile();
       if (mounted) {
         setState(() {
-          _walletBalance = user?.walletBalance ?? 0.0; // Assuming user model has this
+          _walletBalance =
+              user?.walletBalance ?? 0.0; // Assuming user model has this
           _isLoadingWallet = false;
         });
-        
+
         // Auto-select wallet if sufficient
         if (_walletBalance >= widget.product.price) {
           setState(() => _selectedMethod = 'wallet');
@@ -111,17 +117,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
     try {
       if (_selectedMethod == 'wallet') {
         // WALLET FLOW: POST /transactions/pay-wallet
-        await _paymentService.payWallet(widget.product.sellerId, widget.product.id);
+        await _paymentService.payWallet(
+            widget.product.sellerId, widget.product.id);
         if (mounted) _showSuccessModal(isWallet: true);
       } else {
         // GATEWAY FLOW:
         // 1. Create transaction
-        final trxId = await _paymentService.createTransaction(widget.product.sellerId, widget.product.id);
-        
+        final trxId = await _paymentService.createTransaction(
+            widget.product.sellerId, widget.product.id);
+
         // 2. Create Payment gateway token
         // Fetch current user details via profile
         final user = await _profileService.getProfile();
-        
+
         final gatewayResp = await _paymentService.createGatewayPayment(trxId, {
           'first_name': user?.name ?? 'User',
           'email': user?.email ?? 'user@example.com',
@@ -148,7 +156,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
         // Setup waiting state for lifecycle observer
         _isWaitingForPayment = true;
         // Do NOT process or reset `_isProcessing` yet, keep loading spinner.
-        return; 
+        return;
       }
     } catch (e) {
       if (mounted) {
@@ -158,15 +166,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
         });
       }
     }
-    // We only reach here if an error occurred or wallet was successful. 
+    // We only reach here if an error occurred or wallet was successful.
     // If it's gateway, the observer will fire `_isProcessing = false`.
     if (mounted && _selectedMethod == 'wallet') {
       setState(() => _isProcessing = false);
     }
   }
 
-  void _showSuccessModal({bool pending = false, Map<String, dynamic>? transactionData, bool isWallet = false}) {
-    String detailTitle = pending ? 'Menunggu Pembayaran' : 'Pembayaran Berhasil!';
+  void _showSuccessModal(
+      {bool pending = false,
+      Map<String, dynamic>? transactionData,
+      bool isWallet = false}) {
+    String detailTitle =
+        pending ? 'Menunggu Pembayaran' : 'Pembayaran Berhasil!';
     String detailSubtitle = pending
         ? 'Silakan selesaikan pembayaran Anda di jendela Midtrans.'
         : 'Pesanan Anda telah diteruskan ke penjual. Terima kasih!';
@@ -191,6 +203,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Icon(
           pending ? Icons.access_time_filled : Icons.check_circle,
@@ -232,8 +246,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
                       const SizedBox(height: 8),
                     ],
                     if (status != null) ...[
-                      _buildDetailRow('Status', status, 
-                          valueColor: pending ? Colors.orange[800] : Colors.green[800]),
+                      _buildDetailRow('Status', status,
+                          valueColor:
+                              pending ? Colors.orange[800] : Colors.green[800]),
                     ],
                   ],
                 ),
@@ -272,7 +287,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+        Text(label,
+            style: const TextStyle(color: Colors.black54, fontSize: 13)),
         Text(
           value,
           style: TextStyle(
@@ -299,16 +315,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
   Widget build(BuildContext context) {
     final bool isWalletSufficient = _walletBalance >= widget.product.price;
 
-    return Scaffold(
+    return FrostedScaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text('Checkout'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-      ),
+      title: 'Checkout',
       body: _isLoadingWallet
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFFE83030)))
+          ? const JualinLogoLoader(size: 64)
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -338,7 +349,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
                                   width: 80,
                                   height: 80,
                                   color: Colors.grey[200],
-                                  child: const Icon(Icons.image, color: Colors.grey),
+                                  child: const Icon(Icons.image,
+                                      color: Colors.grey),
                                 ),
                         ),
                         const SizedBox(width: 16),
@@ -371,7 +383,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
 
                   const SizedBox(height: 24),
                   const Text('Metode Pembayaran',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                   const SizedBox(height: 12),
 
                   // Wallet Option
@@ -395,7 +408,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
                         boxShadow: _selectedMethod == 'wallet'
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFFE83030).withValues(alpha: 0.1),
+                                  color: const Color(0xFFE83030)
+                                      .withValues(alpha: 0.1),
                                   blurRadius: 8,
                                 )
                               ]
@@ -410,7 +424,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
                             groupValue: _selectedMethod,
                             // ignore: deprecated_member_use
                             onChanged: isWalletSufficient
-                                ? (val) => setState(() => _selectedMethod = val!)
+                                ? (val) =>
+                                    setState(() => _selectedMethod = val!)
                                 : null,
                             activeColor: const Color(0xFFE83030),
                           ),
@@ -477,7 +492,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> with WidgetsBindingObse
                         boxShadow: _selectedMethod == 'gateway'
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFFE83030).withValues(alpha: 0.1),
+                                  color: const Color(0xFFE83030)
+                                      .withValues(alpha: 0.1),
                                   blurRadius: 8,
                                 )
                               ]

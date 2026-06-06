@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/seller_service.dart';
+import '../../widgets/ui/frosted_app_bar.dart';
+import '../../widgets/ui/logo_loader.dart';
 
 class SellerStatsScreen extends StatefulWidget {
   const SellerStatsScreen({super.key});
@@ -57,19 +59,14 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return FrostedScaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text('Statistik Penjualan'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-      ),
+      title: 'Statistik Penjualan',
       body: RefreshIndicator(
         color: const Color(0xFFE83030),
         onRefresh: _fetchStats,
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: Color(0xFFE83030)))
+            ? const JualinLogoLoader(size: 64)
             : _errorMessage != null
                 ? _buildError()
                 : _buildContent(),
@@ -87,7 +84,8 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
             children: [
               const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
               const SizedBox(height: 12),
-              Text(_errorMessage!, textAlign: TextAlign.center,
+              Text(_errorMessage!,
+                  textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.black54)),
               const SizedBox(height: 12),
               TextButton.icon(
@@ -105,8 +103,9 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
   Widget _buildContent() {
     final balance = _stats?['balance'] ?? 0;
     final totalSales = _stats?['total_sales'] ?? balance;
-    final completedTransactions =
-        _stats?['total_completed_transactions'] ?? _stats?['valid_order_count'] ?? 0;
+    final completedTransactions = _stats?['total_completed_transactions'] ??
+        _stats?['valid_order_count'] ??
+        0;
     final transferred = _stats?['transferred'] ?? 0;
     final chartData = (_stats?['chart_data'] as List<dynamic>?) ?? [];
     final walletBalance = _stats?['wallet_balance'] ?? balance;
@@ -137,7 +136,9 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
             children: [
               const Text(
                 'Saldo Tersedia',
-                style: TextStyle(color: Colors.white70, fontSize: 13,
+                style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
                     fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 6),
@@ -151,8 +152,9 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () => Navigator.pushNamed(context, '/seller_withdraw')
-                    .then((_) => _fetchStats()),
+                onPressed: () =>
+                    Navigator.pushNamed(context, '/seller_withdraw')
+                        .then((_) => _fetchStats()),
                 icon: const Icon(Icons.account_balance_wallet, size: 18),
                 label: const Text('Tarik Saldo'),
                 style: ElevatedButton.styleFrom(
@@ -161,7 +163,8 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 ),
               ),
             ],
@@ -220,7 +223,11 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
               Row(
                 children: ['Week', 'Month', 'Year'].map((p) {
                   final selected = _period == p;
-                  final labels = {'Week': 'Minggu', 'Month': 'Bulan', 'Year': 'Tahun'};
+                  final labels = {
+                    'Week': 'Minggu',
+                    'Month': 'Bulan',
+                    'Year': 'Tahun'
+                  };
                   return Expanded(
                     child: GestureDetector(
                       onTap: () {
@@ -231,7 +238,9 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
                         margin: const EdgeInsets.symmetric(horizontal: 3),
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
-                          color: selected ? const Color(0xFFE83030) : const Color(0xFFF5F5F5),
+                          color: selected
+                              ? const Color(0xFFE83030)
+                              : const Color(0xFFF5F5F5),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -239,7 +248,8 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: selected ? Colors.white : Colors.black54,
-                            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight:
+                                selected ? FontWeight.bold : FontWeight.normal,
                             fontSize: 13,
                           ),
                         ),
@@ -270,7 +280,8 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -289,10 +300,12 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
         children: [
           Icon(icon, color: color, size: 24),
           const SizedBox(height: 8),
-          Text(title, style: const TextStyle(fontSize: 11, color: Colors.black45)),
+          Text(title,
+              style: const TextStyle(fontSize: 11, color: Colors.black45)),
           const SizedBox(height: 4),
           Text(value,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              style:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -364,7 +377,8 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
                 width: 72,
                 child: Text(
                   _formatCurrency(income),
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                      fontSize: 10, fontWeight: FontWeight.w600),
                   textAlign: TextAlign.right,
                   overflow: TextOverflow.ellipsis,
                 ),

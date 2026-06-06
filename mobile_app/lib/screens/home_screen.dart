@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/ui/app_chrome.dart';
+import '../widgets/ui/logo_loader.dart';
 import '../widgets/product/product_card.dart';
 import '../services/product_service.dart';
 import '../models/product.dart';
@@ -103,58 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             // 1. Hero Banner — Auto-Sliding
-            Container(
-              margin: const EdgeInsets.all(16),
-              child: AspectRatio(
-                aspectRatio: 16 / 7,
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: PageView.builder(
-                        controller: _bannerController,
-                        itemCount: _bannerImages.length,
-                        onPageChanged: (index) {
-                          setState(() => _currentBannerPage = index);
-                        },
-                      itemBuilder: (context, index) {
-                        return Image.asset(
-                          _bannerImages[index],
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: const Color(0xFF910A0A),
-                            child: const Center(
-                              child: Text(
-                                'JUALIN',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  // Dot indicators
-                  Positioned(
-                    bottom: 12,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        _bannerImages.length,
-                        (index) => _buildDot(index == _currentBannerPage),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ),
+            _buildHeroBanner(),
             // 2. Section Title
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
@@ -175,99 +125,37 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 48,
               child: Row(
                 children: [
-                  // Left button (compact)
-                  Container(
-                    margin: const EdgeInsets.only(left: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 4)
-                      ],
-                    ),
-                    child: IconButton(
-                      padding: const EdgeInsets.all(4),
-                      iconSize: 18,
-                      constraints: const BoxConstraints(),
-                      icon: const Icon(Icons.chevron_left,
-                          color: Color(0xFFE83030)),
-                      onPressed: () => _scrollCategories(-120),
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  // Scrollable pills
                   Expanded(
-                    child: SingleChildScrollView(
-                      controller: _categoryScrollController,
-                      scrollDirection: Axis.horizontal,
-                      physics: const ClampingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 8),
-                      child: Row(
-                        children: List.generate(
-                          _categories.length,
-                          (index) =>
-                              _buildCategoryPill(_categories[index], index),
+                    child: ScrollConfiguration(
+                      behavior: ScrollConfiguration.of(context)
+                          .copyWith(scrollbars: false),
+                      child: SingleChildScrollView(
+                        controller: _categoryScrollController,
+                        scrollDirection: Axis.horizontal,
+                        physics: const ClampingScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: Row(
+                          children: List.generate(
+                            _categories.length,
+                            (index) =>
+                                _buildCategoryPill(_categories[index], index),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  // Right button (compact)
-                  Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 4)
-                      ],
-                    ),
-                    child: IconButton(
-                      padding: const EdgeInsets.all(4),
-                      iconSize: 18,
-                      constraints: const BoxConstraints(),
-                      icon: const Icon(Icons.chevron_right,
-                          color: Color(0xFFE83030)),
-                      onPressed: () => _scrollCategories(120),
                     ),
                   ),
                 ],
               ),
             ),
 
-            // 4. "Lihat semua" link
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: GestureDetector(
-                  onTap: () => widget.onNavigateToProducts?.call(),
-                  child: const Text(
-                    'Lihat semua',
-                    style: TextStyle(
-                      color: Color(0xFFE83030),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            const SizedBox(height: 16),
 
-            // 5. Product Grid (top 8 featured)
+            // 4. Product Grid (top 8 featured)
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.all(48.0),
-                child: Center(child: CircularProgressIndicator()),
+                child: JualinLogoLoader(size: 64),
               )
             else if (_errorMessage != null)
               Padding(
@@ -304,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisCount: crossAxisCount,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
-                  mainAxisExtent: 340,
+                  mainAxisExtent: 300,
                 ),
                 itemCount: _products.length,
                 itemBuilder: (context, index) {
@@ -322,9 +210,130 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
 
+            if (!_isLoading && _errorMessage == null && _products.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                child: Center(
+                  child: TextButton(
+                    onPressed: () => widget.onNavigateToProducts?.call(),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFE83030),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
+                    child: const Text(
+                      'Lihat semua produk',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
             const SizedBox(height: 48),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeroBanner() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: -18,
+            right: 34,
+            top: 18,
+            bottom: -10,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xFFE83030).withValues(alpha: 0.08),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(34),
+                  topRight: Radius.circular(90),
+                  bottomLeft: Radius.circular(90),
+                  bottomRight: Radius.circular(34),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: -10,
+            top: -6,
+            child: Container(
+              width: 118,
+              height: 74,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE83030).withValues(alpha: 0.06),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(64),
+                  topRight: Radius.circular(24),
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(64),
+                ),
+              ),
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.all(4),
+            child: AspectRatio(
+              aspectRatio: 16 / 7,
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: PageView.builder(
+                      controller: _bannerController,
+                      itemCount: _bannerImages.length,
+                      onPageChanged: (index) {
+                        setState(() => _currentBannerPage = index);
+                      },
+                      itemBuilder: (context, index) {
+                        return Image.asset(
+                          _bannerImages[index],
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: const Color(0xFF910A0A),
+                            child: const Center(
+                              child: Text(
+                                'JUALIN',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 12,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        _bannerImages.length,
+                        (index) => _buildDot(index == _currentBannerPage),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -404,18 +413,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     widget.onNavigateToProducts?.call(
       category: label == 'Semua' ? null : label,
-    );
-  }
-
-  void _scrollCategories(double delta) {
-    if (!_categoryScrollController.hasClients) return;
-    final maxScroll = _categoryScrollController.position.maxScrollExtent;
-    final target =
-        (_categoryScrollController.offset + delta).clamp(0.0, maxScroll);
-    _categoryScrollController.animateTo(
-      target,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeInOut,
     );
   }
 }

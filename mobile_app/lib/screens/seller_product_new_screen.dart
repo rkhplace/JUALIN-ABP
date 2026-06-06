@@ -6,6 +6,8 @@ import '../widgets/ui/custom_button.dart';
 import '../widgets/ui/custom_input.dart';
 import '../models/seller_product.dart';
 import '../services/seller_service.dart';
+import '../widgets/ui/frosted_app_bar.dart';
+import '../widgets/ui/logo_loader.dart';
 
 // Shared form used by both New and Edit screens
 class SellerProductFormScreen extends StatefulWidget {
@@ -168,14 +170,9 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return FrostedScaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(widget.isEdit ? 'Edit Produk' : 'Tambah Produk Baru'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-      ),
+      title: widget.isEdit ? 'Edit Produk' : 'Tambah Produk Baru',
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -267,7 +264,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
 
               const SizedBox(height: 16),
               _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const JualinLogoLoader(size: 44)
                   : CustomButton(
                       text: 'Simpan Produk',
                       onPressed: _handleSave,

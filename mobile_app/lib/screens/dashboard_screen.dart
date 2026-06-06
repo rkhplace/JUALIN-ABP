@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import '../widgets/ui/frosted_app_bar.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Dashboard Screen")),
-      body: const Center(child: Text("Dashboard Screen Screen")),
+    return const FrostedScaffold(
+      title: 'Dashboard Screen',
+      body: Center(child: Text("Dashboard Screen Screen")),
     );
   }
 }

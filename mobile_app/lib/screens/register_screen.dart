@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../widgets/ui/custom_button.dart';
 import '../widgets/ui/custom_input.dart';
+import '../widgets/ui/frosted_app_bar.dart';
 import '../widgets/ui/logo.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -17,7 +18,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   bool _isLoading = false;
   bool _showPassword = false;
@@ -41,12 +43,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final confirmation = _confirmPasswordController.text;
 
     final username = name.toLowerCase().replaceAll(RegExp(r'\s+'), '');
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmation.isEmpty) {
+    if (name.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmation.isEmpty) {
       setState(() => _errorMessage = 'Semua field harus diisi.');
       return;
     }
     if (username.length < 3) {
-      setState(() => _errorMessage = 'Nama menghasilkan username minimal 3 karakter.');
+      setState(() =>
+          _errorMessage = 'Nama menghasilkan username minimal 3 karakter.');
       return;
     }
     if (!_isValidEmail(email)) {
@@ -93,15 +99,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return FrostedScaffold(
       backgroundColor: const Color(0xFFF7F7F8),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F7F8),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
+      automaticallyImplyLeading: false,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.black87),
+        onPressed: () => Navigator.pop(context),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -168,7 +171,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       suffixIcon: _buildPasswordToggle(
                         isVisible: _showConfirmPassword,
                         onPressed: () {
-                          setState(() => _showConfirmPassword = !_showConfirmPassword);
+                          setState(() =>
+                              _showConfirmPassword = !_showConfirmPassword);
                         },
                       ),
                     ),
@@ -243,7 +247,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         DropdownButtonFormField<String>(
           initialValue: _role,
           decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Colors.black12),
@@ -260,7 +265,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             fillColor: Colors.white,
           ),
           items: const [
-            DropdownMenuItem(value: 'customer', child: Text('Customer (Buyer)')),
+            DropdownMenuItem(
+                value: 'customer', child: Text('Customer (Buyer)')),
             DropdownMenuItem(value: 'seller', child: Text('Seller')),
           ],
           onChanged: _isLoading

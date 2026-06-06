@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/seller_service.dart';
 import '../models/seller_product.dart';
+import '../widgets/ui/frosted_app_bar.dart';
+import '../widgets/ui/logo_loader.dart';
 
 class SellerProductsScreen extends StatefulWidget {
   const SellerProductsScreen({super.key});
@@ -88,27 +90,22 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return FrostedScaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text('Daftar Produk'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () async {
-              await Navigator.pushNamed(context, '/seller_product_new');
-              // Refresh after returning from add product screen
-              _fetchProducts();
-            },
-          ),
-        ],
-      ),
+      title: 'Daftar Produk',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.add),
+          onPressed: () async {
+            await Navigator.pushNamed(context, '/seller_product_new');
+            // Refresh after returning from add product screen
+            _fetchProducts();
+          },
+        ),
+      ],
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const JualinLogoLoader(size: 64)
             : _errorMessage != null
                 ? Center(
                     child: Padding(
@@ -121,8 +118,7 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                           const SizedBox(height: 12),
                           Text(_errorMessage!,
                               textAlign: TextAlign.center,
-                              style:
-                                  const TextStyle(color: Colors.black54)),
+                              style: const TextStyle(color: Colors.black54)),
                           const SizedBox(height: 12),
                           TextButton.icon(
                             onPressed: _fetchProducts,
@@ -134,8 +130,7 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                     ),
                   )
                 : _products.isEmpty
-                    ? const Center(
-                        child: Text('Tidak ada produk yang dijual.'))
+                    ? const Center(child: Text('Tidak ada produk yang dijual.'))
                     : ListView.separated(
                         padding: const EdgeInsets.all(16),
                         itemCount: _products.length,
@@ -209,8 +204,7 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                                                 padding:
                                                     const EdgeInsets.symmetric(
                                                         horizontal: 12),
-                                                minimumSize:
-                                                    const Size(0, 32)),
+                                                minimumSize: const Size(0, 32)),
                                             onPressed: () {
                                               Navigator.pushNamed(
                                                 context,
@@ -219,8 +213,7 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                                               ).then((_) => _fetchProducts());
                                             },
                                             child: const Text('Edit',
-                                                style:
-                                                    TextStyle(fontSize: 12)),
+                                                style: TextStyle(fontSize: 12)),
                                           ),
                                           const SizedBox(width: 8),
                                           OutlinedButton(
@@ -228,16 +221,14 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                                                 padding:
                                                     const EdgeInsets.symmetric(
                                                         horizontal: 12),
-                                                minimumSize:
-                                                    const Size(0, 32),
+                                                minimumSize: const Size(0, 32),
                                                 foregroundColor: Colors.red,
                                                 side: const BorderSide(
                                                     color: Colors.red)),
                                             onPressed: () => _confirmDelete(
                                                 product.id, product.name),
                                             child: const Text('Hapus',
-                                                style:
-                                                    TextStyle(fontSize: 12)),
+                                                style: TextStyle(fontSize: 12)),
                                           ),
                                         ],
                                       )

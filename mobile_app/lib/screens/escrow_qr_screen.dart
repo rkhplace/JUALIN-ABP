@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../widgets/ui/frosted_app_bar.dart';
 
 class EscrowQrScreen extends StatelessWidget {
   final String transactionId;
@@ -44,13 +45,8 @@ class EscrowQrScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final payloadString = _payload();
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('QR Kode Pembayaran'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
-      ),
+    return FrostedScaffold(
+      title: 'QR Kode Pembayaran',
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -88,13 +84,12 @@ class EscrowQrScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Kode: $authCode',
-                      style: const TextStyle(fontSize: 14)),
+                  Text('Kode: $authCode', style: const TextStyle(fontSize: 14)),
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
                     onPressed: () async {
-                      await Clipboard.setData(
-                          ClipboardData(text: authCode!));
+                      await Clipboard.setData(ClipboardData(text: authCode!));
+                      if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Kode disalin ke clipboard'),
@@ -103,8 +98,8 @@ class EscrowQrScreen extends StatelessWidget {
                     },
                     icon: const Icon(Icons.copy, size: 16),
                     label: const Text('Salin'),
-                    style:
-                        ElevatedButton.styleFrom(minimumSize: const Size(80, 36)),
+                    style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(80, 36)),
                   ),
                 ],
               ),
@@ -118,9 +113,9 @@ class EscrowQrScreen extends StatelessWidget {
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Selesai'),
               style: ElevatedButton.styleFrom(
                   minimumSize: const Size.fromHeight(44)),
+              child: const Text('Selesai'),
             ),
           ],
         ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/ui/app_chrome.dart';
 import '../widgets/ui/login_required_dialog.dart';
+import '../widgets/ui/frosted_app_bar.dart';
+import '../widgets/ui/logo_loader.dart';
 import '../services/chat_service.dart';
 import '../models/chat_room.dart';
 import '../models/chat_message.dart';
@@ -90,7 +92,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildBody() {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isLoading) return const JualinLogoLoader(size: 64);
 
     if (!_isLoggedIn) {
       return Center(
@@ -375,16 +377,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.roomName),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadMessages),
-        ],
-      ),
+    return FrostedScaffold(
+      title: widget.roomName,
+      actions: [
+        IconButton(icon: const Icon(Icons.refresh), onPressed: _loadMessages),
+      ],
       body: Column(
         children: [
           Expanded(child: _buildMessageList()),
@@ -395,7 +392,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Widget _buildMessageList() {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isLoading) return const JualinLogoLoader(size: 64);
 
     if (_errorMessage != null) {
       return Center(

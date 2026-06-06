@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../widgets/ui/login_required_dialog.dart';
+import '../widgets/ui/logo_loader.dart';
 
 class AuthRequiredScreen extends StatefulWidget {
   final Widget child;
@@ -62,9 +63,7 @@ class _AuthRequiredScreenState extends State<AuthRequiredScreen> {
 
     return const Scaffold(
       backgroundColor: Colors.white,
-      body: Center(
-        child: CircularProgressIndicator(color: Color(0xFFE83030)),
-      ),
+      body: JualinLogoLoader(size: 72),
     );
   }
 }

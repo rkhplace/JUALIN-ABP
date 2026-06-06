@@ -3,6 +3,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../services/seller_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/escrow_service.dart';
+import '../../widgets/ui/frosted_app_bar.dart';
+import '../../widgets/ui/logo_loader.dart';
 
 class SellerOrdersScreen extends StatefulWidget {
   const SellerOrdersScreen({super.key});
@@ -44,7 +46,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
       final all = await _sellerService.getSellerOrders();
       // Filter orders where current user is the seller
       final sellerOrders = all
-          .where((o) => _currentUserId == 0 || (o['seller_id'] as int?) == _currentUserId)
+          .where((o) =>
+              _currentUserId == 0 || (o['seller_id'] as int?) == _currentUserId)
           .toList();
       if (mounted) {
         setState(() {
@@ -62,8 +65,11 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     }
   }
 
-  Future<void> _handleClaimPayment(BuildContext context, int transactionId) async {
-    debugPrint('[SellerOrders] Claim button clicked for transactionId=$transactionId');
+  Future<void> _handleClaimPayment(
+      BuildContext context, Map<String, dynamic> order) async {
+    final transactionId = _parseInt(order['id']);
+    debugPrint(
+        '[SellerOrders] Claim button clicked for transactionId=$transactionId');
     final TextEditingController authCodeController = TextEditingController();
 
     debugPrint('[SellerOrders] Opening claim code dialog');
@@ -78,7 +84,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Masukkan 6 digit kode autentikasi yang diberikan oleh pembeli.'),
+              const Text(
+                  'Masukkan 6 digit kode autentikasi yang diberikan oleh pembeli.'),
               const SizedBox(height: 16),
               TextField(
                 controller: authCodeController,
@@ -110,7 +117,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
               child: const Text('Batal'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE83030)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE83030)),
               onPressed: () {
                 final code = authCodeController.text.trim();
                 debugPrint(
@@ -120,7 +128,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                 if (code.length == 6) {
                   Navigator.pop(ctx, code);
                 } else {
-                  debugPrint('[SellerOrders] Claim dialog ignored: code must be 6 chars');
+                  debugPrint(
+                      '[SellerOrders] Claim dialog ignored: code must be 6 chars');
                 }
               },
               child: const Text('Klaim', style: TextStyle(color: Colors.white)),
@@ -136,19 +145,17 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     setState(() => _isClaiming = true);
 
     try {
-      debugPrint('[SellerOrders] Sending escrow claim for transactionId=$transactionId');
+      debugPrint(
+          '[SellerOrders] Sending escrow claim for transactionId=$transactionId');
       await _escrowService.claimPayment(transactionId, authCode);
-      debugPrint('[SellerOrders] Escrow claim success for transactionId=$transactionId');
+      debugPrint(
+          '[SellerOrders] Escrow claim success for transactionId=$transactionId');
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pembayaran berhasil diklaim ke saldo Anda!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      _showClaimSuccessDialog(context, order);
       await _fetchOrders();
     } catch (e) {
-      debugPrint('[SellerOrders] Escrow claim failed for transactionId=$transactionId: $e');
+      debugPrint(
+          '[SellerOrders] Escrow claim failed for transactionId=$transactionId: $e');
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -217,16 +224,121 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     return 'Rp ${val.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
   }
 
+  int _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  void _showClaimSuccessDialog(
+      BuildContext context, Map<String, dynamic> order) {
+    final orderId = order['order_id']?.toString() ?? order['id']?.toString();
+    final amount = _formatCurrency(order['total_amount']);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Icon(
+          Icons.check_circle,
+          color: Colors.green,
+          size: 64,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Text(
+              'Transaksi Berhasil Diklaim!',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Dana transaksi telah masuk ke saldo dompet Anda.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black54, fontSize: 13),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Column(
+                children: [
+                  if (orderId != null && orderId.isNotEmpty) ...[
+                    _buildDetailRow('Order ID', orderId),
+                    const SizedBox(height: 8),
+                  ],
+                  _buildDetailRow('Total Pembayaran', amount),
+                  const SizedBox(height: 8),
+                  _buildDetailRow(
+                    'Status',
+                    'DIKLAIM',
+                    valueColor: Colors.green[800],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE83030),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text(
+                'Tutup',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: const TextStyle(color: Colors.black54, fontSize: 13)),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: valueColor ?? Colors.black87,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return FrostedScaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text('Pesanan Masuk'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-      ),
+      title: 'Pesanan Masuk',
       body: Stack(
         children: [
           RefreshIndicator(
@@ -248,7 +360,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFE83030)));
+      return const JualinLogoLoader(size: 64);
     }
     if (_errorMessage != null) {
       return Center(
@@ -259,7 +371,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
             children: [
               const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
               const SizedBox(height: 12),
-              Text(_errorMessage!, textAlign: TextAlign.center,
+              Text(_errorMessage!,
+                  textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.black54)),
               const SizedBox(height: 12),
               TextButton.icon(
@@ -298,7 +411,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
         final order = _orders[index];
         final customer = order['customer'] as Map<String, dynamic>? ?? {};
         final items = (order['items'] as List<dynamic>?) ?? [];
-        final firstItem = items.isNotEmpty ? (items[0] as Map<String, dynamic>?) ?? {} : {};
+        final firstItem =
+            items.isNotEmpty ? (items[0] as Map<String, dynamic>?) ?? {} : {};
         final product = firstItem['product'] as Map<String, dynamic>? ?? {};
         final status = (order['status'] as String?) ?? 'pending';
 
@@ -328,7 +442,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                     style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 14),
                   ),
-                  _StatusBadge(label: _statusLabel(status), color: _statusColor(status)),
+                  _StatusBadge(
+                      label: _statusLabel(status), color: _statusColor(status)),
                 ],
               ),
               const SizedBox(height: 10),
@@ -365,7 +480,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Total', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                  const Text('Total',
+                      style: TextStyle(color: Colors.black54, fontSize: 13)),
                   Text(
                     _formatCurrency(order['total_amount']),
                     style: const TextStyle(
@@ -376,7 +492,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                   ),
                 ],
               ),
-              
+
               if (status == 'waiting_cod') ...[
                 const SizedBox(height: 16),
                 SizedBox(
@@ -395,9 +511,10 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                             debugPrint(
                               '[SellerOrders] Claim CTA pressed for orderId=${order['id']}',
                             );
-                            _handleClaimPayment(context, order['id']);
+                            _handleClaimPayment(context, order);
                           },
-                    child: const Text('Klaim Pembayaran (Input Kode)', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text('Klaim Pembayaran (Input Kode)',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],

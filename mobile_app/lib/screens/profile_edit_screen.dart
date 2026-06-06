@@ -6,6 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
+import '../widgets/ui/frosted_app_bar.dart';
+import '../widgets/ui/logo_loader.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   const ProfileEditScreen({super.key});
@@ -196,28 +198,23 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return FrostedScaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Edit Profil'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-        actions: [
-          TextButton(
-            onPressed: _isSaving ? null : _saveProfile,
-            child: _isSaving
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Simpan'),
-          ),
-        ],
-      ),
+      title: 'Edit Profil',
+      actions: [
+        TextButton(
+          onPressed: _isSaving ? null : _saveProfile,
+          child: _isSaving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Simpan'),
+        ),
+      ],
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFFE83030)))
+          ? const JualinLogoLoader(size: 64)
           : _errorMessage != null && _user == null
               ? _buildError()
               : Form(
@@ -289,7 +286,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
-                        child: Text(_isSaving ? 'Menyimpan...' : 'Simpan Perubahan'),
+                        child: Text(
+                            _isSaving ? 'Menyimpan...' : 'Simpan Perubahan'),
                       ),
                     ],
                   ),
@@ -359,7 +357,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           children: [
             const Icon(Icons.error_outline, size: 48, color: Colors.grey),
             const SizedBox(height: 12),
-            Text(_errorMessage ?? 'Gagal memuat profil.', textAlign: TextAlign.center),
+            Text(_errorMessage ?? 'Gagal memuat profil.',
+                textAlign: TextAlign.center),
             const SizedBox(height: 12),
             TextButton.icon(
               onPressed: _loadProfile,

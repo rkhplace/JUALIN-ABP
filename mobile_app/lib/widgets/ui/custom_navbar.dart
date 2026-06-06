@@ -1,17 +1,28 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'logo.dart';
 
 class CustomNavbar extends StatefulWidget implements PreferredSizeWidget {
   final bool showSearch;
+  final bool showLogo;
   final ValueChanged<String>? onSearch;
+  final bool scrolled;
 
-  const CustomNavbar({super.key, this.showSearch = true, this.onSearch});
+  const CustomNavbar({
+    super.key,
+    this.showSearch = true,
+    this.showLogo = true,
+    this.onSearch,
+    this.scrolled = false,
+  });
 
   @override
   State<CustomNavbar> createState() => _CustomNavbarState();
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(52);
 }
 
 class _CustomNavbarState extends State<CustomNavbar> {
@@ -46,31 +57,72 @@ class _CustomNavbarState extends State<CustomNavbar> {
 
   @override
   Widget build(BuildContext context) {
+    final backgroundColor =
+        widget.scrolled ? Colors.white.withValues(alpha: 0.78) : Colors.white;
+    final dividerColor = widget.scrolled
+        ? Colors.black.withValues(alpha: 0.10)
+        : Colors.grey.withValues(alpha: 0.18);
+
     return AppBar(
-      backgroundColor: Colors.white,
+      toolbarHeight: 52,
+      backgroundColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.transparent,
       elevation: 0,
+      scrolledUnderElevation: 0,
+      systemOverlayStyle: SystemUiOverlayStyle.dark,
       centerTitle: false,
-      titleSpacing: 16,
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(color: Colors.grey[200], height: 1),
+      titleSpacing: 14,
+      flexibleSpace: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: widget.scrolled ? 10 : 0,
+            sigmaY: widget.scrolled ? 10 : 0,
+          ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              border: Border(
+                bottom: BorderSide(color: dividerColor, width: 1),
+              ),
+              boxShadow: widget.scrolled
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+            ),
+          ),
+        ),
       ),
       title: Row(
         children: [
-          const Logo(
-            width: 92,
-            height: 42,
-            alignment: Alignment.centerLeft,
-          ),
+          if (widget.showLogo)
+            const Logo(
+              width: 88,
+              height: 38,
+              alignment: Alignment.centerLeft,
+            ),
           if (widget.showSearch) ...[
-            const SizedBox(width: 8),
+            if (widget.showLogo) const SizedBox(width: 8),
             Expanded(
               child: Container(
-                height: 34,
+                height: 32,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
+                  color: widget.scrolled
+                      ? Colors.white.withValues(alpha: 0.86)
+                      : const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[300]!),
+                  border: Border.all(
+                    color: widget.scrolled
+                        ? Colors.black.withValues(alpha: 0.12)
+                        : Colors.grey[300]!,
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -91,14 +143,16 @@ class _CustomNavbarState extends State<CustomNavbar> {
                               fontWeight: FontWeight.w400),
                           border: InputBorder.none,
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 9),
                         ),
                       ),
                     ),
                     if (_hasText)
                       GestureDetector(
                         onTap: _clearSearch,
-                        child: Icon(Icons.close, size: 18, color: Colors.grey[500]),
+                        child: Icon(Icons.close,
+                            size: 18, color: Colors.grey[500]),
                       ),
                     const SizedBox(width: 8),
                   ],
@@ -111,8 +165,8 @@ class _CustomNavbarState extends State<CustomNavbar> {
       actions: [
         if (widget.showSearch) ...[
           IconButton(
-            icon: const Icon(Icons.notifications_outlined,
-                color: Colors.black87),
+            icon:
+                const Icon(Icons.notifications_outlined, color: Colors.black87),
             onPressed: () {},
           ),
           const SizedBox(width: 8),

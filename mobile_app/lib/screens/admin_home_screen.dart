@@ -1,100 +1,1132 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../services/admin_service.dart';
 import '../services/auth_service.dart';
+import '../widgets/ui/logo_loader.dart';
 
-class AdminHomeScreen extends StatelessWidget {
+class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final authService = AuthService();
+  State<AdminHomeScreen> createState() => _AdminHomeScreenState();
+}
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
-      appBar: AppBar(
-        title: const Text('Admin'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.black12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
+class _AdminHomeScreenState extends State<AdminHomeScreen> {
+  final AdminService _adminService = AdminService();
+  final AuthService _authService = AuthService();
+
+  List<Map<String, dynamic>> _users = [];
+  List<Map<String, dynamic>> _products = [];
+  List<Map<String, dynamic>> _transactions = [];
+  List<Map<String, dynamic>> _reports = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAdminData();
+  }
+
+  Future<void> _fetchAdminData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final results = await Future.wait([
+        _adminService.getUsers(),
+        _adminService.getProducts(),
+        _adminService.getTransactions(),
+        _adminService.getReports(),
+      ]);
+
+      if (!mounted) return;
+      setState(() {
+        _users = results[0];
+        _products = results[1];
+        _transactions = results[2];
+        _reports = results[3];
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 4,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF6F6F7),
+          body: Column(
+            children: [
+              _buildAdminHero(),
+              Container(
+                color: Colors.white,
+                child: const TabBar(
+                  indicatorColor: Color(0xFFE83030),
+                  indicatorWeight: 3,
+                  labelColor: Color(0xFFE83030),
+                  unselectedLabelColor: Colors.black54,
+                  labelStyle:
+                      TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                  unselectedLabelStyle:
+                      TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                  tabs: [
+                    Tab(text: 'Overview'),
+                    Tab(text: 'Users'),
+                    Tab(text: 'Produk'),
+                    Tab(text: 'Laporan'),
+                  ],
                 ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFEEEE),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: const Icon(
-                    Icons.admin_panel_settings_outlined,
-                    color: Color(0xFFE83030),
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  'Backoffice mobile belum dimigrasikan',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Akun admin sudah dikenali. Modul users, products admin, reports, dan super admin dikerjakan pada tahap terakhir.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.black54, height: 1.4),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      await authService.logout();
-                      if (context.mounted) {
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          '/login',
-                          (route) => false,
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Logout'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE83030),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+              Expanded(
+                child: _isLoading
+                    ? const JualinLogoLoader(size: 72)
+                    : _errorMessage != null
+                        ? _buildErrorState()
+                        : RefreshIndicator(
+                            color: const Color(0xFFE83030),
+                            onRefresh: _fetchAdminData,
+                            child: TabBarView(
+                              children: [
+                                _buildOverviewTab(),
+                                _buildUsersTab(),
+                                _buildProductsTransactionsTab(),
+                                _buildReportsTab(),
+                              ],
+                            ),
+                          ),
+              ),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildAdminHero() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        24,
+        MediaQuery.of(context).padding.top + 18,
+        20,
+        28,
+      ),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFE83030), Color(0xFFF13838)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(34),
+          bottomRight: Radius.circular(34),
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -50,
+            bottom: -32,
+            child: _buildHeroBlob(150, 106, 0.15),
+          ),
+          Positioned(
+            right: 18,
+            top: 50,
+            child: _buildHeroBlob(90, 120, 0.10),
+          ),
+          Positioned(
+            right: 84,
+            bottom: -22,
+            child: _buildHeroBlob(102, 96, 0.13),
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Backoffice Admin',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      'Super Admin',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 29,
+                        fontWeight: FontWeight.w900,
+                        height: 1,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      'Pantau pengguna, produk, transaksi,\ndan laporan.',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        height: 1.35,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Refresh',
+                onPressed: _fetchAdminData,
+                icon: const Icon(Icons.refresh, color: Colors.white),
+              ),
+              IconButton(
+                tooltip: 'Logout',
+                onPressed: _logout,
+                icon: const Icon(Icons.logout, color: Colors.white),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroBlob(double width, double height, double alpha) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: alpha),
+        borderRadius: BorderRadius.circular(28),
+      ),
+    );
+  }
+
+  Widget _buildOverviewTab() {
+    final pendingReports =
+        _reports.where((item) => _text(item['status']) == 'pending').length;
+    final bannedUsers =
+        _users.where((item) => _parseBool(item['is_banned'])).length;
+    final pendingReport = _reports.cast<Map<String, dynamic>?>().firstWhere(
+          (item) => _text(item?['status']) == 'pending',
+          orElse: () => _reports.isEmpty ? null : _reports.first,
+        );
+    final latestTransaction =
+        _transactions.isEmpty ? null : _transactions.first;
+    final latestProduct = _products.isEmpty ? null : _products.first;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+      children: [
+        const Text(
+          'Ringkasan',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 10),
+        GridView.count(
+          crossAxisCount: 2,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          shrinkWrap: true,
+          padding: EdgeInsets.zero,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: 1.75,
+          children: [
+            _buildSummaryTile('Users', _users.length.toString(),
+                'Total pengguna', Icons.people_alt_outlined),
+            _buildSummaryTile('Produk', _products.length.toString(),
+                'Total produk', Icons.inventory_2_outlined),
+            _buildSummaryTile('Transaksi', _transactions.length.toString(),
+                'Total transaksi', Icons.receipt_long_outlined),
+            _buildSummaryTile('Laporan Pending', pendingReports.toString(),
+                'Perlu ditinjau', Icons.report_outlined),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _buildBannedOverviewCard(bannedUsers),
+        const SizedBox(height: 14),
+        const Text(
+          'Aktivitas Terbaru',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 10),
+        if (latestProduct != null)
+          _buildActivityRow(
+            icon: Icons.inventory_2_outlined,
+            title: _text(latestProduct['name'] ?? latestProduct['title'],
+                'Produk terbaru'),
+            subtitle: 'Produk terbaru dalam katalog',
+            onTap: () => DefaultTabController.of(context).animateTo(2),
+          ),
+        if (latestProduct != null && latestTransaction != null)
+          const SizedBox(height: 8),
+        if (latestTransaction != null)
+          _buildActivityRow(
+            icon: Icons.receipt_long_outlined,
+            title: 'Transaksi #${_parseInt(latestTransaction['id'])}',
+            subtitle: _formatTransactionStatus(
+              _text(latestTransaction['status'], 'pending'),
+            ),
+            onTap: () => DefaultTabController.of(context).animateTo(2),
+          ),
+        if (latestProduct == null && latestTransaction == null)
+          _buildCard(
+            child: const Text(
+              'Belum ada aktivitas terbaru.',
+              style: TextStyle(color: Colors.black54),
+            ),
+          ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Perlu Ditinjau',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+              ),
+            ),
+            TextButton(
+              onPressed: () => DefaultTabController.of(context).animateTo(3),
+              child: const Text('Lihat semua'),
+            ),
+          ],
+        ),
+        if (pendingReport == null)
+          _buildCard(
+            child: const Text(
+              'Belum ada laporan yang perlu ditinjau.',
+              style: TextStyle(color: Colors.black54),
+            ),
+          )
+        else
+          _buildReviewPreviewCard(pendingReport),
+      ],
+    );
+  }
+
+  Widget _buildUsersTab() {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: _users.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final user = _users[index];
+        final id = _parseInt(user['id']);
+        final username =
+            _text(user['username'] ?? user['name'] ?? user['email'], '-');
+        final email = _text(user['email'], '-');
+        final role = _text(user['role'], '-');
+        final isBanned = _parseBool(user['is_banned']);
+
+        return _buildCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _buildIconBox(Icons.person_outline),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(username,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w800)),
+                        Text(email,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                color: Colors.black45, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  _buildStatusChip(role, Colors.blue),
+                ],
+              ),
+              if (isBanned) ...[
+                const SizedBox(height: 10),
+                Text(
+                  'Diban sampai ${_formatDate(user['banned_until'])}',
+                  style:
+                      const TextStyle(color: Color(0xFFE83030), fontSize: 12),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: role == 'admin' || id == 0
+                          ? null
+                          : () => isBanned
+                              ? _unbanUser(id)
+                              : _showBanDurationDialog(id, username),
+                      icon: Icon(isBanned ? Icons.lock_open : Icons.block),
+                      label: Text(isBanned ? 'Unban' : 'Ban'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFE83030),
+                        side: const BorderSide(color: Color(0xFFE83030)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProductsTransactionsTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Text(
+          'Produk Terbaru',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 12),
+        ..._products.map(_buildProductCard),
+        const SizedBox(height: 22),
+        const Text(
+          'Monitoring Transaksi',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 12),
+        ..._transactions.map(_buildTransactionCard),
+      ],
+    );
+  }
+
+  Widget _buildReportsTab() {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: _reports.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) => _buildReportCard(_reports[index]),
+    );
+  }
+
+  Widget _buildProductCard(Map<String, dynamic> product) {
+    final id = _parseInt(product['id']);
+    final name = _text(product['name'] ?? product['title'], 'Produk');
+    final category = _text(product['category'], 'Uncategorized');
+    final price = _parseInt(product['price']);
+    final stock = _parseInt(product['stock_quantity'] ?? product['stock']);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: _buildCard(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildImage(product['image'] ?? product['image_path']),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 3),
+                  Text(category,
+                      style: const TextStyle(color: Colors.blue, fontSize: 11)),
+                  const SizedBox(height: 4),
+                  Text('Stok: $stock',
+                      style:
+                          const TextStyle(color: Colors.black45, fontSize: 12)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _formatCurrency(price),
+                          style: const TextStyle(
+                            color: Color(0xFFE83030),
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: id == 0 ? null : () => _deleteProduct(id),
+                        icon: const Icon(Icons.delete_outline,
+                            color: Color(0xFFE83030)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionCard(Map<String, dynamic> trx) {
+    final id = _parseInt(trx['id']);
+    final status = _text(trx['status'], 'pending');
+    final customer = _text(_nested(trx['customer'], 'username'), '-');
+    final seller = _text(_nested(trx['seller'], 'username'), '-');
+    final total = _parseInt(trx['total_price'] ?? trx['total_amount']);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: _buildCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                _buildIconBox(Icons.receipt_long_outlined),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'TRX-$id',
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+                _buildStatusChip(
+                    _formatTransactionStatus(status), Colors.green),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text('Customer: $customer',
+                style: const TextStyle(color: Colors.black54, fontSize: 12)),
+            Text('Seller: $seller',
+                style: const TextStyle(color: Colors.black54, fontSize: 12)),
+            Text(_formatCurrency(total),
+                style: const TextStyle(
+                    color: Color(0xFFE83030), fontWeight: FontWeight.w800)),
+            const SizedBox(height: 10),
+            _buildStatusDropdown(
+              value: status,
+              options: const [
+                'pending',
+                'waiting_cod',
+                'paid',
+                'processing',
+                'completed',
+                'cancelled',
+                'refunded',
+              ],
+              onChanged: id == 0
+                  ? null
+                  : (value) => _updateTransactionStatus(id, value),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReportCard(Map<String, dynamic> report) {
+    final id = _parseInt(report['id']);
+    final status = _uiReportStatus(_text(report['status'], 'pending'));
+    final reporter =
+        _text(report['reporter_username'] ?? report['username'], '-');
+    final reported = _text(
+      report['reported_username'] ?? report['target_username'],
+      'Tidak tersedia',
+    );
+    final product = _text(report['reported_product_name'], '');
+    final description = _text(report['description'], '-');
+    final type = _text(report['type'], 'Laporan');
+    final reportedUserId = _parseInt(report['reported_user_id']);
+    final isReportedBanned = _parseBool(report['reported_user_is_banned']);
+
+    return _buildCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _buildIconBox(Icons.report_outlined),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(type,
+                    style: const TextStyle(fontWeight: FontWeight.w800)),
+              ),
+              _buildStatusChip(_formatReportStatus(status), Colors.orange),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text('Pelapor: $reporter',
+              style: const TextStyle(color: Colors.black54, fontSize: 12)),
+          Text('Terlapor: $reported',
+              style: const TextStyle(color: Color(0xFFE83030), fontSize: 12)),
+          if (product.isNotEmpty)
+            Text('Produk: $product',
+                style: const TextStyle(color: Colors.black54, fontSize: 12)),
+          const SizedBox(height: 8),
+          Text(description, style: const TextStyle(fontSize: 13)),
+          const SizedBox(height: 12),
+          _buildStatusDropdown(
+            value: status,
+            options: const ['pending', 'processing', 'accepted', 'rejected'],
+            onChanged:
+                id == 0 ? null : (value) => _updateReportStatus(id, value),
+          ),
+          if (reportedUserId > 0) ...[
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: isReportedBanned
+                  ? () => _unbanUser(reportedUserId)
+                  : () => _showBanDurationDialog(reportedUserId, reported),
+              icon: Icon(isReportedBanned ? Icons.lock_open : Icons.block),
+              label: Text(isReportedBanned ? 'Unban Akun' : 'Ban Akun'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFE83030),
+                side: const BorderSide(color: Color(0xFFE83030)),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryTile(
+    String title,
+    String value,
+    String subtitle,
+    IconData icon,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.035),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _buildSmallIconBox(icon),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.black54, fontSize: 11),
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
+          ),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.black38, fontSize: 10),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBannedOverviewCard(int bannedUsers) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => DefaultTabController.of(context).animateTo(1),
+      child: _buildCard(
+        child: Row(
+          children: [
+            _buildIconBox(Icons.block_outlined),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Akun Ter-ban',
+                    style: TextStyle(
+                      color: Color(0xFFE83030),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'Akun yang dibatasi/diblokir',
+                    style: TextStyle(color: Colors.black45, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              bannedUsers.toString(),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, color: Colors.black26),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActivityRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: _buildCard(
+        child: Row(
+          children: [
+            _buildIconBox(icon),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.black45,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.black26),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReviewPreviewCard(Map<String, dynamic> report) {
+    final id = _parseInt(report['id']);
+    final product = _text(
+      report['reported_product_name'] ?? report['product']?['name'],
+      'Laporan Produk',
+    );
+    final description = _text(report['description'], '-');
+    final status = _uiReportStatus(_text(report['status'], 'pending'));
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => DefaultTabController.of(context).animateTo(3),
+      child: _buildCard(
+        child: Row(
+          children: [
+            _buildIconBox(Icons.flag_outlined),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    id == 0 ? 'Laporan Produk' : 'Laporan Produk #LP-$id',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    product,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  Text(
+                    description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.black45, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            _buildStatusChip(_formatReportStatus(status), Colors.orange),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right, color: Colors.black26),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.035),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildSmallIconBox(IconData icon) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFEFEF),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Icon(icon, color: const Color(0xFFE83030), size: 18),
+    );
+  }
+
+  Widget _buildIconBox(IconData icon) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFEFEF),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, color: const Color(0xFFE83030), size: 21),
+    );
+  }
+
+  Widget _buildImage(dynamic rawImage) {
+    final imageUrl = _extractImageUrl(rawImage);
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: imageUrl.isEmpty
+          ? const Icon(Icons.image_outlined, color: Colors.grey)
+          : ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.image_outlined, color: Colors.grey),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildStatusChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusDropdown({
+    required String value,
+    required List<String> options,
+    required ValueChanged<String>? onChanged,
+  }) {
+    final selected = options.contains(value) ? value : options.first;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F8F8),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.black12),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: selected,
+          isExpanded: true,
+          items: options
+              .map((item) => DropdownMenuItem(
+                    value: item,
+                    child: Text(_formatReportStatus(_uiReportStatus(item))),
+                  ))
+              .toList(),
+          onChanged: onChanged == null
+              ? null
+              : (value) {
+                  if (value != null && value != selected) onChanged(value);
+                },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.admin_panel_settings_outlined,
+                size: 56, color: Colors.grey),
+            const SizedBox(height: 12),
+            Text(
+              _errorMessage ?? 'Gagal memuat data admin.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.black54),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: _fetchAdminData,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Coba lagi'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE83030),
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showBanDurationDialog(int userId, String username) async {
+    final duration = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        title: Text('Ban $username'),
+        content: const Text('Pilih durasi ban akun.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, 1),
+              child: const Text('1 hari')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, 7),
+              child: const Text('7 hari')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, 30),
+              child: const Text('30 hari')),
+        ],
+      ),
+    );
+    if (duration == null) return;
+    await _banUser(userId, duration);
+  }
+
+  Future<void> _banUser(int userId, int durationDays) async {
+    await _runAdminAction(
+      action: () => _adminService.banUser(userId, durationDays),
+      successMessage: 'User berhasil diban.',
+    );
+  }
+
+  Future<void> _unbanUser(int userId) async {
+    await _runAdminAction(
+      action: () => _adminService.unbanUser(userId),
+      successMessage: 'User berhasil di-unban.',
+    );
+  }
+
+  Future<void> _deleteProduct(int productId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        title: const Text('Hapus Produk'),
+        content: const Text('Yakin ingin menghapus produk ini?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style:
+                TextButton.styleFrom(foregroundColor: const Color(0xFFE83030)),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await _runAdminAction(
+      action: () => _adminService.deleteProduct(productId),
+      successMessage: 'Produk berhasil dihapus.',
+    );
+  }
+
+  Future<void> _updateTransactionStatus(int id, String status) async {
+    await _runAdminAction(
+      action: () => _adminService.updateTransactionStatus(id, status),
+      successMessage: 'Status transaksi diperbarui.',
+    );
+  }
+
+  Future<void> _updateReportStatus(int id, String status) async {
+    await _runAdminAction(
+      action: () => _adminService.updateReportStatus(id, status),
+      successMessage: 'Status laporan diperbarui.',
+    );
+  }
+
+  Future<void> _runAdminAction({
+    required Future<void> Function() action,
+    required String successMessage,
+  }) async {
+    try {
+      await action();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(successMessage)),
+      );
+      await _fetchAdminData();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _logout() async {
+    await _authService.logout();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+  }
+
+  int _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  bool _parseBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final text = value?.toString().toLowerCase();
+    return text == 'true' || text == '1' || text == 'yes';
+  }
+
+  String _text(dynamic value, [String fallback = '']) {
+    final text = value?.toString().trim() ?? '';
+    return text.isEmpty ? fallback : text;
+  }
+
+  dynamic _nested(dynamic parent, String key) {
+    if (parent is Map) return parent[key];
+    return null;
+  }
+
+  String _extractImageUrl(dynamic raw) {
+    if (raw is List && raw.isNotEmpty) return raw.first?.toString() ?? '';
+    return raw?.toString() ?? '';
+  }
+
+  String _formatCurrency(int amount) {
+    return 'Rp ${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
+  }
+
+  String _formatDate(dynamic value) {
+    final parsed = DateTime.tryParse(value?.toString() ?? '');
+    if (parsed == null) return '-';
+    return '${parsed.day}/${parsed.month}/${parsed.year}';
+  }
+
+  String _uiReportStatus(String status) {
+    if (status == 'reviewed') return 'accepted';
+    if (status == 'resolved') return 'rejected';
+    if (status == 'processed') return 'processing';
+    return status;
+  }
+
+  String _formatReportStatus(String status) {
+    switch (status) {
+      case 'pending':
+        return 'Menunggu';
+      case 'processing':
+      case 'processed':
+        return 'Diproses';
+      case 'accepted':
+      case 'reviewed':
+        return 'Diterima';
+      case 'rejected':
+      case 'resolved':
+        return 'Ditolak';
+      default:
+        return status;
+    }
+  }
+
+  String _formatTransactionStatus(String status) {
+    return status
+        .replaceAll('_', ' ')
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
   }
 }
