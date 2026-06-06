@@ -279,16 +279,17 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
     status = status.toLowerCase();
     switch (status) {
       case 'pending':
-        return Colors.red;
-      case 'waiting_cod':
         return Colors.orange;
+      case 'waiting_cod':
+        return const Color(0xFFE87D30);
       case 'verified':
-      case 'processing':
-        return Colors.blue;
       case 'completed':
       case 'settlement':
       case 'capture':
+      case 'paid':
         return Colors.green;
+      case 'processing':
+        return Colors.blue;
       case 'refunded':
         return Colors.purple;
       default:
@@ -300,18 +301,20 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
     status = status.toLowerCase();
     switch (status) {
       case 'pending':
-        return 'Menunggu Pembayaran';
+        return 'Menunggu';
       case 'waiting_cod':
-        return 'Menunggu COD (Tunjukkan Kode)';
+        return 'Tunggu COD';
       case 'verified':
-        return 'Terverifikasi';
+        return 'Selesai';
+      case 'processing':
+        return 'Diproses';
       case 'settlement':
       case 'capture':
       case 'paid':
       case 'completed':
         return 'Selesai';
       case 'refunded':
-        return 'Dikembalikan & Dibatalkan';
+        return 'Dikembalikan';
       default:
         return status;
     }
