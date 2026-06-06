@@ -284,4 +284,18 @@ class SellerService {
       rethrow;
     }
   }
+
+  /// Fetches verification status for the seller.
+  ///
+  /// API: GET /v1/seller/verification-status
+  Future<Map<String, dynamic>> getVerificationStatus() async {
+    try {
+      final response = await _client.get(ApiConfig.sellerVerificationStatus);
+      return Map<String, dynamic>.from(response['data'] ?? response);
+    } on ApiException catch (e) {
+      throw Exception('Gagal memuat status verifikasi: ${e.message}');
+    } catch (e) {
+      throw Exception('Tidak dapat terhubung ke server.');
+    }
+  }
 }

@@ -9,6 +9,7 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\SellerController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Http\Request;
 
@@ -62,6 +63,9 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
     Route::patch('/users/{id}/update', [UserController::class, 'update']);
     Route::get('/transactions', [TransactionController::class, 'index']);
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);
+
+    // ── Notifications ────────────────────────────────────────────────────
+    Route::get('/notifications', [NotificationController::class, 'index']);
 
     // ── Chat ─────────────────────────────────────────────────────────────
     Route::prefix('chat')->group(function () {
