@@ -113,6 +113,14 @@ class EscrowController extends Controller
                 'type' => 'refund',
                 'reference_transaction_id' => $transaction->id,
             ]);
+
+            $formattedAmount = number_format($transaction->total_amount, 0, ',', '.');
+            \App\Models\Notification::create([
+                'user_id' => $buyer->id,
+                'title' => 'Refund Berhasil',
+                'body' => "Dana sebesar Rp{$formattedAmount} dari pesanan yang dibatalkan telah masuk ke Saldo Dompet Anda.",
+                'type' => 'payment',
+            ]);
             
             // Restore stock since the transaction is refunded
             foreach ($transaction->items as $item) {

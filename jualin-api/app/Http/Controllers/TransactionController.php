@@ -85,6 +85,13 @@ class TransactionController extends Controller
 
             DB::commit();
 
+            \App\Models\Notification::create([
+                'user_id' => $customerId,
+                'title' => 'Menunggu Pembayaran',
+                'body' => 'Jangan lupa selesaikan pembayaran untuk pesanan Anda sebelum batas waktu habis.',
+                'type' => 'order',
+            ]);
+
             $transaction->load(['items.product', 'customer', 'seller']);
 
             return ApiResponse::success(
@@ -178,6 +185,13 @@ class TransactionController extends Controller
                     'payment_type' => 'jualin_wallet',
                     'transaction_status' => 'settlement',
                     'transaction_time' => now(),
+                ]);
+
+                \App\Models\Notification::create([
+                    'user_id' => $buyer->id,
+                    'title' => 'Pembayaran Berhasil',
+                    'body' => "Hore! Pembayaran pesanan {$product->name} sudah berhasil diverifikasi.",
+                    'type' => 'payment',
                 ]);
 
                 $transaction->load(['items.product', 'customer', 'seller']);

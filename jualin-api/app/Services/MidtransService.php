@@ -168,6 +168,15 @@ class MidtransService
         if ($newStatus === 'paid' && !in_array($oldStatus, ['waiting_cod', 'verified'])) {
             $updates['status'] = 'waiting_cod';
             $updates['auth_code'] = strtoupper(\Illuminate\Support\Str::random(6)); // 6 alphanumeric characters
+
+            $transaction->loadMissing('items.product');
+            $productName = $transaction->items->first()?->product?->name ?? 'Anda';
+            \App\Models\Notification::create([
+                'user_id' => $transaction->customer_id,
+                'title' => 'Pembayaran Berhasil',
+                'body' => "Hore! Pembayaran pesanan {$productName} sudah berhasil diverifikasi.",
+                'type' => 'payment',
+            ]);
         }
 
         $transaction->update($updates);
