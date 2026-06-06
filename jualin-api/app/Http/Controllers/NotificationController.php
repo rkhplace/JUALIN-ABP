@@ -36,10 +36,12 @@ class NotificationController extends Controller
             ->where('is_read', false)
             ->count();
 
-        // Optionally mark all as read when fetched:
-        Notification::where('user_id', $user->id)
-            ->where('is_read', false)
-            ->update(['is_read' => true]);
+        // Optionally mark all as read when explicitly requested
+        if ($request->query('mark_read')) {
+            Notification::where('user_id', $user->id)
+                ->where('is_read', false)
+                ->update(['is_read' => true]);
+        }
 
         return ApiResponse::success('Notifications retrieved successfully', [
             'unread_count' => $unreadCount,
