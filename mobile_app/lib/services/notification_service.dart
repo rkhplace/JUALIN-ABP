@@ -16,9 +16,10 @@ class NotificationService {
   ///     ]
   ///   }
   /// }
-  Future<Map<String, dynamic>> getNotifications() async {
+  Future<Map<String, dynamic>> getNotifications({bool markRead = false}) async {
     try {
-      final response = await _client.get(ApiConfig.notifications);
+      final endpoint = markRead ? '${ApiConfig.notifications}?mark_read=1' : ApiConfig.notifications;
+      final response = await _client.get(endpoint);
       final data = response['data'] ?? response;
       return Map<String, dynamic>.from(data);
     } catch (e) {

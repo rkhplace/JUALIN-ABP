@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -31,6 +32,7 @@ class _CustomNavbarState extends State<CustomNavbar> {
   bool _hasText = false;
   final NotificationService _notificationService = NotificationService();
   int _unreadCount = 0;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
@@ -39,6 +41,10 @@ class _CustomNavbarState extends State<CustomNavbar> {
       setState(() => _hasText = _searchController.text.isNotEmpty);
     });
     _fetchNotificationCount();
+    // Poll every 10 seconds to keep the badge updated even if we navigate back
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _fetchNotificationCount();
+    });
   }
 
   Future<void> _fetchNotificationCount() async {
@@ -54,6 +60,7 @@ class _CustomNavbarState extends State<CustomNavbar> {
 
   @override
   void dispose() {
+    _pollingTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -251,7 +258,7 @@ class _CustomNavbarState extends State<CustomNavbar> {
               const SizedBox(height: 16),
               Expanded(
                 child: FutureBuilder<Map<String, dynamic>>(
-                  future: _notificationService.getNotifications(),
+                  future: _notificationService.getNotifications(markRead: true),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(
