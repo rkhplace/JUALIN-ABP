@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
@@ -98,7 +97,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
-
+Future<bool?> _showLogoutConfirmation() {
+  return showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      backgroundColor: Colors.white,
+      title: const Text(
+        'Konfirmasi Logout',
+        style: TextStyle(
+          color: Colors.black87,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      content: const Text(
+        'Apakah Anda yakin ingin keluar?',
+        style: TextStyle(
+          color: Colors.black54,
+          fontSize: 14,
+        ),
+      ),
+      actionsPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      actionsAlignment: MainAxisAlignment.end,
+      actions: [
+        TextButton(
+          style: TextButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFFE83030),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: const BorderSide(color: Color(0xFFE83030)),
+            ),
+          ),
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Batal'),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFE83030),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Logout'),
+        ),
+      ],
+    ),
+  );
+}
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -166,10 +217,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   isDanger: true,
                                   showChevron: false,
                                   onTap: () async {
-                                    await _authService.logout();
-                                    if (context.mounted) {
-                                      Navigator.pushReplacementNamed(
-                                          context, '/login');
+                                    final confirmed = await _showLogoutConfirmation();
+                                    if (confirmed == true) {
+                                      await _authService.logout();
+                                      if (context.mounted) {
+                                        Navigator.pushReplacementNamed(
+                                            context, '/login');
+                                      }
                                     }
                                   },
                                 ),

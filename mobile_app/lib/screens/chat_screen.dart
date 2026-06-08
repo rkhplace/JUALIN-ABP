@@ -164,7 +164,7 @@ class _ChatScreenState extends State<ChatScreen> {
       onRefresh: _loadRooms,
       child: ListView.separated(
         itemCount: _rooms.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
+        separatorBuilder: (_, __) => const SizedBox.shrink(),
         itemBuilder: (context, index) => _buildRoomTile(_rooms[index]),
       ),
     );
@@ -180,49 +180,7 @@ class _ChatScreenState extends State<ChatScreen> {
         : '';
     final unread = latest != null && !latest.isRead;
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      leading: CircleAvatar(
-        backgroundColor: const Color(0xFFF04445).withValues(alpha: 0.1),
-        child: Text(
-          name.isNotEmpty ? name[0].toUpperCase() : '?',
-          style: const TextStyle(
-              color: Color(0xFFE83030), fontWeight: FontWeight.bold),
-        ),
-      ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontWeight: unread ? FontWeight.bold : FontWeight.normal)),
-          ),
-          Text(time, style: TextStyle(color: Colors.grey[500], fontSize: 11)),
-        ],
-      ),
-      subtitle: Row(
-        children: [
-          Expanded(
-            child: Text(preview,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    color: unread ? Colors.black87 : Colors.black45,
-                    fontSize: 13,
-                    fontWeight: unread ? FontWeight.w600 : FontWeight.normal)),
-          ),
-          if (unread)
-            Container(
-              width: 8,
-              height: 8,
-              margin: const EdgeInsets.only(left: 4),
-              decoration: const BoxDecoration(
-                  color: Color(0xFFE83030), shape: BoxShape.circle),
-            ),
-        ],
-      ),
+    return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
@@ -234,10 +192,97 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ).then((_) => _loadRooms());
       },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.black12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: const Color(0xFFE83030).withOpacity(0.12),
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                style: const TextStyle(
+                  color: Color(0xFFE83030),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight:
+                                unread ? FontWeight.bold : FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        time,
+                        style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          preview,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: unread ? Colors.black87 : Colors.black54,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      if (unread) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFE83030),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Chat Room Message Thread Screen
 // ─────────────────────────────────────────────────────────────────────────────
