@@ -5,6 +5,7 @@ import '../../services/auth_service.dart';
 import '../../services/escrow_service.dart';
 import '../../widgets/ui/frosted_app_bar.dart';
 import '../../widgets/ui/logo_loader.dart';
+import 'dart:convert';
 
 class SellerOrdersScreen extends StatefulWidget {
   const SellerOrdersScreen({super.key});
@@ -103,7 +104,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                 onPressed: () async {
                   final scanned = await _scanAuthCode(ctx);
                   if (scanned != null && scanned.isNotEmpty) {
-                    authCodeController.text = scanned.toUpperCase();
+                    Navigator.pop(ctx, scanned.toUpperCase());
                   }
                 },
                 icon: const Icon(Icons.qr_code_scanner),
@@ -553,25 +554,38 @@ class _EscrowCodeScannerDialogState extends State<_EscrowCodeScannerDialog> {
   }
 
   Future<void> _handleDetect(BarcodeCapture capture) async {
-    if (_hasScanned) return;
+  if (_hasScanned) return;
 
-    String? value;
-    for (final barcode in capture.barcodes) {
-      final raw = barcode.rawValue?.trim();
-      if (raw != null && raw.isNotEmpty) {
-        value = raw;
-        break;
-      }
-    }
-
-    if (value == null || value.isEmpty) return;
-
-    _hasScanned = true;
-    await _scannerController.stop();
-    if (mounted) {
-      Navigator.pop(context, value);
+  String? value;
+  for (final barcode in capture.barcodes) {
+    final raw = barcode.rawValue?.trim();
+    if (raw != null && raw.isNotEmpty) {
+      value = raw;
+      break;
     }
   }
+
+  if (value == null || value.isEmpty) return;
+
+  String? authCode = value;
+  try {
+    final payload = jsonDecode(value);
+    if (payload is Map<String, dynamic>) {
+      authCode = payload['auth_code']?.toString().trim() ??
+          payload['data']?['auth_code']?.toString().trim();
+    }
+  } catch (_) {
+    // bukan JSON, terus gunakan value apa adanya
+  }
+
+  if (authCode == null || authCode.isEmpty) return;
+
+  _hasScanned = true;
+  await _scannerController.stop();
+  if (mounted) {
+    Navigator.pop(context, authCode);
+  }
+}
 
   @override
   Widget build(BuildContext context) {

@@ -198,8 +198,8 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
     }
 
     final parsedAmount = amount is num
-        ? amount.toInt()
-        : int.tryParse(amount?.toString() ?? '') ?? 0;
+    ? amount.toInt()
+    : num.tryParse(amount?.toString() ?? '')?.toInt() ?? 0;
 
     Navigator.push(
       context,

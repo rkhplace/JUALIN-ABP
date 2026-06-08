@@ -3,6 +3,7 @@ import 'package:mobile_app/screens/seller_dashboard_screen.dart';
 import 'package:mobile_app/screens/seller_products_screen.dart';
 import 'package:mobile_app/screens/profile_screen.dart';
 import 'seller_orders_screen.dart';
+import 'package:mobile_app/screens/chat_screen.dart';
 
 class SellerMainScreen extends StatefulWidget {
   const SellerMainScreen({super.key});
@@ -18,6 +19,7 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
   Widget build(BuildContext context) {
     final List<Widget> screens = [
       const SellerDashboardScreen(),
+      const ChatScreen(),
       const SellerProductsScreen(),
       const SellerOrdersScreen(),
       const ProfileScreen(),
@@ -39,6 +41,11 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
             icon: Icon(Icons.dashboard_outlined),
             activeIcon: Icon(Icons.dashboard),
             label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            activeIcon: Icon(Icons.chat_bubble),
+            label: 'Chat',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.inventory_2_outlined),
