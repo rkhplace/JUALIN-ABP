@@ -895,30 +895,206 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     required ValueChanged<String>? onChanged,
   }) {
     final selected = options.contains(value) ? value : options.first;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F8F8),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black12),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: selected,
-          isExpanded: true,
-          items: options
-              .map((item) => DropdownMenuItem(
-                    value: item,
-                    child: Text(_formatReportStatus(_uiReportStatus(item))),
-                  ))
-              .toList(),
-          onChanged: onChanged == null
-              ? null
-              : (value) {
-                  if (value != null && value != selected) onChanged(value);
-                },
+    return _buildChoiceField(
+      value: _formatAdminOptionLabel(selected),
+      hint: 'Pilih status',
+      enabled: onChanged != null,
+      onTap: onChanged == null
+          ? null
+          : () async {
+              final picked = await _showAdminOptionSheet(
+                title: 'Pilih Status',
+                selected: selected,
+                options: options,
+                labelBuilder: _formatAdminOptionLabel,
+              );
+              if (picked != null && picked != selected) onChanged(picked);
+            },
+    );
+  }
+
+  Widget _buildChoiceField({
+    required String? value,
+    required String hint,
+    required VoidCallback? onTap,
+    bool enabled = true,
+    String? errorText,
+  }) {
+    final hasValue = value != null && value.trim().isNotEmpty;
+    final hasError = errorText != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: enabled ? onTap : null,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              decoration: BoxDecoration(
+                color: enabled ? const Color(0xFFFDFDFD) : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: hasError
+                      ? const Color(0xFFE83030)
+                      : Colors.black.withValues(alpha: 0.10),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.035),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      hasValue ? value : hint,
+                      style: TextStyle(
+                        color: hasValue ? Colors.black87 : Colors.black38,
+                        fontWeight:
+                            hasValue ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: enabled ? const Color(0xFFE83030) : Colors.black26,
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
+        if (hasError) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 10),
+            child: Text(
+              errorText,
+              style: const TextStyle(color: Color(0xFFE83030), fontSize: 11),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<String?> _showAdminOptionSheet({
+    required String title,
+    required String? selected,
+    required List<String> options,
+    required String Function(String value) labelBuilder,
+  }) {
+    return showModalBottomSheet<String>(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      builder: (sheetContext) {
+        final maxHeight = MediaQuery.of(sheetContext).size.height * 0.72;
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.black12,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      physics: const ClampingScrollPhysics(),
+                      itemCount: options.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final option = options[index];
+                        final isSelected = option == selected;
+                        return Material(
+                          color: isSelected
+                              ? const Color(0xFFFFEFEF)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: () => Navigator.pop(sheetContext, option),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 13,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? const Color(0xFFE83030)
+                                      : Colors.black.withValues(alpha: 0.08),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      labelBuilder(option),
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? const Color(0xFFE83030)
+                                            : Colors.black87,
+                                        fontWeight: isSelected
+                                            ? FontWeight.w800
+                                            : FontWeight.w600,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                  if (isSelected)
+                                    const Icon(
+                                      Icons.check_circle,
+                                      color: Color(0xFFE83030),
+                                      size: 20,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1029,23 +1205,19 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               children: [
                 Text('Pilih alasan penghapusan untuk "$productName".'),
                 const SizedBox(height: 14),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedReason,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Alasan penghapusan',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: reasons
-                      .map(
-                        (item) => DropdownMenuItem(
-                          value: item,
-                          child: Text(item),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) =>
-                      setDialogState(() => selectedReason = value),
+                _buildChoiceField(
+                  value: selectedReason,
+                  hint: 'Pilih alasan penghapusan',
+                  onTap: () async {
+                    final picked = await _showAdminOptionSheet(
+                      title: 'Alasan Penghapusan',
+                      selected: selectedReason,
+                      options: reasons,
+                      labelBuilder: (value) => value,
+                    );
+                    if (picked == null || !context.mounted) return;
+                    setDialogState(() => selectedReason = picked);
+                  },
                 ),
                 if (needsCustom) ...[
                   const SizedBox(height: 12),
@@ -1193,6 +1365,34 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         return 'Ditolak';
       default:
         return status;
+    }
+  }
+
+  String _formatAdminOptionLabel(String value) {
+    switch (value) {
+      case 'pending':
+        return 'Menunggu';
+      case 'waiting_cod':
+        return 'Menunggu COD';
+      case 'paid':
+        return 'Dibayar';
+      case 'processing':
+      case 'processed':
+        return 'Diproses';
+      case 'completed':
+        return 'Selesai';
+      case 'cancelled':
+        return 'Dibatalkan';
+      case 'refunded':
+        return 'Refund';
+      case 'accepted':
+      case 'reviewed':
+        return 'Diterima';
+      case 'rejected':
+      case 'resolved':
+        return 'Ditolak';
+      default:
+        return _formatTransactionStatus(value);
     }
   }
 

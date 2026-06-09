@@ -7,19 +7,30 @@ class ImageUrlHelper {
 
     final lower = path.toLowerCase();
     if (lower.startsWith('http://') || lower.startsWith('https://')) {
-      return path.replaceFirst('http://localhost:', 'http://10.0.2.2:');
+      final uri = Uri.tryParse(path);
+      if (uri != null && uri.path.startsWith('/storage/')) {
+        return _apiFileUrl(uri.path.substring('/storage/'.length));
+      }
+      if (path.startsWith('http://localhost:')) {
+        return path.replaceFirst('http://localhost:', 'http://10.0.2.2:');
+      }
+      return path;
     }
 
-    final apiUri = Uri.parse(ApiConfig.baseUrl);
-    final backendBase = '${apiUri.scheme}://${apiUri.host}'
-        '${apiUri.hasPort ? ':${apiUri.port}' : ''}';
-    final normalizedBase =
-        backendBase.replaceFirst('http://localhost:', 'http://10.0.2.2:');
     final cleanPath = path.replaceFirst(RegExp(r'^/+'), '');
-    final storagePath =
-        cleanPath.startsWith('storage/') ? cleanPath : 'storage/$cleanPath';
+    final storagePath = cleanPath.startsWith('storage/')
+        ? cleanPath.substring('storage/'.length)
+        : cleanPath;
 
-    return '$normalizedBase/$storagePath';
+    return _apiFileUrl(storagePath);
+  }
+
+  static String _apiFileUrl(String storagePath) {
+    final cleanPath = storagePath.replaceFirst(RegExp(r'^/+'), '');
+    final base = ApiConfig.baseUrl
+        .replaceFirst('http://localhost:', 'http://10.0.2.2:')
+        .replaceFirst(RegExp(r'/+$'), '');
+    return '$base/files/$cleanPath';
   }
 
   static String _firstPath(dynamic value) {
