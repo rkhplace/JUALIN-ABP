@@ -7,9 +7,11 @@ use App\Http\Requests\ProductUpdateRequest;
 use App\Repositories\ProductRepository;
 use App\Http\Responses\ApiResponse;
 use App\Http\Responses\ProductResponse;
+use App\Models\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
@@ -123,7 +125,7 @@ class ProductController extends Controller
         return ApiResponse::success('Product updated successfully', new ProductResponse($updatedProduct));
     }
 
-    public function destroy($id): JsonResponse
+    public function destroy(Request $request, $id): JsonResponse
     {
         try {
             Log::info("Delete product attempt", [
@@ -167,9 +169,35 @@ class ProductController extends Controller
                 return ApiResponse::error('Forbidden', null, 403);
             }
 
+            $deleteReason = null;
+            if ($user->role === 'admin') {
+                $deleteReason = trim((string) $request->input('delete_reason', ''));
+                if ($deleteReason === '') {
+                    return ApiResponse::error('Alasan penghapusan wajib diisi', null, 422);
+                }
+                if (mb_strlen($deleteReason) > 500) {
+                    return ApiResponse::error('Alasan penghapusan maksimal 500 karakter', null, 422);
+                }
+
+                Notification::create([
+                    'user_id' => $product->seller_id,
+                    'title' => 'Produk dihapus admin',
+                    'body' => sprintf(
+                        'Produk "%s" dihapus admin pada %s. Alasan: %s',
+                        $product->name,
+                        now()->format('d/m/Y H:i'),
+                        $deleteReason
+                    ),
+                    'type' => 'product_deleted',
+                ]);
+            }
+
             $deleted = $this->repo->delete($id);
             if ($deleted) {
-                Log::info("Product deleted successfully", ['product_id' => $id]);
+                Log::info("Product deleted successfully", [
+                    'product_id' => $id,
+                    'delete_reason' => $deleteReason
+                ]);
                 return ApiResponse::success('Product deleted successfully', null);
             } else {
                 Log::error("Delete repository returned false", ['product_id' => $id]);

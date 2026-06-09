@@ -1,10 +1,9 @@
 import 'dart:ui';
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../services/notification_service.dart';
 import 'logo.dart';
+import 'notification_button.dart';
 
 class CustomNavbar extends StatefulWidget implements PreferredSizeWidget {
   final bool showSearch;
@@ -30,9 +29,6 @@ class CustomNavbar extends StatefulWidget implements PreferredSizeWidget {
 class _CustomNavbarState extends State<CustomNavbar> {
   final TextEditingController _searchController = TextEditingController();
   bool _hasText = false;
-  final NotificationService _notificationService = NotificationService();
-  int _unreadCount = 0;
-  Timer? _pollingTimer;
 
   @override
   void initState() {
@@ -40,27 +36,10 @@ class _CustomNavbarState extends State<CustomNavbar> {
     _searchController.addListener(() {
       setState(() => _hasText = _searchController.text.isNotEmpty);
     });
-    _fetchNotificationCount();
-    // Poll every 10 seconds to keep the badge updated even if we navigate back
-    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      _fetchNotificationCount();
-    });
-  }
-
-  Future<void> _fetchNotificationCount() async {
-    try {
-      final data = await _notificationService.getNotifications();
-      if (mounted) {
-        setState(() {
-          _unreadCount = (data['unread_count'] as num?)?.toInt() ?? 0;
-        });
-      }
-    } catch (_) {}
   }
 
   @override
   void dispose() {
-    _pollingTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -186,185 +165,10 @@ class _CustomNavbarState extends State<CustomNavbar> {
       ),
       actions: [
         if (widget.showSearch) ...[
-          IconButton(
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                const Icon(Icons.notifications_outlined, color: Colors.black87),
-                if (_unreadCount > 0)
-                  Positioned(
-                    right: -2,
-                    top: -2,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFE83030),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        _unreadCount > 99 ? '99+' : '$_unreadCount',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            onPressed: () => _showNotificationPopup(context),
-          ),
+          const NotificationButton(),
           const SizedBox(width: 8),
         ]
       ],
-    );
-  }
-
-  void _showNotificationPopup(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.6,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Notifikasi',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: FutureBuilder<Map<String, dynamic>>(
-                  future: _notificationService.getNotifications(markRead: true),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: CircularProgressIndicator(color: Color(0xFFE83030)),
-                      );
-                    }
-                    if (snapshot.hasError) {
-                      return const Center(
-                        child: Text(
-                          'Gagal memuat notifikasi.',
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      );
-                    }
-
-                    final dataMap = snapshot.data ?? {};
-                    final items = (dataMap['data'] as List<dynamic>?) ?? [];
-
-                    // Reset unread count on view
-                    if (_unreadCount > 0) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) setState(() => _unreadCount = 0);
-                      });
-                    }
-
-                    if (items.isEmpty) {
-                      return const Center(
-                        child: Text('Belum ada notifikasi', style: TextStyle(color: Colors.black54)),
-                      );
-                    }
-
-                    return ListView.separated(
-                      itemCount: items.length,
-                      separatorBuilder: (_, __) => const Divider(height: 24),
-                      itemBuilder: (context, index) {
-                        final item = items[index] as Map<String, dynamic>;
-                        final type = item['type'] ?? '';
-                        IconData iconData = Icons.notifications;
-                        Color iconColor = Colors.blue;
-
-                        if (type == 'order') {
-                          iconData = Icons.shopping_bag;
-                          iconColor = Colors.orange;
-                        } else if (type == 'payment') {
-                          iconData = Icons.payment;
-                          iconColor = Colors.green;
-                        } else if (type == 'chat') {
-                          iconData = Icons.chat;
-                          iconColor = Colors.purple;
-                        }
-
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: iconColor.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(iconData, color: iconColor, size: 20),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          item['title'] ?? '',
-                                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        item['created_at'] ?? '',
-                                        style: const TextStyle(fontSize: 11, color: Colors.black45),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    item['body'] ?? '',
-                                    style: const TextStyle(fontSize: 12, color: Colors.black87),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

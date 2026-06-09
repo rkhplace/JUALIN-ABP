@@ -534,6 +534,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                         ? Image.network(
                                             _product!.imagePath,
                                             fit: BoxFit.cover,
+                                            loadingBuilder:
+                                                (context, child, progress) {
+                                              if (progress == null) {
+                                                return child;
+                                              }
+                                              return const Center(
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                ),
+                                              );
+                                            },
                                             errorBuilder: (_, __, ___) =>
                                                 Center(
                                               child: Icon(Icons.image,
@@ -715,20 +727,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: CustomButton(
-                        text: 'Beli Sekarang',
-                        onPressed: () async {
-                          // Check if user is logged in using existing AuthService
-                          final loggedIn = await requireLogin(context);
+                        text: _product!.stock <= 0
+                            ? 'Stok Habis'
+                            : 'Beli Sekarang',
+                        onPressed: _product!.stock <= 0
+                            ? null
+                            : () async {
+                                // Check if user is logged in using existing AuthService
+                                final loggedIn = await requireLogin(context);
 
-                          if (!context.mounted) return;
-                          if (!loggedIn) return;
+                                if (!context.mounted) return;
+                                if (!loggedIn) return;
 
-                          Navigator.pushNamed(
-                            context,
-                            '/checkout',
-                            arguments: _product,
-                          );
-                        },
+                                Navigator.pushNamed(
+                                  context,
+                                  '/checkout',
+                                  arguments: _product,
+                                );
+                              },
                       ),
                     ),
                   ],

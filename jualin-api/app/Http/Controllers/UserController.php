@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Responses\ApiResponse;
+use App\Models\Notification;
 use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Http\Request;
@@ -110,6 +111,16 @@ class UserController extends Controller
                 'banned_until' => $banEndsAt,
             ]);
 
+            Notification::create([
+                'user_id' => $user->id,
+                'title' => 'Akun dibatasi admin',
+                'body' => sprintf(
+                    'Akun Anda dibatasi sampai %s. Hubungi admin jika merasa ini keliru.',
+                    $banEndsAt->format('d/m/Y H:i')
+                ),
+                'type' => 'account',
+            ]);
+
             return ApiResponse::success('User banned successfully', [
                 'user' => $user->fresh(),
                 'ban_started_at' => $banStartsAt->toDateTimeString(),
@@ -136,6 +147,13 @@ class UserController extends Controller
             $user->update([
                 'is_banned' => false,
                 'banned_until' => null,
+            ]);
+
+            Notification::create([
+                'user_id' => $user->id,
+                'title' => 'Pembatasan akun dicabut',
+                'body' => 'Akun Anda sudah tidak dibatasi. Anda dapat menggunakan fitur Jualin kembali.',
+                'type' => 'account',
             ]);
 
             return ApiResponse::success('User unbanned successfully', [

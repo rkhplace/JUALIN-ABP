@@ -111,6 +111,7 @@ class ProductService {
         ApiConfig.products,
         data,
         imageFile: imageFile,
+        imageField: 'images[]',
       );
 
       // On success: { success, data: { ...product } }
@@ -132,6 +133,7 @@ class ProductService {
         '${ApiConfig.products}/$id?_method=PATCH',
         data,
         imageFile: imageFile,
+        imageField: 'images[]',
       );
 
       final productData = response['data'];
