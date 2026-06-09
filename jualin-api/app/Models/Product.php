@@ -92,12 +92,11 @@ class Product extends Model
             return $image;
         }
 
-        $baseUrl = rtrim(request()?->getSchemeAndHttpHost() ?: config('app.url', ''), '/');
         $cleanPath = ltrim($image, '/');
         $storagePath = str_starts_with($cleanPath, 'storage/')
-            ? $cleanPath
-            : 'storage/' . $cleanPath;
+            ? substr($cleanPath, strlen('storage/'))
+            : $cleanPath;
 
-        return $baseUrl ? "{$baseUrl}/{$storagePath}" : "/{$storagePath}";
+        return url('/api/v1/files/' . $storagePath);
     }
 }
