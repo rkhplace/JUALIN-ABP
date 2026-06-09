@@ -48,8 +48,11 @@ class AdminService {
     await _client.patch('/users/$userId/unban');
   }
 
-  Future<void> deleteProduct(int productId) async {
-    await _client.delete('${ApiConfig.products}/$productId');
+  Future<void> deleteProduct(int productId, String reason) async {
+    await _client.delete(
+      '${ApiConfig.products}/$productId',
+      body: {'delete_reason': reason},
+    );
   }
 
   Future<void> updateTransactionStatus(int transactionId, String status) async {

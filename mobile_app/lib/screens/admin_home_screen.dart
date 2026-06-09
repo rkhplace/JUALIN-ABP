@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../services/admin_service.dart';
 import '../services/auth_service.dart';
+import '../utils/image_url_helper.dart';
 import '../widgets/ui/logo_loader.dart';
 
 class AdminHomeScreen extends StatefulWidget {
@@ -468,7 +469,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         ),
                       ),
                       IconButton(
-                        onPressed: id == 0 ? null : () => _deleteProduct(id),
+                        onPressed:
+                            id == 0 ? null : () => _deleteProduct(id, name),
                         icon: const Icon(Icons.delete_outline,
                             color: Color(0xFFE83030)),
                       ),
@@ -856,6 +858,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               child: Image.network(
                 imageUrl,
                 fit: BoxFit.cover,
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  );
+                },
                 errorBuilder: (_, __, ___) =>
                     const Icon(Icons.image_outlined, color: Colors.grey),
               ),
@@ -987,31 +995,99 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  Future<void> _deleteProduct(int productId) async {
-    final confirmed = await showDialog<bool>(
+  Future<void> _deleteProduct(int productId, String productName) async {
+    const reasons = [
+      'Produk melanggar ketentuan',
+      'Foto produk tidak sesuai',
+      'Deskripsi produk tidak jelas',
+      'Produk terindikasi penipuan',
+      'Produk duplikat',
+      'Kategori produk tidak sesuai',
+      'Stok atau informasi produk tidak valid',
+      'Lainnya',
+    ];
+
+    final customReasonController = TextEditingController();
+    String? selectedReason;
+
+    final reason = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        title: const Text('Hapus Produk'),
-        content: const Text('Yakin ingin menghapus produk ini?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Batal')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style:
-                TextButton.styleFrom(foregroundColor: const Color(0xFFE83030)),
-            child: const Text('Hapus'),
-          ),
-        ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final needsCustom = selectedReason == 'Lainnya';
+          final customReason = customReasonController.text.trim();
+          final canDelete = selectedReason != null &&
+              (!needsCustom || customReason.isNotEmpty);
+
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            title: const Text('Hapus Produk'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Pilih alasan penghapusan untuk "$productName".'),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedReason,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Alasan penghapusan',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: reasons
+                      .map(
+                        (item) => DropdownMenuItem(
+                          value: item,
+                          child: Text(item),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) =>
+                      setDialogState(() => selectedReason = value),
+                ),
+                if (needsCustom) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: customReasonController,
+                    minLines: 2,
+                    maxLines: 4,
+                    onChanged: (_) => setDialogState(() {}),
+                    decoration: const InputDecoration(
+                      labelText: 'Alasan lainnya',
+                      hintText: 'Tulis alasan penghapusan',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal')),
+              TextButton(
+                onPressed: canDelete
+                    ? () => Navigator.pop(
+                          context,
+                          needsCustom ? customReason : selectedReason,
+                        )
+                    : null,
+                style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFE83030)),
+                child: const Text('Hapus'),
+              ),
+            ],
+          );
+        },
       ),
     );
-    if (confirmed != true) return;
+    customReasonController.dispose();
+    if (reason == null || reason.trim().isEmpty) return;
 
     await _runAdminAction(
-      action: () => _adminService.deleteProduct(productId),
+      action: () => _adminService.deleteProduct(productId, reason.trim()),
       successMessage: 'Produk berhasil dihapus.',
     );
   }
@@ -1082,8 +1158,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   String _extractImageUrl(dynamic raw) {
-    if (raw is List && raw.isNotEmpty) return raw.first?.toString() ?? '';
-    return raw?.toString() ?? '';
+    return ImageUrlHelper.resolve(raw);
   }
 
   String _formatCurrency(int amount) {

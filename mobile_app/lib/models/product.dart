@@ -1,3 +1,5 @@
+import '../utils/image_url_helper.dart';
+
 class Product {
   final int id;
   final String title;
@@ -42,18 +44,14 @@ class Product {
     int sellerId = _parseInt(json['seller_id']);
     if (json['seller'] != null && json['seller'] is Map) {
       final seller = json['seller'] as Map;
-      sellerName =
-          seller['username']?.toString() ?? seller['name']?.toString() ?? 'Penjual';
+      sellerName = seller['username']?.toString() ??
+          seller['name']?.toString() ??
+          'Penjual';
       sellerId = sellerId == 0 ? _parseInt(seller['id']) : sellerId;
     }
 
-    String imagePath = '';
-    final image = json['image'] ?? json['image_path'];
-    if (image is List && image.isNotEmpty) {
-      imagePath = image.first?.toString() ?? '';
-    } else if (image != null) {
-      imagePath = image.toString();
-    }
+    final imagePath =
+        ImageUrlHelper.resolve(json['image'] ?? json['image_path']);
 
     return Product(
       id: _parseInt(json['id']),

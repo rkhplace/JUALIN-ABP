@@ -9,6 +9,21 @@ import '../services/seller_service.dart';
 import '../widgets/ui/frosted_app_bar.dart';
 import '../widgets/ui/logo_loader.dart';
 
+const List<String> _productCategories = [
+  'Elektronik',
+  'Fashion',
+  'Hobi & Olahraga',
+  'Rumah Tangga',
+  'Aksesoris',
+  'Otomotif',
+  'Lainnya',
+];
+
+const Map<String, String> _productConditions = {
+  'new': 'Baru',
+  'used': 'Bekas / Used',
+};
+
 // Shared form used by both New and Edit screens
 class SellerProductFormScreen extends StatefulWidget {
   final bool isEdit;
@@ -24,7 +39,6 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
   final SellerService _sellerService = SellerService();
 
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _categoryController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _stockController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -35,6 +49,8 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   bool _didInitializeEditData = false;
+  String? _selectedCategory;
+  String? _selectedCondition;
 
   @override
   void didChangeDependencies() {
@@ -45,9 +61,13 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
     if (args is SellerProduct) {
       _editingProduct = args;
       _nameController.text = args.name;
-      _categoryController.text = '';
+      _selectedCategory = _normalizeCategory(args.category);
+      _selectedCondition = _productConditions.containsKey(args.condition)
+          ? args.condition
+          : 'used';
       _priceController.text = args.price.toString();
       _stockController.text = args.stock.toString();
+      _descriptionController.text = args.description;
     }
     _didInitializeEditData = true;
   }
@@ -55,7 +75,6 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _categoryController.dispose();
     _priceController.dispose();
     _stockController.dispose();
     _descriptionController.dispose();
@@ -64,13 +83,36 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
 
   Future<void> _handleSave() async {
     final name = _nameController.text.trim();
-    final category = _categoryController.text.trim();
     final price = _priceController.text.trim();
     final stock = _stockController.text.trim();
     final description = _descriptionController.text.trim();
+    final priceValue = int.tryParse(price);
+    final stockValue = int.tryParse(stock);
 
-    if (name.isEmpty || price.isEmpty) {
-      setState(() => _errorMessage = 'Nama produk dan harga wajib diisi.');
+    if (name.isEmpty) {
+      setState(() => _errorMessage = 'Nama produk wajib diisi.');
+      return;
+    }
+    if (priceValue == null || priceValue <= 0) {
+      setState(
+          () => _errorMessage = 'Harga wajib diisi dan harus angka valid.');
+      return;
+    }
+    if (stockValue == null || stockValue < 0) {
+      setState(
+          () => _errorMessage = 'Stok wajib diisi dan tidak boleh negatif.');
+      return;
+    }
+    if (_selectedCategory == null || _selectedCategory!.isEmpty) {
+      setState(() => _errorMessage = 'Kategori produk wajib dipilih.');
+      return;
+    }
+    if (_selectedCondition == null || _selectedCondition!.isEmpty) {
+      setState(() => _errorMessage = 'Kondisi barang wajib dipilih.');
+      return;
+    }
+    if (description.isEmpty) {
+      setState(() => _errorMessage = 'Deskripsi produk wajib diisi.');
       return;
     }
 
@@ -82,11 +124,11 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
     try {
       final payload = {
         'name': name,
-        'category': category.isNotEmpty ? category : 'Umum',
-        'price': price,
-        'stock_quantity': stock.isNotEmpty ? stock : '0',
+        'category': _selectedCategory!,
+        'price': priceValue.toString(),
+        'stock_quantity': stockValue.toString(),
         'description': description,
-        'condition': 'used',
+        'condition': _selectedCondition!,
         'status': 'active',
       };
 
@@ -121,6 +163,15 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
         });
       }
     }
+  }
+
+  String? _normalizeCategory(String value) {
+    final text = value.trim();
+    if (text.isEmpty) return null;
+    for (final category in _productCategories) {
+      if (category.toLowerCase() == text.toLowerCase()) return category;
+    }
+    return 'Lainnya';
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -220,10 +271,19 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
                 controller: _nameController,
               ),
               const SizedBox(height: 16),
-              CustomInput(
+              _buildDropdownField(
                 label: 'Kategori',
-                hintText: 'Contoh: Elektronik',
-                controller: _categoryController,
+                value: _selectedCategory,
+                hint: 'Pilih kategori',
+                items: _productCategories
+                    .map(
+                      (category) => DropdownMenuItem<String>(
+                        value: category,
+                        child: Text(category),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) => setState(() => _selectedCategory = value),
               ),
               const SizedBox(height: 16),
               CustomInput(
@@ -244,6 +304,22 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
                 label: 'Deskripsi',
                 hintText: 'Tulis deskripsi produk secara detail',
                 controller: _descriptionController,
+              ),
+              const SizedBox(height: 16),
+              _buildDropdownField(
+                label: 'Kondisi Barang',
+                value: _selectedCondition,
+                hint: 'Pilih kondisi',
+                items: _productConditions.entries
+                    .map(
+                      (entry) => DropdownMenuItem<String>(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) =>
+                    setState(() => _selectedCondition = value),
               ),
               const SizedBox(height: 16),
 
@@ -276,6 +352,39 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
     );
   }
 
+  Widget _buildDropdownField({
+    required String label,
+    required String? value,
+    required String hint,
+    required List<DropdownMenuItem<String>> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.black12),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              isExpanded: true,
+              hint: Text(hint),
+              items: items,
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildImagePreview() {
     if (_selectedImage != null) {
       return ClipRRect(
@@ -291,6 +400,11 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
         child: Image.network(
           existingImage,
           fit: BoxFit.cover,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return const Center(
+                child: CircularProgressIndicator(strokeWidth: 2));
+          },
           errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
         ),
       );

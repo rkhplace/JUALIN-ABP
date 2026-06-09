@@ -5,6 +5,7 @@ import '../models/seller_product.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 import '../widgets/ui/logo_loader.dart';
+import '../widgets/ui/notification_button.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   const SellerDashboardScreen({super.key});
@@ -254,13 +255,30 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Dashboard Penjual',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Dashboard Penjual',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const NotificationButton(
+                      iconColor: Colors.white,
+                      badgeColor: Colors.white,
+                      badgeTextColor: Color(0xFFE83030),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 22),
               Text(

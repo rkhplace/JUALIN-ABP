@@ -344,6 +344,25 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                                   width: 80,
                                   height: 80,
                                   fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, progress) {
+                                    if (progress == null) return child;
+                                    return const SizedBox(
+                                      width: 80,
+                                      height: 80,
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: 80,
+                                    height: 80,
+                                    color: Colors.grey[200],
+                                    child: const Icon(Icons.image,
+                                        color: Colors.grey),
+                                  ),
                                 )
                               : Container(
                                   width: 80,

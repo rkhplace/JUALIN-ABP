@@ -163,6 +163,18 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                                           child: Image.network(
                                             product.imagePath,
                                             fit: BoxFit.cover,
+                                            loadingBuilder:
+                                                (context, child, progress) {
+                                              if (progress == null) {
+                                                return child;
+                                              }
+                                              return const Center(
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                ),
+                                              );
+                                            },
                                             errorBuilder: (_, __, ___) =>
                                                 const Icon(Icons.image,
                                                     color: Colors.grey),
