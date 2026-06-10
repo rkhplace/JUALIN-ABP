@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool isLoading;
   final bool isSecondary;
   final bool isFullWidth;
@@ -20,9 +20,8 @@ class CustomButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final bgColor = isSecondary ? Colors.white : const Color(0xFFE83030);
     final fgColor = isSecondary ? Colors.black87 : Colors.white;
-    final side = isSecondary
-        ? const BorderSide(color: Colors.black12)
-        : BorderSide.none;
+    final side =
+        isSecondary ? const BorderSide(color: Colors.black12) : BorderSide.none;
 
     final Widget buttonChild = isLoading
         ? SizedBox(

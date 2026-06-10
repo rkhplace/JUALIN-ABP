@@ -201,6 +201,7 @@ class SellerService {
     return rawList
         .whereType<Map>()
         .map((json) => SellerProduct.fromJson(Map<String, dynamic>.from(json)))
+        .where((product) => product.stock > 0)
         .toList();
   }
 

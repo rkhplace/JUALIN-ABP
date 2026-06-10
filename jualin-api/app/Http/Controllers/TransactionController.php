@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\WalletTransaction;
+use App\Models\Notification;
 use Illuminate\Support\Str;
 
 class TransactionController extends Controller
@@ -85,10 +86,27 @@ class TransactionController extends Controller
 
             DB::commit();
 
-            \App\Models\Notification::create([
+            Notification::create([
                 'user_id' => $customerId,
                 'title' => 'Menunggu Pembayaran',
                 'body' => 'Jangan lupa selesaikan pembayaran untuk pesanan Anda sebelum batas waktu habis.',
+                'type' => 'order',
+            ]);
+
+            $productNames = collect($productsToUpdate)
+                ->map(fn ($item) => $item['product']->name)
+                ->filter()
+                ->take(3)
+                ->implode(', ');
+
+            Notification::create([
+                'user_id' => $request->seller_id,
+                'title' => 'Pesanan baru masuk',
+                'body' => sprintf(
+                    'Ada pesanan baru%s dengan total Rp %s. Segera cek menu Pesanan.',
+                    $productNames ? " untuk {$productNames}" : '',
+                    number_format($totalAmount, 0, ',', '.')
+                ),
                 'type' => 'order',
             ]);
 
@@ -187,11 +205,22 @@ class TransactionController extends Controller
                     'transaction_time' => now(),
                 ]);
 
-                \App\Models\Notification::create([
+                Notification::create([
                     'user_id' => $buyer->id,
                     'title' => 'Pembayaran Berhasil',
                     'body' => "Hore! Pembayaran pesanan {$product->name} sudah berhasil diverifikasi.",
                     'type' => 'payment',
+                ]);
+
+                Notification::create([
+                    'user_id' => $request->seller_id,
+                    'title' => 'Pesanan COD baru',
+                    'body' => sprintf(
+                        'Pembeli memesan %s dan membayar Rp %s via Jualin Wallet. Cek kode COD di menu Pesanan.',
+                        $product->name,
+                        number_format($totalAmount, 0, ',', '.')
+                    ),
+                    'type' => 'order',
                 ]);
 
                 $transaction->load(['items.product', 'customer', 'seller']);

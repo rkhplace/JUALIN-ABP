@@ -36,18 +36,22 @@ class ApiClient {
       final token = prefs.getString('auth_token');
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
-        debugPrint('[ApiClient] Token: ${token.substring(0, token.length > 30 ? 30 : token.length)}...');
+        debugPrint(
+            '[ApiClient] Token: ${token.substring(0, token.length > 30 ? 30 : token.length)}...');
       } else {
-        debugPrint('[ApiClient] WARNING: No auth_token found in SharedPreferences!');
+        debugPrint(
+            '[ApiClient] WARNING: No auth_token found in SharedPreferences!');
       }
     }
     return headers;
   }
 
   Map<String, dynamic> _decode(http.Response response) {
-    debugPrint('[ApiClient] ← HTTP ${response.statusCode} | body: ${response.body.length > 500 ? "${response.body.substring(0, 500)}..." : response.body}');
-    final body =
-        response.body.trim().isEmpty ? <String, dynamic>{} : jsonDecode(response.body);
+    debugPrint(
+        '[ApiClient] ← HTTP ${response.statusCode} | body: ${response.body.length > 500 ? "${response.body.substring(0, 500)}..." : response.body}');
+    final body = response.body.trim().isEmpty
+        ? <String, dynamic>{}
+        : jsonDecode(response.body);
     if (response.statusCode >= 400) {
       final msg = body is Map
           ? (body['message'] ?? 'Request failed')
@@ -61,8 +65,7 @@ class ApiClient {
 
   /// GET request (optionally authenticated).
   Future<Map<String, dynamic>> get(String path,
-      {bool requiresAuth = true,
-      Map<String, String>? queryParams}) async {
+      {bool requiresAuth = true, Map<String, String>? queryParams}) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}$path')
         .replace(queryParameters: queryParams);
     final headers = await _authHeaders(requiresAuth: requiresAuth);
@@ -110,12 +113,13 @@ class ApiClient {
 
   /// DELETE request (optionally authenticated).
   Future<Map<String, dynamic>> delete(String path,
-      {bool requiresAuth = true}) async {
+      {bool requiresAuth = true, Map<String, dynamic>? body}) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}$path');
     final headers = await _authHeaders(requiresAuth: requiresAuth);
 
-    final response =
-        await http.delete(uri, headers: headers).timeout(
+    final response = await http
+        .delete(uri, headers: headers, body: jsonEncode(body ?? {}))
+        .timeout(
           const Duration(seconds: 30),
           onTimeout: () => throw ApiException('Request timed out', 408),
         );

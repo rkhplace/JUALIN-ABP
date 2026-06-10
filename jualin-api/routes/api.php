@@ -19,6 +19,14 @@ Route::prefix('v1')->group(function () {
     Route::post('/password/email', [AuthController::class, 'sendResetLinkEmail']);
     Route::post('/password/reset', [AuthController::class, 'resetPassword']);
     Route::post('/refresh-token', [AuthController::class, 'refreshToken']);
+    Route::get('files/{path}', function (string $path) {
+        $path = ltrim($path, '/');
+        if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            return ApiResponse::error('File not found', null, 404);
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->response($path);
+    })->where('path', '.*');
     Route::get('products', [ProductController::class, 'index']);
     Route::get('products/{id}', [ProductController::class, 'show']);
     Route::get('/users/{id}', [UserController::class, 'show'])->whereNumber('id');
