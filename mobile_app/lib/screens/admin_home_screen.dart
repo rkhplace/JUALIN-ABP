@@ -16,11 +16,16 @@ class AdminHomeScreen extends StatefulWidget {
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   final AdminService _adminService = AdminService();
   final AuthService _authService = AuthService();
+  final TextEditingController _productSearchController =
+      TextEditingController();
+  final TextEditingController _userSearchController = TextEditingController();
 
   List<Map<String, dynamic>> _users = [];
   List<Map<String, dynamic>> _products = [];
   List<Map<String, dynamic>> _transactions = [];
   List<Map<String, dynamic>> _reports = [];
+  String _productSearchQuery = '';
+  String _userSearchQuery = '';
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -28,6 +33,50 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   void initState() {
     super.initState();
     _fetchAdminData();
+  }
+
+  @override
+  void dispose() {
+    _productSearchController.dispose();
+    _userSearchController.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> get _filteredUsers {
+    final query = _userSearchQuery.trim().toLowerCase();
+
+    return _users.where((user) {
+      final username = _text(user['username'] ?? user['name'] ?? user['email'])
+          .toLowerCase();
+      final email = _text(user['email']).toLowerCase();
+      final role = _text(user['role']).toLowerCase();
+      final status = _isCurrentlyBanned(user) ? 'banned diban' : 'aktif';
+
+      return query.isEmpty ||
+          username.contains(query) ||
+          email.contains(query) ||
+          role.contains(query) ||
+          status.contains(query);
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> get _filteredProducts {
+    final query = _productSearchQuery.trim().toLowerCase();
+
+    return _products.where((product) {
+      final name = _text(product['name'] ?? product['title']).toLowerCase();
+      final category = _text(product['category']).toLowerCase();
+      final seller = _text(
+        _nested(product['seller'], 'username') ??
+            product['seller_name'] ??
+            product['sellerName'],
+      ).toLowerCase();
+
+      return query.isEmpty ||
+          name.contains(query) ||
+          category.contains(query) ||
+          seller.contains(query);
+    }).toList();
   }
 
   Future<void> _fetchAdminData() async {
@@ -327,104 +376,206 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Widget _buildUsersTab() {
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: _users.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final user = _users[index];
-        final id = _parseInt(user['id']);
-        final username =
-            _text(user['username'] ?? user['name'] ?? user['email'], '-');
-        final email = _text(user['email'], '-');
-        final role = _text(user['role'], '-');
-        final isBanned = _isCurrentlyBanned(user);
+    final filteredUsers = _filteredUsers;
 
-        return _buildCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _buildIconBox(Icons.person_outline),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(username,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w800)),
-                        Text(email,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                color: Colors.black45, fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                  _buildStatusChip(role, Colors.blue),
-                ],
-              ),
-              if (isBanned) ...[
-                const SizedBox(height: 10),
-                Text(
-                  'Diban sampai ${_formatDate(user['banned_until'])}',
-                  style:
-                      const TextStyle(color: Color(0xFFE83030), fontSize: 12),
-                ),
-              ],
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: role == 'admin' || id == 0
-                          ? null
-                          : () => isBanned
-                              ? _unbanUser(id)
-                              : _showBanDurationDialog(id, username),
-                      icon: Icon(isBanned ? Icons.lock_open : Icons.block),
-                      label: Text(isBanned ? 'Unban' : 'Ban'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFE83030),
-                        side: const BorderSide(color: Color(0xFFE83030)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: role == 'admin' || id == 0
-                          ? null
-                          : () => _confirmDeleteUser(id, username),
-                      icon: const Icon(Icons.delete_outline),
-                      label: const Text('Hapus Akun'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFE83030),
-                        side: const BorderSide(color: Color(0xFFE83030)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildProductsTransactionsTab() {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         const Text(
-          'Produk Terbaru',
+          'Users',
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 12),
-        ..._products.map(_buildProductCard),
+        _buildUserSearch(),
+        const SizedBox(height: 12),
+        if (filteredUsers.isEmpty)
+          _buildEmptyUserSearchState()
+        else
+          ...filteredUsers.map(
+            (user) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildAdminUserCard(user),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildAdminUserCard(Map<String, dynamic> user) {
+    final id = _parseInt(user['id']);
+    final username =
+        _text(user['username'] ?? user['name'] ?? user['email'], '-');
+    final email = _text(user['email'], '-');
+    final role = _text(user['role'], '-');
+    final isBanned = _isCurrentlyBanned(user);
+
+    return _buildCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _buildIconBox(Icons.person_outline),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      username,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    Text(
+                      email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          const TextStyle(color: Colors.black45, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              _buildStatusChip(role, Colors.blue),
+            ],
+          ),
+          if (isBanned) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Diban sampai ${_formatDate(user['banned_until'])}',
+              style: const TextStyle(color: Color(0xFFE83030), fontSize: 12),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: role == 'admin' || id == 0
+                      ? null
+                      : () => isBanned
+                          ? _unbanUser(id)
+                          : _showBanDurationDialog(id, username),
+                  icon: Icon(isBanned ? Icons.lock_open : Icons.block),
+                  label: Text(isBanned ? 'Unban' : 'Ban'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFE83030),
+                    side: const BorderSide(color: Color(0xFFE83030)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: role == 'admin' || id == 0
+                      ? null
+                      : () => _confirmDeleteUser(id, username),
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Hapus Akun'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFE83030),
+                    side: const BorderSide(color: Color(0xFFE83030)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserSearch() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _userSearchController,
+        onChanged: (value) => setState(() => _userSearchQuery = value),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Cari nama, email, atau role',
+          hintStyle: const TextStyle(color: Colors.black38, fontSize: 13),
+          prefixIcon: const Icon(Icons.search, color: Color(0xFFE83030)),
+          suffixIcon: _userSearchQuery.isEmpty
+              ? null
+              : IconButton(
+                  onPressed: () {
+                    _userSearchController.clear();
+                    setState(() => _userSearchQuery = '');
+                  },
+                  icon: const Icon(Icons.close, size: 18),
+                ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: Color(0xFFE83030), width: 1.2),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyUserSearchState() {
+    return _buildCard(
+      child: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 28),
+        child: Column(
+          children: [
+            Icon(Icons.search_off, color: Colors.black38, size: 42),
+            SizedBox(height: 10),
+            Text(
+              'User tidak ditemukan',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Coba ubah kata kunci pencarian.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black45, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductsTransactionsTab() {
+    final filteredProducts = _filteredProducts;
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Text(
+          'Produk',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 12),
+        _buildProductSearch(),
+        const SizedBox(height: 12),
+        if (filteredProducts.isEmpty)
+          _buildEmptyProductSearchState()
+        else
+          ...filteredProducts.map(_buildProductCard),
         const SizedBox(height: 22),
         const Text(
           'Monitoring Transaksi',
@@ -433,6 +584,81 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         const SizedBox(height: 12),
         ..._transactions.map(_buildTransactionCard),
       ],
+    );
+  }
+
+  Widget _buildProductSearch() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _productSearchController,
+        onChanged: (value) => setState(() => _productSearchQuery = value),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Cari produk, seller, atau kategori',
+          hintStyle: const TextStyle(color: Colors.black38, fontSize: 13),
+          prefixIcon: const Icon(Icons.search, color: Color(0xFFE83030)),
+          suffixIcon: _productSearchQuery.isEmpty
+              ? null
+              : IconButton(
+                  onPressed: () {
+                    _productSearchController.clear();
+                    setState(() => _productSearchQuery = '');
+                  },
+                  icon: const Icon(Icons.close, size: 18),
+                ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: Color(0xFFE83030), width: 1.2),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyProductSearchState() {
+    return _buildCard(
+      child: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 28),
+        child: Column(
+          children: [
+            Icon(Icons.search_off, color: Colors.black38, size: 42),
+            SizedBox(height: 10),
+            Text(
+              'Produk tidak ditemukan',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Coba ubah kata kunci pencarian.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black45, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

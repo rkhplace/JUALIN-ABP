@@ -5,6 +5,7 @@ import '../services/chat_service.dart';
 import '../services/auth_service.dart';
 import '../services/report_service.dart';
 import '../models/product.dart';
+import '../models/chat_room.dart';
 import '../widgets/ui/login_required_dialog.dart';
 import '../widgets/ui/frosted_app_bar.dart';
 import '../widgets/ui/logo_loader.dart';
@@ -120,6 +121,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           builder: (_) => ChatRoomScreen(
             roomId: roomId,
             roomName: _product!.sellerName,
+            product: ChatProduct(
+              id: _product!.id,
+              name: _product!.title,
+              price: _product!.price,
+              image: _product!.imagePath,
+              sellerName: _product!.sellerName,
+            ),
           ),
         ),
       );
