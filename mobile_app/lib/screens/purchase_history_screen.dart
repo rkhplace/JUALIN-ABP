@@ -128,108 +128,208 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
     ];
     String selectedReason = 'Pembeli membatalkan pesanan';
     final customReasonController = TextEditingController();
+    bool customReasonError = false;
 
-    final String? refundReason = await showDialog<String>(
+    final String? refundReason = await showModalBottomSheet<String>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.35),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-          child: AlertDialog(
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-            title: const Text(
-              'Request Refund',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Apakah Anda yakin ingin membatalkan pesanan ini? Dana akan dikembalikan ke saldo Jualin Anda.',
-                  style: TextStyle(fontSize: 13, height: 1.4),
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedReason,
-                  decoration: const InputDecoration(
-                    labelText: 'Alasan refund',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: reasons
-                      .map((reason) => DropdownMenuItem(
-                            value: reason,
-                            child: Text(reason),
-                          ))
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setDialogState(() => selectedReason = value);
-                  },
-                ),
-                if (selectedReason == 'Lainnya') ...[
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: customReasonController,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      hintText: 'Tulis alasan refund',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFFE83030),
-                ),
-                child: const Text('Batal'),
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheetState) {
+          return SafeArea(
+            child: AnimatedPadding(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
               ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE83030),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-                ),
-                onPressed: () {
-                  final reason = selectedReason == 'Lainnya'
-                      ? customReasonController.text.trim()
-                      : selectedReason;
-                  if (reason.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Alasan refund wajib diisi.'),
-                        backgroundColor: Colors.orange,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 42,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 18),
+                        decoration: BoxDecoration(
+                          color: Colors.black12,
+                          borderRadius: BorderRadius.circular(99),
+                        ),
                       ),
-                    );
-                    return;
-                  }
-                  Navigator.pop(context, reason);
-                },
-                child: const Text('Ya, Refund'),
+                    ),
+                    const Text(
+                      'Request Refund',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Apakah Anda yakin ingin membatalkan pesanan ini? Dana akan dikembalikan ke saldo Jualin Anda.',
+                      style: TextStyle(fontSize: 13, height: 1.4),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Alasan refund',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ...reasons.map(
+                      (reason) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            setSheetState(() {
+                              selectedReason = reason;
+                              customReasonError = false;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 13,
+                            ),
+                            decoration: BoxDecoration(
+                              color: selectedReason == reason
+                                  ? const Color(0xFFFFEEEE)
+                                  : const Color(0xFFF8F8F8),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: selectedReason == reason
+                                    ? const Color(0xFFE83030)
+                                    : Colors.black12,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    reason,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: selectedReason == reason
+                                          ? const Color(0xFFE83030)
+                                          : Colors.black87,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                if (selectedReason == reason)
+                                  const Icon(
+                                    Icons.check_circle,
+                                    color: Color(0xFFE83030),
+                                    size: 20,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (selectedReason == 'Lainnya') ...[
+                      const SizedBox(height: 4),
+                      TextField(
+                        controller: customReasonController,
+                        maxLines: 3,
+                        onChanged: (_) {
+                          if (customReasonError) {
+                            setSheetState(() => customReasonError = false);
+                          }
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Tulis alasan refund',
+                          hintStyle: const TextStyle(fontSize: 13),
+                          filled: true,
+                          fillColor: const Color(0xFFF8F8F8),
+                          errorText: customReasonError
+                              ? 'Alasan refund wajib diisi.'
+                              : null,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE83030),
+                              width: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(sheetContext),
+                            style: TextButton.styleFrom(
+                              foregroundColor: const Color(0xFFE83030),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                            ),
+                            child: const Text('Batal'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE83030),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(22),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                            ),
+                            onPressed: () {
+                              final reason = selectedReason == 'Lainnya'
+                                  ? customReasonController.text.trim()
+                                  : selectedReason;
+
+                              if (reason.isEmpty) {
+                                setSheetState(() => customReasonError = true);
+                                return;
+                              }
+
+                              Navigator.pop(sheetContext, reason);
+                            },
+                            child: const Text('Ya, Refund'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
 
     customReasonController.dispose();
 
-    if (refundReason == null || refundReason.trim().isEmpty) return;
+    if (!mounted || refundReason == null || refundReason.trim().isEmpty) {
+      return;
+    }
 
     setState(() => _isProcessingAction = true);
 
