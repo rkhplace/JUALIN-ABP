@@ -25,11 +25,19 @@ class ProductFilterRequest extends FormRequest
             'category' => ['sometimes', 'string', 'max:255'],
             'location' => ['sometimes', 'string', 'max:255'],
             'name' => ['sometimes', 'string', 'max:255'],
+            'search' => ['sometimes', 'string', 'max:255'],
+            'seller' => ['sometimes', 'string', 'max:255'],
+            'status' => ['sometimes', 'string', 'max:255'],
+            'condition' => ['sometimes', 'string', 'max:255'],
+            'stock_status' => ['sometimes', 'string', 'in:available,empty'],
             'price_min' => ['sometimes', 'numeric', 'min:0'],
             'price_max' => ['sometimes', 'numeric', 'min:0'],
             'sort_by' => ['sometimes', 'string', 'in:price,name,created_at'],
+            'sort' => ['sometimes', 'string', 'in:price,name,created_at'],
             'sort_dir' => ['sometimes', 'string', 'in:asc,desc'],
+            'order' => ['sometimes', 'string', 'in:asc,desc'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:200'],
+            'limit' => ['sometimes', 'integer', 'min:1', 'max:200'],
             'min_stock' => ['sometimes', 'integer', 'min:0'],
             'seller_id' => ['sometimes', 'integer'], // Allow but can be overridden in controller
         ];
@@ -43,6 +51,9 @@ class ProductFilterRequest extends FormRequest
         // Normalize sort_dir
         if ($this->has('sort_dir')) {
             $this->merge(['sort_dir' => strtolower($this->get('sort_dir'))]);
+        }
+        if ($this->has('order')) {
+            $this->merge(['order' => strtolower($this->get('order'))]);
         }
     }
 }

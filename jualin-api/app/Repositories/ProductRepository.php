@@ -27,13 +27,40 @@ class ProductRepository
             });
         }
 
-        if (!empty($filters['name'])) {
-            $needle = $filters['name'];
+        if (!empty($filters['name']) || !empty($filters['search'])) {
+            $needle = $filters['name'] ?? $filters['search'];
             $safe = '%' . mb_strtolower($needle) . '%';
             $q->where(function ($sq) use ($safe) {
                 $sq->whereRaw('LOWER(name) LIKE ?', [$safe])
-                   ->orWhereRaw('LOWER(description) LIKE ?', [$safe]);
+                   ->orWhereRaw('LOWER(description) LIKE ?', [$safe])
+                   ->orWhereRaw('LOWER(category) LIKE ?', [$safe])
+                   ->orWhereHas('seller', function ($sellerQuery) use ($safe) {
+                       $sellerQuery->whereRaw('LOWER(username) LIKE ?', [$safe]);
+                   });
             });
+        }
+
+        if (!empty($filters['seller'])) {
+            $seller = '%' . mb_strtolower($filters['seller']) . '%';
+            $q->whereHas('seller', function ($sellerQuery) use ($seller) {
+                $sellerQuery->whereRaw('LOWER(username) LIKE ?', [$seller]);
+            });
+        }
+
+        if (!empty($filters['status'])) {
+            $q->whereRaw('LOWER(status) = ?', [mb_strtolower($filters['status'])]);
+        }
+
+        if (!empty($filters['condition'])) {
+            $q->whereRaw('LOWER(condition) = ?', [mb_strtolower($filters['condition'])]);
+        }
+
+        if (!empty($filters['stock_status'])) {
+            if ($filters['stock_status'] === 'available') {
+                $q->where('stock_quantity', '>', 0);
+            } elseif ($filters['stock_status'] === 'empty') {
+                $q->where('stock_quantity', '<=', 0);
+            }
         }
 
         if (isset($filters['price_min']) && $filters['price_min'] !== '') {
@@ -49,18 +76,21 @@ class ProductRepository
         }
 
         $allowedSort = ['price', 'name', 'created_at'];
-        if (!empty($filters['sort_by']) && in_array($filters['sort_by'], $allowedSort, true)) {
+        $sortBy = $filters['sort_by'] ?? $filters['sort'] ?? null;
+        if (!empty($sortBy) && in_array($sortBy, $allowedSort, true)) {
             $direction = 'asc';
-            if (!empty($filters['sort_dir']) && in_array(strtolower($filters['sort_dir']), ['asc', 'desc'], true)) {
-                $direction = strtolower($filters['sort_dir']);
+            $requestedDirection = $filters['sort_dir'] ?? $filters['order'] ?? null;
+            if (!empty($requestedDirection) && in_array(strtolower($requestedDirection), ['asc', 'desc'], true)) {
+                $direction = strtolower($requestedDirection);
             }
-            $q->orderBy($filters['sort_by'], $direction);
+            $q->orderBy($sortBy, $direction);
         } else {
             $q->orderByDesc('created_at');
         }
 
-        $perPage = isset($filters['per_page']) && (int) $filters['per_page'] > 0
-            ? (int) $filters['per_page']
+        $perPageValue = $filters['per_page'] ?? $filters['limit'] ?? null;
+        $perPage = isset($perPageValue) && (int) $perPageValue > 0
+            ? (int) $perPageValue
             : 10;
 
         return $q->paginate($perPage);

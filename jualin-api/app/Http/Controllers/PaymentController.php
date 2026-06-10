@@ -180,12 +180,16 @@ class PaymentController extends Controller
                     'seller_name' => $seller ? ($seller->shop_name ?? $seller->username) : 'Unknown Seller',
                     'transaction' => [
                         'auth_code' => $transaction->auth_code,
+                        'refund_reason' => $transaction->refund_reason,
+                        'refunded_at' => $transaction->refunded_at,
                     ],
+                    'refund_reason' => $transaction->refund_reason,
+                    'refunded_at' => $transaction->refunded_at,
                 ];
             });
 
         if ($payments->isEmpty()) {
-            return ApiResponse::error('No payments found', [], 404);
+            return ApiResponse::success('Payments retrieved successfully', [], 200);
         }
 
         return ApiResponse::success('Payments retrieved successfully', $payments, 200);

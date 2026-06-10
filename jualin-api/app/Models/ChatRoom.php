@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ChatRoom extends Model
 {
-    protected $fillable = ['room_type'];
+    protected $fillable = ['room_type', 'product_id'];
 
     /** Members of this room (pivot: chat_room_member) */
     public function members(): BelongsToMany
@@ -28,5 +29,10 @@ class ChatRoom extends Model
     public function latestMessage(): HasOne
     {
         return $this->hasOne(ChatMessage::class, 'chat_room_id')->latestOfMany('sent_at');
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
 }
