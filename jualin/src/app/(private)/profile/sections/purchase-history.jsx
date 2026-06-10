@@ -26,7 +26,17 @@ export function PurchaseHistorySection({
   const [escrowToast, setEscrowToast] = useState(null);
   const [refundModalOpen, setRefundModalOpen] = useState(false);
   const [refundOrderId, setRefundOrderId] = useState(null);
+  const [refundReason, setRefundReason] = useState("Pembeli membatalkan pesanan");
+  const [refundReasonError, setRefundReasonError] = useState("");
   const [copiedId, setCopiedId] = useState(null);
+
+  const refundReasons = [
+    "Penjual tidak merespons",
+    "Produk tidak tersedia",
+    "Pembeli membatalkan pesanan",
+    "Produk tidak sesuai",
+    "Transaksi bermasalah",
+  ];
 
   const handleCopy = (code, orderId, e) => {
     e.stopPropagation();
@@ -38,15 +48,23 @@ export function PurchaseHistorySection({
   const initiateRefund = (transactionId, e) => {
     e.stopPropagation(); // prevent row click
     setRefundOrderId(transactionId);
+    setRefundReason("Pembeli membatalkan pesanan");
+    setRefundReasonError("");
     setRefundModalOpen(true);
   };
 
   const confirmRefund = async () => {
     if (!refundOrderId) return;
 
+    const reason = refundReason.trim();
+    if (!reason) {
+      setRefundReasonError("Alasan refund wajib diisi.");
+      return;
+    }
+
     setEscrowLoading(true);
     try {
-      const response = await escrowService.refundPayment(refundOrderId);
+      const response = await escrowService.refundPayment(refundOrderId, reason);
       const walletBalance = Number(response?.data?.wallet_balance);
 
       if (Number.isFinite(walletBalance)) {
@@ -67,6 +85,7 @@ export function PurchaseHistorySection({
     } finally {
       setEscrowLoading(false);
       setRefundModalOpen(false);
+      setRefundReasonError("");
       setTimeout(() => setEscrowToast(null), 3000);
     }
   };
@@ -395,9 +414,40 @@ export function PurchaseHistorySection({
             <p className="text-sm text-gray-600 mb-6 font-medium">
               Are you sure you want to refund this product? The total amount will be credited back instantly to your Virtual Wallet.
             </p>
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Alasan refund
+              </label>
+              <select
+                value={refundReason}
+                onChange={(event) => {
+                  setRefundReason(event.target.value);
+                  setRefundReasonError("");
+                }}
+                className={`w-full rounded-xl border px-4 py-2.5 text-sm text-gray-700 outline-none transition focus:border-[#E53935] focus:ring-2 focus:ring-red-100 ${
+                  refundReasonError
+                    ? "border-red-400 bg-red-50"
+                    : "border-gray-200 bg-white"
+                }`}
+              >
+                {refundReasons.map((reason) => (
+                  <option key={reason} value={reason}>
+                    {reason}
+                  </option>
+                ))}
+              </select>
+              {refundReasonError && (
+                <p className="mt-2 text-xs font-medium text-red-600">
+                  {refundReasonError}
+                </p>
+              )}
+            </div>
             <div className="flex gap-3">
               <button
-                onClick={() => setRefundModalOpen(false)}
+                onClick={() => {
+                  setRefundModalOpen(false);
+                  setRefundReasonError("");
+                }}
                 className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
               >
                 No, Keep it
