@@ -18,10 +18,13 @@ class Transaction extends Model
         'total_amount',
         'status',
         'auth_code',
+        'refund_reason',
+        'refunded_at',
     ];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
+        'refunded_at' => 'datetime',
     ];
 
     public function customer(): BelongsTo

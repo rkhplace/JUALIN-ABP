@@ -81,13 +81,20 @@ class EscrowController extends Controller
      */
     public function refund(Request $request, string $id): JsonResponse
     {
+        $request->validate([
+            'refund_reason' => 'required|string|max:500',
+        ]);
+
         $user = Auth::user();
 
         try {
             DB::beginTransaction();
 
             // Lock the transaction row
-            $transaction = Transaction::where('id', $id)->lockForUpdate()->firstOrFail();
+            $transaction = Transaction::with(['items.product', 'seller'])
+                ->where('id', $id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
             if ($transaction->customer_id !== $user->id) {
                 return ApiResponse::error('Unauthorized', null, 403);
@@ -99,6 +106,8 @@ class EscrowController extends Controller
 
             // Update transaction
             $transaction->status = 'refunded';
+            $transaction->refund_reason = trim($request->input('refund_reason'));
+            $transaction->refunded_at = now();
             $transaction->save();
 
             // Lock the buyer row so refund credits do not race with other wallet actions.
@@ -115,11 +124,20 @@ class EscrowController extends Controller
             ]);
 
             $formattedAmount = number_format($transaction->total_amount, 0, ',', '.');
+            $productName = $transaction->items->first()?->product?->name ?? "Transaksi #{$transaction->id}";
+            $refundDate = $transaction->refunded_at->format('d/m/Y H:i');
             \App\Models\Notification::create([
                 'user_id' => $buyer->id,
                 'title' => 'Refund Berhasil',
-                'body' => "Dana sebesar Rp{$formattedAmount} dari pesanan yang dibatalkan telah masuk ke Saldo Dompet Anda.",
+                'body' => "Refund {$productName} telah diproses pada {$refundDate}. Status: refunded. Alasan: {$transaction->refund_reason}. Dana Rp{$formattedAmount} telah masuk ke Saldo Dompet Anda.",
                 'type' => 'payment',
+            ]);
+
+            \App\Models\Notification::create([
+                'user_id' => $transaction->seller_id,
+                'title' => 'Pesanan Direfund',
+                'body' => "Refund {$productName} telah diproses pada {$refundDate}. Status: refunded. Alasan: {$transaction->refund_reason}.",
+                'type' => 'order',
             ]);
             
             // Restore stock since the transaction is refunded

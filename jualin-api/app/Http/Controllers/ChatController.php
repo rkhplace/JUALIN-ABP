@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Responses\ApiResponse;
 use App\Models\ChatMessage;
 use App\Models\ChatRoom;
+use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +28,7 @@ class ChatController extends Controller
             ->with([
                 'members'       => fn($q) => $q->where('users.id', '!=', $user->id),
                 'latestMessage.sender',
+                'product.seller:id,username,profile_picture',
             ])
             ->latest('updated_at')
             ->get()
@@ -36,6 +38,8 @@ class ChatController extends Controller
                 return [
                     'id'            => $room->id,
                     'room_type'     => $room->room_type,
+                    'product_id'    => $room->product_id,
+                    'product'       => $this->serializeProduct($room->product),
                     'other_user'    => $other ? [
                         'id'              => $other->id,
                         'username'        => $other->username ?? $other->name,
@@ -200,11 +204,13 @@ class ChatController extends Controller
         $request->validate([
             'seller_id'  => 'sometimes|integer|exists:users,id',
             'user_id'    => 'sometimes|integer|exists:users,id',
+            'product_id' => 'sometimes|nullable|integer|exists:products,id',
         ]);
 
         $currentUser  = Auth::user();
         // Accept either seller_id or user_id
         $targetUserId = $request->seller_id ?? $request->user_id;
+        $productId = $request->input('product_id');
 
         if (!$targetUserId) {
             return ApiResponse::error('seller_id or user_id is required', null, 422);
@@ -214,6 +220,17 @@ class ChatController extends Controller
             return ApiResponse::error('Cannot start chat with yourself', null, 400);
         }
 
+        if ($productId) {
+            $product = Product::find($productId);
+            if (!$product) {
+                return ApiResponse::error('Product not found', null, 422);
+            }
+
+            if ((int) $product->seller_id !== (int) $targetUserId) {
+                return ApiResponse::error('Product does not belong to selected seller', null, 422);
+            }
+        }
+
         // Find existing private room shared by both users
         $existingRoom = ChatRoom::where('room_type', 'private')
             ->whereHas('members', fn($q) => $q->where('users.id', $currentUser->id))
@@ -221,13 +238,42 @@ class ChatController extends Controller
             ->first();
 
         if ($existingRoom) {
-            return ApiResponse::success('Existing room found', ['room_id' => $existingRoom->id]);
+            if ($productId && !$existingRoom->product_id) {
+                $existingRoom->update(['product_id' => $productId]);
+            }
+
+            return ApiResponse::success('Existing room found', [
+                'room_id' => $existingRoom->id,
+                'product_id' => $existingRoom->fresh()->product_id,
+            ]);
         }
 
         // Create new room and add both members
-        $room = ChatRoom::create(['room_type' => 'private']);
+        $room = ChatRoom::create([
+            'room_type' => 'private',
+            'product_id' => $productId,
+        ]);
         $room->members()->attach([$currentUser->id, $targetUserId]);
 
-        return ApiResponse::success('Room created', ['room_id' => $room->id], 201);
+        return ApiResponse::success('Room created', [
+            'room_id' => $room->id,
+            'product_id' => $room->product_id,
+        ], 201);
+    }
+
+    private function serializeProduct(?Product $product): ?array
+    {
+        if (!$product) {
+            return null;
+        }
+
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'price' => $product->price,
+            'image' => $product->image,
+            'seller_id' => $product->seller_id,
+            'seller_name' => $product->seller?->username,
+        ];
     }
 }

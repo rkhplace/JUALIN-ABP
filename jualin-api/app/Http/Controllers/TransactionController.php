@@ -302,11 +302,19 @@ class TransactionController extends Controller
     {
         $request->validate([
             'status' => 'required|string',
+            'refund_reason' => 'sometimes|nullable|string|max:500',
         ]);
 
         try {
             $transaction = Transaction::findOrFail($id);
             $transaction->status = $request->status;
+            if (in_array($request->status, ['cancelled', 'refunded'], true)) {
+                $transaction->refund_reason = trim((string) $request->input(
+                    'refund_reason',
+                    $transaction->refund_reason ?: 'Dibatalkan oleh admin/sistem'
+                ));
+                $transaction->refunded_at = $transaction->refunded_at ?: now();
+            }
             $transaction->save();
 
             // Trigger seller verification whenever a transaction reaches 'completed'

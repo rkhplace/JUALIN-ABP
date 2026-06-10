@@ -6,6 +6,7 @@ use App\Models\Report;
 use App\Models\User;
 use App\Models\Product;
 use App\Http\Responses\ApiResponse;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
@@ -144,15 +145,6 @@ class ReportController extends Controller
 
         $newStatus = $request->input('status');
 
-        // Normalize friendly admin states to the persisted report states.
-        if ($newStatus === 'accepted') {
-            $newStatus = 'reviewed';
-        }
-
-        if ($newStatus === 'rejected') {
-            $newStatus = 'resolved';
-        }
-
         try {
             $report = Report::find($id);
 
@@ -166,6 +158,67 @@ class ReportController extends Controller
             return ApiResponse::success('Report status updated successfully', $report);
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to update report status', $e->getMessage(), 500);
+        }
+    }
+
+    public function banReportedUser(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'duration_days' => 'required|integer|in:1,7,30',
+        ]);
+
+        if ($validator->fails()) {
+            return ApiResponse::error('Validation error', $validator->errors(), 422);
+        }
+
+        try {
+            $report = Report::find($id);
+            if (!$report) {
+                return ApiResponse::error('Report not found', null, 404);
+            }
+
+            if (!$report->reported_user_id) {
+                return ApiResponse::error('Report does not have a reported user', null, 422);
+            }
+
+            $user = User::find($report->reported_user_id);
+            if (!$user) {
+                return ApiResponse::error('Reported user not found', null, 404);
+            }
+
+            if (!in_array($user->role, ['customer', 'seller'], true)) {
+                return ApiResponse::error('Only customer or seller accounts can be banned', null, 422);
+            }
+
+            $banStartsAt = Carbon::now();
+            $banEndsAt = $banStartsAt->copy()->addDays((int) $request->duration_days);
+
+            $user->update([
+                'is_banned' => true,
+                'banned_until' => $banEndsAt,
+            ]);
+
+            Notification::create([
+                'user_id' => $user->id,
+                'title' => 'Akun dibatasi admin',
+                'body' => sprintf(
+                    'Akun Anda dibatasi sampai %s. Hubungi admin jika merasa ini keliru.',
+                    $banEndsAt->format('d/m/Y H:i')
+                ),
+                'type' => 'account',
+            ]);
+
+            $report->status = 'reviewed';
+            $report->save();
+
+            return ApiResponse::success('Reported user banned successfully', [
+                'user' => $user->fresh(),
+                'report' => $report->fresh(),
+                'ban_started_at' => $banStartsAt->toDateTimeString(),
+                'banned_until' => $banEndsAt->toDateTimeString(),
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::error('Failed to ban reported user', $e->getMessage(), 500);
         }
     }
 }

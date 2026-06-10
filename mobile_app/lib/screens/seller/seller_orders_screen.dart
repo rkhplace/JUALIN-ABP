@@ -103,6 +103,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
               OutlinedButton.icon(
                 onPressed: () async {
                   final scanned = await _scanAuthCode(ctx);
+                  if (!ctx.mounted) return;
                   if (scanned != null && scanned.isNotEmpty) {
                     Navigator.pop(ctx, scanned.toUpperCase());
                   }
@@ -416,6 +417,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
             items.isNotEmpty ? (items[0] as Map<String, dynamic>?) ?? {} : {};
         final product = firstItem['product'] as Map<String, dynamic>? ?? {};
         final status = (order['status'] as String?) ?? 'pending';
+        final refundReason = order['refund_reason']?.toString() ?? '';
+        final refundedAt = order['refunded_at']?.toString() ?? '';
 
         return Container(
           padding: const EdgeInsets.all(16),
@@ -494,6 +497,44 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                 ],
               ),
 
+              if ((status == 'refunded' || status == 'cancelled') &&
+                  refundReason.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.purple[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.purple[100]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Alasan refund: $refundReason',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (refundedAt.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'Diproses: $refundedAt',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+
               if (status == 'waiting_cod') ...[
                 const SizedBox(height: 16),
                 SizedBox(
@@ -554,38 +595,38 @@ class _EscrowCodeScannerDialogState extends State<_EscrowCodeScannerDialog> {
   }
 
   Future<void> _handleDetect(BarcodeCapture capture) async {
-  if (_hasScanned) return;
+    if (_hasScanned) return;
 
-  String? value;
-  for (final barcode in capture.barcodes) {
-    final raw = barcode.rawValue?.trim();
-    if (raw != null && raw.isNotEmpty) {
-      value = raw;
-      break;
+    String? value;
+    for (final barcode in capture.barcodes) {
+      final raw = barcode.rawValue?.trim();
+      if (raw != null && raw.isNotEmpty) {
+        value = raw;
+        break;
+      }
+    }
+
+    if (value == null || value.isEmpty) return;
+
+    String? authCode = value;
+    try {
+      final payload = jsonDecode(value);
+      if (payload is Map<String, dynamic>) {
+        authCode = payload['auth_code']?.toString().trim() ??
+            payload['data']?['auth_code']?.toString().trim();
+      }
+    } catch (_) {
+      // bukan JSON, terus gunakan value apa adanya
+    }
+
+    if (authCode == null || authCode.isEmpty) return;
+
+    _hasScanned = true;
+    await _scannerController.stop();
+    if (mounted) {
+      Navigator.pop(context, authCode);
     }
   }
-
-  if (value == null || value.isEmpty) return;
-
-  String? authCode = value;
-  try {
-    final payload = jsonDecode(value);
-    if (payload is Map<String, dynamic>) {
-      authCode = payload['auth_code']?.toString().trim() ??
-          payload['data']?['auth_code']?.toString().trim();
-    }
-  } catch (_) {
-    // bukan JSON, terus gunakan value apa adanya
-  }
-
-  if (authCode == null || authCode.isEmpty) return;
-
-  _hasScanned = true;
-  await _scannerController.stop();
-  if (mounted) {
-    Navigator.pop(context, authCode);
-  }
-}
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/report_service.dart';
 
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
@@ -10,6 +11,7 @@ class ReportScreen extends StatefulWidget {
 }
 
 class _ReportScreenState extends State<ReportScreen> {
+  final ReportService _reportService = ReportService();
   final TextEditingController _controller = TextEditingController();
   List<Map<String, dynamic>> _savedReports = [];
   bool _isLoading = false;
@@ -23,7 +25,7 @@ class _ReportScreenState extends State<ReportScreen> {
   Future<void> _loadSavedReports() async {
     final prefs = await SharedPreferences.getInstance();
     final rawList = prefs.getStringList('saved_reports') ?? [];
-    
+
     setState(() {
       _savedReports = rawList.map((json) {
         final map = jsonDecode(json) as Map<String, dynamic>;
@@ -47,14 +49,19 @@ class _ReportScreenState extends State<ReportScreen> {
     setState(() => _isLoading = true);
 
     try {
+      await _reportService.createGeneralReport(
+        type: 'Laporan Umum',
+        description: text,
+      );
+
       final prefs = await SharedPreferences.getInstance();
       final list = prefs.getStringList('saved_reports') ?? [];
-      
+
       final report = {
         'text': text,
         'timestamp': DateTime.now().toIso8601String(),
       };
-      
+
       list.add(jsonEncode(report));
       await prefs.setStringList('saved_reports', list);
 
@@ -64,7 +71,7 @@ class _ReportScreenState extends State<ReportScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Laporan berhasil disimpan'),
+            content: Text('Laporan berhasil dikirim'),
             backgroundColor: Colors.green,
           ),
         );
@@ -147,7 +154,8 @@ class _ReportScreenState extends State<ReportScreen> {
               minLines: 4,
               maxLines: 8,
               decoration: InputDecoration(
-                hintText: 'Contoh: Laporan produk error, feature request, atau feedback umum...',
+                hintText:
+                    'Contoh: Laporan produk error, feature request, atau feedback umum...',
                 hintStyle: TextStyle(color: Colors.grey[500], fontSize: 13),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -159,7 +167,8 @@ class _ReportScreenState extends State<ReportScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE83030), width: 2),
+                  borderSide:
+                      const BorderSide(color: Color(0xFFE83030), width: 2),
                 ),
                 contentPadding: const EdgeInsets.all(14),
               ),
@@ -207,18 +216,18 @@ class _ReportScreenState extends State<ReportScreen> {
             ),
             const SizedBox(height: 12),
             if (_savedReports.isEmpty)
-              Center(
+              const Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  padding: EdgeInsets.symmetric(vertical: 40),
                   child: Column(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.folder_open_outlined,
                         size: 64,
                         color: Colors.grey,
                       ),
-                      const SizedBox(height: 12),
-                      const Text(
+                      SizedBox(height: 12),
+                      Text(
                         'Belum ada laporan',
                         style: TextStyle(
                           color: Colors.black54,
