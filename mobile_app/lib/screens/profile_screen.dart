@@ -5,7 +5,7 @@ import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 import '../services/seller_service.dart';
 import '../widgets/ui/logo_loader.dart';
-import '../screens/report_screen.dart';  
+import '../screens/report_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -451,55 +451,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.only(top: 98),
           child: Column(
             children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: CircleAvatar(
-                      radius: 48,
-                      backgroundColor: const Color(0xFFF1F1F1),
-                      backgroundImage: user.avatarUrl.isNotEmpty
-                          ? NetworkImage(user.avatarUrl)
-                          : null,
-                      child: user.avatarUrl.isEmpty
-                          ? const Icon(
-                              Icons.person,
-                              size: 48,
-                              color: Colors.grey,
-                            )
-                          : null,
-                    ),
-                  ),
-                  Positioned(
-                    right: 2,
-                    bottom: 4,
-                    child: Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.edit_outlined,
-                        size: 14,
-                        color: Color(0xFFE83030),
-                      ),
-                    ),
-                  ),
-                ],
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: CircleAvatar(
+                  radius: 48,
+                  backgroundColor: const Color(0xFFF1F1F1),
+                  backgroundImage: user.avatarUrl.isNotEmpty
+                      ? NetworkImage(user.avatarUrl)
+                      : null,
+                  child: user.avatarUrl.isEmpty
+                      ? const Icon(
+                          Icons.person,
+                          size: 48,
+                          color: Colors.grey,
+                        )
+                      : null,
+                ),
               ),
               const SizedBox(height: 10),
               Text(

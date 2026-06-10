@@ -7,6 +7,8 @@ import '../widgets/ui/logo_loader.dart';
 import '../services/chat_service.dart';
 import '../models/chat_room.dart';
 import '../models/chat_message.dart';
+import '../utils/formatters.dart';
+import '../utils/image_url_helper.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Chat Rooms List Screen
@@ -189,7 +191,8 @@ class _ChatScreenState extends State<ChatScreen> {
     final time = room.updatedAt != null
         ? '${room.updatedAt!.day}/${room.updatedAt!.month}'
         : '';
-    final unread = latest != null && !latest.isRead && latest.senderId != _currentUserId;
+    final unread =
+        latest != null && !latest.isRead && latest.senderId != _currentUserId;
 
     return GestureDetector(
       onTap: () {
@@ -199,6 +202,7 @@ class _ChatScreenState extends State<ChatScreen> {
             builder: (_) => ChatRoomScreen(
               roomId: room.id,
               roomName: name,
+              product: room.product,
             ),
           ),
         ).then((_) => _loadRooms());
@@ -212,7 +216,7 @@ class _ChatScreenState extends State<ChatScreen> {
           border: Border.all(color: Colors.black12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 16,
               offset: const Offset(0, 8),
             ),
@@ -223,7 +227,7 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: const Color(0xFFE83030).withOpacity(0.12),
+              backgroundColor: const Color(0xFFE83030).withValues(alpha: 0.12),
               child: Text(
                 name.isNotEmpty ? name[0].toUpperCase() : '?',
                 style: const TextStyle(
@@ -301,11 +305,13 @@ class _ChatScreenState extends State<ChatScreen> {
 class ChatRoomScreen extends StatefulWidget {
   final int roomId;
   final String roomName;
+  final ChatProduct? product;
 
   const ChatRoomScreen({
     super.key,
     required this.roomId,
     required this.roomName,
+    this.product,
   });
 
   @override
@@ -440,10 +446,102 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       ],
       body: Column(
         children: [
+          if (widget.product != null) _buildProductCard(widget.product!),
           Expanded(child: _buildMessageList()),
           _buildInputBar(),
         ],
       ),
+    );
+  }
+
+  Widget _buildProductCard(ChatProduct product) {
+    final imageUrl = ImageUrlHelper.resolve(product.image);
+
+    return InkWell(
+      onTap: product.id > 0
+          ? () => Navigator.pushNamed(
+                context,
+                '/product_detail',
+                arguments: product.id,
+              )
+          : null,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFFFD6D6)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: imageUrl.isNotEmpty
+                  ? Image.network(
+                      imageUrl,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _productImageFallback(),
+                    )
+                  : _productImageFallback(),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    formatCurrency(product.price),
+                    style: const TextStyle(
+                      color: Color(0xFFE83030),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if ((product.sellerName ?? '').isNotEmpty)
+                    Text(
+                      product.sellerName!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Color(0xFFE83030)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _productImageFallback() {
+    return Container(
+      width: 56,
+      height: 56,
+      color: Colors.grey[100],
+      child: const Icon(Icons.image_outlined, color: Colors.grey),
     );
   }
 

@@ -4,6 +4,7 @@ class ChatRoom {
   final String roomType;
   final ChatUser? otherUser;
   final ChatPreviewMessage? latestMessage;
+  final ChatProduct? product;
   final DateTime? updatedAt;
 
   ChatRoom({
@@ -11,6 +12,7 @@ class ChatRoom {
     required this.roomType,
     this.otherUser,
     this.latestMessage,
+    this.product,
     this.updatedAt,
   });
 
@@ -25,9 +27,42 @@ class ChatRoom {
           ? ChatPreviewMessage.fromJson(
               json['latest_message'] as Map<String, dynamic>)
           : null,
+      product: json['product'] is Map<String, dynamic>
+          ? ChatProduct.fromJson(json['product'] as Map<String, dynamic>)
+          : null,
       updatedAt: json['updated_at'] != null
           ? DateTime.tryParse(json['updated_at'].toString())
           : null,
+    );
+  }
+}
+
+class ChatProduct {
+  final int id;
+  final String name;
+  final num price;
+  final dynamic image;
+  final String? sellerName;
+
+  ChatProduct({
+    required this.id,
+    required this.name,
+    required this.price,
+    this.image,
+    this.sellerName,
+  });
+
+  factory ChatProduct.fromJson(Map<String, dynamic> json) {
+    return ChatProduct(
+      id: json['id'] is num
+          ? (json['id'] as num).toInt()
+          : int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      name: json['name']?.toString() ?? 'Produk',
+      price: json['price'] is num
+          ? json['price'] as num
+          : num.tryParse(json['price']?.toString() ?? '') ?? 0,
+      image: json['image'],
+      sellerName: json['seller_name']?.toString(),
     );
   }
 }

@@ -118,59 +118,123 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
   }
 
   Future<void> _handleRefund(int transactionId) async {
-    final bool? confirm = await showDialog<bool>(
+    const reasons = [
+      'Penjual tidak merespons',
+      'Produk tidak tersedia',
+      'Pembeli membatalkan pesanan',
+      'Produk tidak sesuai',
+      'Transaksi bermasalah',
+      'Lainnya',
+    ];
+    String selectedReason = 'Pembeli membatalkan pesanan';
+    final customReasonController = TextEditingController();
+
+    final String? refundReason = await showDialog<String>(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.35),
-      builder: (context) => BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-        child: AlertDialog(
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          title: const Text(
-            'Request Refund',
-            style: TextStyle(fontWeight: FontWeight.w700),
-          ),
-          content: const Text(
-            'Apakah Anda yakin ingin membatalkan pesanan ini? Dana akan dikembalikan ke saldo Jualin Anda.',
-            style: TextStyle(fontSize: 13, height: 1.4),
-          ),
-          actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFE83030),
-              ),
-              child: const Text('Batal'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: AlertDialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE83030),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+            title: const Text(
+              'Request Refund',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Apakah Anda yakin ingin membatalkan pesanan ini? Dana akan dikembalikan ke saldo Jualin Anda.',
+                  style: TextStyle(fontSize: 13, height: 1.4),
                 ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-              ),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Ya, Refund'),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedReason,
+                  decoration: const InputDecoration(
+                    labelText: 'Alasan refund',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: reasons
+                      .map((reason) => DropdownMenuItem(
+                            value: reason,
+                            child: Text(reason),
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setDialogState(() => selectedReason = value);
+                  },
+                ),
+                if (selectedReason == 'Lainnya') ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: customReasonController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      hintText: 'Tulis alasan refund',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ],
+            actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFFE83030),
+                ),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE83030),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                ),
+                onPressed: () {
+                  final reason = selectedReason == 'Lainnya'
+                      ? customReasonController.text.trim()
+                      : selectedReason;
+                  if (reason.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Alasan refund wajib diisi.'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.pop(context, reason);
+                },
+                child: const Text('Ya, Refund'),
+              ),
+            ],
+          ),
         ),
       ),
     );
 
-    if (confirm != true) return;
+    customReasonController.dispose();
+
+    if (refundReason == null || refundReason.trim().isEmpty) return;
 
     setState(() => _isProcessingAction = true);
 
     try {
-      await _escrowService.refundPayment(transactionId);
+      await _escrowService.refundPayment(transactionId, refundReason.trim());
       if (mounted) {
         _showRefundSuccessDialog(context);
       }
@@ -198,8 +262,8 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
     }
 
     final parsedAmount = amount is num
-    ? amount.toInt()
-    : num.tryParse(amount?.toString() ?? '')?.toInt() ?? 0;
+        ? amount.toInt()
+        : num.tryParse(amount?.toString() ?? '')?.toInt() ?? 0;
 
     Navigator.push(
       context,
@@ -418,6 +482,12 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
             p['first_item_name']?.toString() ?? 'Order #${p['order_id']}';
         final String subtitle = p['seller_name']?.toString() ?? 'Penjual';
         final transactionInfo = p['transaction'] as Map<String, dynamic>? ?? {};
+        final refundReason = p['refund_reason']?.toString() ??
+            transactionInfo['refund_reason']?.toString() ??
+            '';
+        final refundedAt = p['refunded_at']?.toString() ??
+            transactionInfo['refunded_at']?.toString() ??
+            '';
 
         return GestureDetector(
           onTap: isPending
@@ -618,7 +688,44 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
                       ],
                     ),
                   )
-                ]
+                ],
+
+                if (status == 'refunded' && refundReason.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.purple[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.purple[100]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Alasan refund: $refundReason',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (refundedAt.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              'Diproses: $refundedAt',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

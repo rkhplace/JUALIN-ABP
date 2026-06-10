@@ -7,10 +7,13 @@ class EscrowService {
 
   /// Initiates a refund for an Escrow (Waiting COD) transaction.
   /// API: POST /v1/escrow/{transactionId}/refund
-  Future<void> refundPayment(int transactionId) async {
+  Future<void> refundPayment(int transactionId, String refundReason) async {
     final endpoint = ApiConfig.escrowRefund(transactionId);
     try {
-      await _client.post(endpoint);
+      await _client.post(
+        endpoint,
+        body: {'refund_reason': refundReason},
+      );
     } on ApiException catch (e) {
       debugPrint(
         '[EscrowService] POST $endpoint failed (${e.statusCode}): ${e.message}',
@@ -23,7 +26,8 @@ class EscrowService {
 
   /// Claims a payment for the seller using the auth code provided by the buyer.
   /// API: POST /v1/escrow/{transactionId}/claim { auth_code }
-  Future<Map<String, dynamic>> claimPayment(int transactionId, String authCode) async {
+  Future<Map<String, dynamic>> claimPayment(
+      int transactionId, String authCode) async {
     final endpoint = ApiConfig.escrowClaim(transactionId);
     try {
       final response = await _client.post(

@@ -13,6 +13,9 @@ class PaymentService {
       final data = response['data'];
       return data is List ? data : [];
     } on ApiException catch (e) {
+      if (e.statusCode == 404) {
+        return [];
+      }
       throw Exception('Gagal memuat riwayat: ${e.message}');
     } catch (e) {
       throw Exception('Terjadi kesalahan saat memuat riwayat.');
@@ -94,11 +97,12 @@ class PaymentService {
     try {
       await _client.get('/payments/status/$orderId');
     } catch (e) {
-      // It's mostly a sync endpoint, ignore errors if it fails so the 
+      // It's mostly a sync endpoint, ignore errors if it fails so the
       // original purchase history fetch can still run.
     }
   }
-    /// Creates an escrow transaction.
+
+  /// Creates an escrow transaction.
   /// API: POST /v1/escrow { seller_id, items: [...] }
   Future<Map<String, dynamic>> createEscrow(int sellerId, int productId) async {
     try {

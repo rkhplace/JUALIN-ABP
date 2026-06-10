@@ -4,6 +4,25 @@ import 'api_config.dart';
 class ReportService {
   final ApiClient _client = ApiClient();
 
+  Future<void> createGeneralReport({
+    required String type,
+    required String description,
+  }) async {
+    try {
+      await _client.post(
+        ApiConfig.reports,
+        body: {
+          'type': type,
+          'description': description,
+        },
+      );
+    } on ApiException catch (e) {
+      throw Exception(e.message);
+    } catch (_) {
+      throw Exception('Tidak dapat terhubung ke server.');
+    }
+  }
+
   Future<void> createProductReport({
     required int productId,
     required String type,

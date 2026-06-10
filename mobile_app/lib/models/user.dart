@@ -1,3 +1,5 @@
+import '../utils/image_url_helper.dart';
+
 class User {
   final int id;
   final String name;
@@ -39,15 +41,12 @@ class User {
     return User(
       id: _parseInt(json['id']),
       // /me returns 'username'; /login data also has 'username'
-      name: json['username']?.toString() ??
-          json['name']?.toString() ??
-          '',
+      name: json['username']?.toString() ?? json['name']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
       role: json['role']?.toString() ?? 'customer',
-      avatarUrl: json['profile_picture']?.toString() ??
-          json['avatar_url']?.toString() ??
-          json['avatar']?.toString() ??
-          '',
+      avatarUrl: ImageUrlHelper.resolve(
+        json['profile_picture'] ?? json['avatar_url'] ?? json['avatar'],
+      ),
       walletBalance: json['wallet_balance'] != null
           ? double.tryParse(json['wallet_balance'].toString()) ?? 0.0
           : 0.0,
@@ -58,8 +57,7 @@ class User {
           json['address']?.toString() ??
           json['location']?.toString() ??
           '',
-      city: json['city']?.toString() ??
-          '',
+      city: json['city']?.toString() ?? '',
       phone: json['phone']?.toString() ??
           json['phone_number']?.toString() ??
           json['no_hp']?.toString() ??
