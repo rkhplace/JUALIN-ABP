@@ -14,14 +14,31 @@ use Illuminate\Validation\Rule;
 
 class ReportController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'status' => 'nullable|string|in:pending,processing,accepted,rejected,reviewed,resolved',
+            'per_page' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return ApiResponse::error('Validation error', $validator->errors(), 422);
+        }
+
+        $perPage = (int) $request->input('per_page', 10);
+
         // For admin to view all reports, ordered by newest
         $reports = Report::with([
             'reporter:id,username',
             'reportedUser:id,username,is_banned,banned_until',
             'product:id,name',
-        ])->orderBy('created_at', 'desc')->paginate(10);
+        ])
+            ->when(
+                $request->filled('status'),
+                fn ($query) => $query->where('status', $request->input('status'))
+            )
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
 
         $reports->getCollection()->transform(function ($report) {
             $reportedUser = $report->reportedUser;
@@ -40,7 +57,7 @@ class ReportController extends Controller
 
             return $report;
         });
-        
+
         return ApiResponse::success('Reports retrieved successfully', $reports);
     }
 
