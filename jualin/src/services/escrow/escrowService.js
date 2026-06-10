@@ -8,8 +8,10 @@ export const escrowService = {
         return resp;
     },
 
-    async refundPayment(transactionId) {
-        const resp = await fetcher.post(`/api/v1/escrow/${transactionId}/refund`);
+    async refundPayment(transactionId, refundReason) {
+        const resp = await fetcher.post(`/api/v1/escrow/${transactionId}/refund`, {
+            refund_reason: refundReason,
+        });
         return resp;
     },
 };

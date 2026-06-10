@@ -90,6 +90,7 @@ export async function getOrCreateChatRoom(
     const res = await fetcher.post("/api/v1/chat/rooms/start", {
       user_id: customerId,
       seller_id: sellerId,
+      product_id: productId,
     });
     const roomId = res?.data?.room_id || res?.room_id || res?.data?.id;
 

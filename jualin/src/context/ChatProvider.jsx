@@ -102,18 +102,52 @@ export function ChatProvider({ children }) {
           productPayload?.id || productPayload
         );
 
-        // Send product as a chat message (prevents duplicates server-side)
-        if (productPayload && typeof productPayload === "object" && chatId) {
-          try {
-            await sendProductMessageService(chatId, productPayload);
-            console.log("[startChat] Product message sent for chatId:", chatId);
-          } catch (err) {
-            console.error("[startChat] Failed to send product message:", err);
-          }
-        }
+        const chatInfoFromList = chats.find(
+          (chat) => String(chat.id) === String(chatId)
+        );
+        const currentUserId = String(user.id);
+        const otherUserIdStr = String(otherUserId);
+        const fallbackChatInfo = {
+          id: chatId,
+          participants: [currentUserId, otherUserIdStr],
+          participantDetails: {
+            [currentUserId]: currentUserInfo,
+            [otherUserIdStr]: {
+              name:
+                otherUserInfoWithRole.name ||
+                otherUserInfoWithRole.username ||
+                otherUserInfoWithRole.email ||
+                "Seller",
+              avatar: otherUserInfoWithRole.avatar || null,
+              role: otherUserInfoWithRole.role || "seller",
+            },
+          },
+          lastMessage: null,
+          unreadCount: { [currentUserId]: 0 },
+          updatedAt: new Date(),
+        };
 
-        const chatInfo = await getChatRoomInfo(chatId);
-        setCurrentChat(chatInfo);
+        setCurrentChat(chatInfoFromList || fallbackChatInfo);
+
+        getChatRoomInfo(chatId)
+          .then((chatInfo) => {
+            if (chatInfo) setCurrentChat(chatInfo);
+          })
+          .catch((err) => {
+            console.error("[startChat] Failed to refresh chat info:", err);
+          });
+
+        // Send product as a chat message in the background.
+        if (productPayload && typeof productPayload === "object" && chatId) {
+          sendProductMessageService(chatId, productPayload)
+            .then(() => {
+              refreshMessagesRef.current?.();
+              console.log("[startChat] Product message sent for chatId:", chatId);
+            })
+            .catch((err) => {
+              console.error("[startChat] Failed to send product message:", err);
+            });
+        }
 
         return chatId;
       } catch (error) {
@@ -123,7 +157,7 @@ export function ChatProvider({ children }) {
         setLoading(false);
       }
     },
-    [user]
+    [user, chats]
   );
 
   const openChatWithUser = useCallback(
