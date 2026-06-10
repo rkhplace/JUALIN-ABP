@@ -25,6 +25,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isLoading = true;
   bool _isLoggedIn = false;
   String? _errorMessage;
+  int? _currentUserId;
 
   @override
   void initState() {
@@ -49,6 +50,16 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       }
       return;
+    }
+
+// read stored user id first, fallback to API
+    _currentUserId = prefs.getInt('user_id');
+    if (_currentUserId == null) {
+      final id = await _chatService.getMe();
+      if (id != null) {
+        _currentUserId = id;
+        await prefs.setInt('user_id', id);
+      }
     }
 
     setState(() => _isLoggedIn = true);
@@ -178,7 +189,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final time = room.updatedAt != null
         ? '${room.updatedAt!.day}/${room.updatedAt!.month}'
         : '';
-    final unread = latest != null && !latest.isRead;
+    final unread = latest != null && !latest.isRead && latest.senderId != _currentUserId;
 
     return GestureDetector(
       onTap: () {

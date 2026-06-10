@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 import '../services/seller_service.dart';
 import '../widgets/ui/logo_loader.dart';
+import '../screens/report_screen.dart';  
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -97,59 +98,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
-Future<bool?> _showLogoutConfirmation() {
-  return showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      backgroundColor: Colors.white,
-      title: const Text(
-        'Konfirmasi Logout',
-        style: TextStyle(
-          color: Colors.black87,
-          fontWeight: FontWeight.w700,
+
+  Future<bool?> _showLogoutConfirmation() {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
-      ),
-      content: const Text(
-        'Apakah Anda yakin ingin keluar?',
-        style: TextStyle(
-          color: Colors.black54,
-          fontSize: 14,
-        ),
-      ),
-      actionsPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      actionsAlignment: MainAxisAlignment.end,
-      actions: [
-        TextButton(
-          style: TextButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFFE83030),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-              side: const BorderSide(color: Color(0xFFE83030)),
-            ),
+        backgroundColor: Colors.white,
+        title: const Text(
+          'Konfirmasi Logout',
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.w700,
           ),
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Batal'),
         ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFE83030),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+        content: const Text(
+          'Apakah Anda yakin ingin keluar?',
+          style: TextStyle(
+            color: Colors.black54,
+            fontSize: 14,
           ),
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Logout'),
         ),
-      ],
-    ),
-  );
-}
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        actionsAlignment: MainAxisAlignment.end,
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFFE83030),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+                side: const BorderSide(color: Color(0xFFE83030)),
+              ),
+            ),
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE83030),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -211,13 +213,27 @@ Future<bool?> _showLogoutConfirmation() {
                                 ),
                                 const SizedBox(height: 12),
                                 _buildProfileMenuItem(
+                                  icon: Icons.report_gmailerrorred_outlined,
+                                  title: 'Laporan Umum',
+                                  subtitle: 'Kirim atau lihat laporan umum',
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) => const ReportScreen()),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 12),
+                                _buildProfileMenuItem(
                                   icon: Icons.logout_outlined,
                                   title: 'Logout',
                                   subtitle: 'Keluar dari akun Anda',
                                   isDanger: true,
                                   showChevron: false,
                                   onTap: () async {
-                                    final confirmed = await _showLogoutConfirmation();
+                                    final confirmed =
+                                        await _showLogoutConfirmation();
                                     if (confirmed == true) {
                                       await _authService.logout();
                                       if (context.mounted) {
@@ -633,78 +649,81 @@ Future<bool?> _showLogoutConfirmation() {
             : const Color(0xFFE83030);
 
     return Material(
-      color: const Color(0xFFFFF4F4),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: () => _showVerificationBottomSheet(context),
+        color: const Color(0xFFFFF4F4),
         borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
+        child: InkWell(
+            onTap: () => _showVerificationBottomSheet(context),
             borderRadius: BorderRadius.circular(16),
-            border:
-                Border.all(color: const Color(0xFFE83030).withValues(alpha: 0.2)),
-          ),
-          child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFE8E8),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              isVerified
-                  ? Icons.verified_user
-                  : Icons.assignment_turned_in_outlined,
-              color: const Color(0xFFE83030),
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Verifikasi Akun',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 4),
-                Text(label, style: TextStyle(color: color, fontSize: 12)),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  isVerified ? Icons.check_circle : Icons.info_outline,
-                  color: color,
-                  size: 14,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  isVerified ? 'Terverifikasi' : label,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: const Color(0xFFE83030).withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFE8E8),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      isVerified
+                          ? Icons.verified_user
+                          : Icons.assignment_turned_in_outlined,
+                      color: const Color(0xFFE83030),
+                      size: 22,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    )));
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Verifikasi Akun',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(label,
+                            style: TextStyle(color: color, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isVerified ? Icons.check_circle : Icons.info_outline,
+                          color: color,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          isVerified ? 'Terverifikasi' : label,
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )));
   }
 
   void _showVerificationBottomSheet(BuildContext context) {
@@ -747,7 +766,8 @@ Future<bool?> _showLogoutConfirmation() {
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
-                      child: CircularProgressIndicator(color: Color(0xFFE83030)),
+                      child:
+                          CircularProgressIndicator(color: Color(0xFFE83030)),
                     );
                   }
                   if (snapshot.hasError) {
@@ -761,9 +781,11 @@ Future<bool?> _showLogoutConfirmation() {
                   }
 
                   final data = snapshot.data ?? {};
-                  final totalSales = (data['total_sales'] as num?)?.toInt() ?? 0;
+                  final totalSales =
+                      (data['total_sales'] as num?)?.toInt() ?? 0;
                   final target = (data['target'] as num?)?.toInt() ?? 3;
-                  final progress = target > 0 ? (totalSales / target).clamp(0.0, 1.0) : 0.0;
+                  final progress =
+                      target > 0 ? (totalSales / target).clamp(0.0, 1.0) : 0.0;
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
