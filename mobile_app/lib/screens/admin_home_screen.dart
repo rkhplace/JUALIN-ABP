@@ -221,13 +221,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   Widget _buildOverviewTab() {
     final pendingReports =
-        _reports.where((item) => _text(item['status']) == 'pending').length;
-    final bannedUsers =
-        _users.where((item) => _parseBool(item['is_banned'])).length;
-    final pendingReport = _reports.cast<Map<String, dynamic>?>().firstWhere(
-          (item) => _text(item?['status']) == 'pending',
-          orElse: () => _reports.isEmpty ? null : _reports.first,
-        );
+        _reports.where((item) => _text(item['status']) == 'pending').toList();
+    final bannedUsers = _users.where((item) => _isCurrentlyBanned(item)).length;
     final latestTransaction =
         _transactions.isEmpty ? null : _transactions.first;
     final latestProduct = _products.isEmpty ? null : _products.first;
@@ -255,8 +250,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 'Total produk', Icons.inventory_2_outlined),
             _buildSummaryTile('Transaksi', _transactions.length.toString(),
                 'Total transaksi', Icons.receipt_long_outlined),
-            _buildSummaryTile('Laporan Pending', pendingReports.toString(),
-                'Perlu ditinjau', Icons.report_outlined),
+            _buildSummaryTile(
+                'Laporan Pending',
+                pendingReports.length.toString(),
+                'Perlu ditinjau',
+                Icons.report_outlined),
           ],
         ),
         const SizedBox(height: 10),
@@ -303,12 +301,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               ),
             ),
             TextButton(
-              onPressed: () => DefaultTabController.of(context).animateTo(3),
+              onPressed: pendingReports.isEmpty
+                  ? null
+                  : () => _showPendingReportsSheet(pendingReports),
               child: const Text('Lihat semua'),
             ),
           ],
         ),
-        if (pendingReport == null)
+        if (pendingReports.isEmpty)
           _buildCard(
             child: const Text(
               'Belum ada laporan yang perlu ditinjau.',
@@ -316,7 +316,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ),
           )
         else
-          _buildReviewPreviewCard(pendingReport),
+          ...pendingReports.take(3).map(
+                (report) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _buildReviewPreviewCard(report),
+                ),
+              ),
       ],
     );
   }
@@ -333,7 +338,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             _text(user['username'] ?? user['name'] ?? user['email'], '-');
         final email = _text(user['email'], '-');
         final role = _text(user['role'], '-');
-        final isBanned = _parseBool(user['is_banned']);
+        final isBanned = _isCurrentlyBanned(user);
 
         return _buildCard(
           child: Column(
@@ -381,6 +386,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               : _showBanDurationDialog(id, username),
                       icon: Icon(isBanned ? Icons.lock_open : Icons.block),
                       label: Text(isBanned ? 'Unban' : 'Ban'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFE83030),
+                        side: const BorderSide(color: Color(0xFFE83030)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: role == 'admin' || id == 0
+                          ? null
+                          : () => _confirmDeleteUser(id, username),
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Hapus Akun'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFFE83030),
                         side: const BorderSide(color: Color(0xFFE83030)),
@@ -665,7 +684,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   Widget _buildBannedOverviewCard(int bannedUsers) {
     return InkWell(
       borderRadius: BorderRadius.circular(16),
-      onTap: () => DefaultTabController.of(context).animateTo(1),
+      onTap: _showBannedUsersSheet,
       child: _buildCard(
         child: Row(
           children: [
@@ -739,7 +758,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.black26),
           ],
         ),
       ),
@@ -757,7 +775,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
     return InkWell(
       borderRadius: BorderRadius.circular(16),
-      onTap: () => DefaultTabController.of(context).animateTo(3),
+      onTap: () => _openReportDetail(report),
       child: _buildCard(
         child: Row(
           children: [
@@ -1129,28 +1147,415 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
+  Future<void> _showBannedUsersSheet() {
+    final bannedUsers =
+        _users.where((user) => _isCurrentlyBanned(user)).toList();
+
+    return showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.72,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.black12,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Akun Ter-ban',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 12),
+                  if (bannedUsers.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 22),
+                      child: Center(
+                        child: Text(
+                          'Tidak ada akun yang sedang diban.',
+                          style: TextStyle(color: Colors.black54),
+                        ),
+                      ),
+                    )
+                  else
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: bannedUsers.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final user = bannedUsers[index];
+                          final username = _text(
+                            user['username'] ?? user['name'] ?? user['email'],
+                            '-',
+                          );
+                          return Material(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(14),
+                              onTap: () {
+                                Navigator.pop(sheetContext);
+                                DefaultTabController.of(this.context)
+                                    .animateTo(1);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    _buildSmallIconBox(
+                                        Icons.person_off_outlined),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            username,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Sampai ${_formatDate(user['banned_until'])}',
+                                            style: const TextStyle(
+                                              color: Colors.black45,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.chevron_right,
+                                      color: Colors.black26,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showPendingReportsSheet(
+    List<Map<String, dynamic>> pendingReports,
+  ) {
+    return showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.78,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.black12,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Laporan Menunggu',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 12),
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: pendingReports.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final report = pendingReports[index];
+                        final id = _parseInt(report['id']);
+                        final type = _text(report['type'], 'Laporan');
+                        final description = _text(report['description'], '-');
+
+                        return Material(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: () {
+                              Navigator.pop(sheetContext);
+                              Future.microtask(
+                                () => _openReportDetail(report),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: Colors.black.withValues(alpha: 0.08),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  _buildSmallIconBox(Icons.flag_outlined),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          id == 0 ? type : '$type #LP-$id',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                        Text(
+                                          description,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.black45,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.chevron_right,
+                                    color: Colors.black26,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openReportDetail(Map<String, dynamic> report) {
+    final id = _parseInt(report['id']);
+    final status = _uiReportStatus(_text(report['status'], 'pending'));
+    final reporter =
+        _text(report['reporter_username'] ?? report['username'], '-');
+    final reported = _text(
+      report['reported_username'] ?? report['target_username'],
+      'Tidak tersedia',
+    );
+    final product = _text(report['reported_product_name'], '');
+    final type = _text(report['type'], 'Laporan');
+    final description = _text(report['description'], '-');
+
+    return Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: RouteSettings(
+          name: '/admin/reports/$id',
+          arguments: report,
+        ),
+        builder: (context) => Scaffold(
+          backgroundColor: const Color(0xFFF6F6F7),
+          appBar: AppBar(
+            title: const Text('Detail Laporan'),
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+          ),
+          body: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _buildCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        _buildIconBox(Icons.report_outlined),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            id == 0 ? type : '$type #LP-$id',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        _buildStatusChip(
+                          _formatReportStatus(status),
+                          Colors.orange,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    _buildReportDetailRow('Pelapor', reporter),
+                    _buildReportDetailRow('Terlapor', reported),
+                    if (product.isNotEmpty)
+                      _buildReportDetailRow('Produk', product),
+                    _buildReportDetailRow(
+                      'Tanggal',
+                      _formatDate(report['created_at']),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Deskripsi',
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(description, style: const TextStyle(height: 1.45)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReportDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 86,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.black54,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _showBanDurationDialog(int userId, String username) async {
+    const durationOptions = ['1', '7', '30'];
+    String? selectedDuration;
+
     final duration = await showDialog<int>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        title: Text('Ban $username'),
-        content: const Text('Pilih durasi ban akun.'),
-        actions: [
-          TextButton(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          title: Text('Ban $username'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Pilih durasi ban akun.'),
+              const SizedBox(height: 14),
+              _buildChoiceField(
+                value:
+                    selectedDuration == null ? null : '$selectedDuration hari',
+                hint: 'Pilih durasi ban',
+                onTap: () async {
+                  final picked = await _showAdminOptionSheet(
+                    title: 'Durasi Ban',
+                    selected: selectedDuration,
+                    options: durationOptions,
+                    labelBuilder: (value) => '$value hari',
+                  );
+                  if (picked == null || !context.mounted) return;
+                  setDialogState(() => selectedDuration = picked);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Batal')),
-          TextButton(
-              onPressed: () => Navigator.pop(context, 1),
-              child: const Text('1 hari')),
-          TextButton(
-              onPressed: () => Navigator.pop(context, 7),
-              child: const Text('7 hari')),
-          TextButton(
-              onPressed: () => Navigator.pop(context, 30),
-              child: const Text('30 hari')),
-        ],
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: selectedDuration == null
+                  ? null
+                  : () => Navigator.pop(
+                        context,
+                        int.parse(selectedDuration!),
+                      ),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFE83030),
+              ),
+              child: const Text('Ban'),
+            ),
+          ],
+        ),
       ),
     );
     if (duration == null) return;
@@ -1168,6 +1573,41 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     await _runAdminAction(
       action: () => _adminService.unbanUser(userId),
       successMessage: 'User berhasil di-unban.',
+    );
+  }
+
+  Future<void> _confirmDeleteUser(int userId, String username) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        title: const Text('Hapus Akun'),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus akun "$username"? '
+          'Tindakan ini tidak dapat dibatalkan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFE83030),
+            ),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await _runAdminAction(
+      action: () => _adminService.deleteUser(userId),
+      successMessage: 'Akun berhasil dihapus.',
     );
   }
 
@@ -1301,6 +1741,32 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        title: const Text('Konfirmasi Logout'),
+        content: const Text('Apakah Anda yakin ingin keluar?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE83030),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Ya'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
     await _authService.logout();
     if (!mounted) return;
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
@@ -1317,6 +1783,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     if (value is num) return value != 0;
     final text = value?.toString().toLowerCase();
     return text == 'true' || text == '1' || text == 'yes';
+  }
+
+  bool _isCurrentlyBanned(Map<String, dynamic> user) {
+    if (!_parseBool(user['is_banned'])) return false;
+
+    final bannedUntil =
+        DateTime.tryParse(user['banned_until']?.toString() ?? '');
+    if (bannedUntil == null) return true;
+
+    return bannedUntil.isAfter(DateTime.now());
   }
 
   String _text(dynamic value, [String fallback = '']) {
