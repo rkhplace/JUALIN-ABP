@@ -225,4 +225,45 @@ class ReportControllerTest extends TestCase
             'status' => 'rejected',
         ]);
     }
+
+    public function test_admin_can_filter_pending_reports_and_set_page_size()
+    {
+        $admin = User::create([
+            'username' => 'filter-admin',
+            'email' => 'filter-admin@example.com',
+            'password' => 'password',
+            'role' => 'admin',
+        ]);
+        $reporter = User::create([
+            'username' => 'filter-reporter',
+            'email' => 'filter-reporter@example.com',
+            'password' => 'password',
+            'role' => 'customer',
+        ]);
+
+        Report::create([
+            'reporter_id' => $reporter->id,
+            'reporter_username' => $reporter->username,
+            'username' => $reporter->username,
+            'type' => 'Pending report',
+            'description' => 'Needs review',
+            'status' => 'pending',
+        ]);
+
+        Report::create([
+            'reporter_id' => $reporter->id,
+            'reporter_username' => $reporter->username,
+            'username' => $reporter->username,
+            'type' => 'Resolved report',
+            'description' => 'Already handled',
+            'status' => 'resolved',
+        ]);
+
+        $this->actingAs($admin, 'api')
+            ->getJson('/api/v1/reports?status=pending&per_page=100')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.status', 'pending')
+            ->assertJsonPath('pagination.per_page', 100);
+    }
 }

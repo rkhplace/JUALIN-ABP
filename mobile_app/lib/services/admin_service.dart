@@ -29,12 +29,34 @@ class AdminService {
     return _extractList(response);
   }
 
-  Future<List<Map<String, dynamic>>> getReports({int page = 1}) async {
-    final response = await _client.get(
-      ApiConfig.reports,
-      queryParams: {'page': page.toString()},
-    );
-    return _extractList(response);
+  Future<List<Map<String, dynamic>>> getReports({
+    int page = 1,
+    int perPage = 100,
+    String? status,
+  }) async {
+    final reports = <Map<String, dynamic>>[];
+    var currentPage = page;
+    var lastPage = page;
+
+    do {
+      final response = await _client.get(
+        ApiConfig.reports,
+        queryParams: {
+          'page': currentPage.toString(),
+          'per_page': perPage.toString(),
+          if (status != null) 'status': status,
+        },
+      );
+      reports.addAll(_extractList(response));
+
+      final pagination = response['pagination'];
+      lastPage = pagination is Map
+          ? _parseInt(pagination['last_page'], currentPage)
+          : currentPage;
+      currentPage++;
+    } while (currentPage <= lastPage);
+
+    return reports;
   }
 
   Future<void> banUser(int userId, int durationDays) async {
@@ -46,6 +68,10 @@ class AdminService {
 
   Future<void> unbanUser(int userId) async {
     await _client.patch('/users/$userId/unban');
+  }
+
+  Future<void> deleteUser(int userId) async {
+    await _client.delete('/users/$userId');
   }
 
   Future<void> deleteProduct(int productId, String reason) async {
@@ -85,5 +111,11 @@ class AdminService {
         .whereType<Map>()
         .map((item) => Map<String, dynamic>.from(item))
         .toList();
+  }
+
+  int _parseInt(dynamic value, int fallback) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? fallback;
   }
 }

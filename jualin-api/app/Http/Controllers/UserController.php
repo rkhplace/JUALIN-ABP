@@ -78,7 +78,18 @@ class UserController extends Controller
 
     public function destroy($id)
     {
+        $user = User::find($id);
+
+        if (!$user) {
+            return ApiResponse::error('User not found', null, 404);
+        }
+
+        if ($user->role === 'admin') {
+            return ApiResponse::error('Admin accounts cannot be deleted', null, 422);
+        }
+
         $this->service->delete($id);
+
         return ApiResponse::success('User deleted');
     }
 
