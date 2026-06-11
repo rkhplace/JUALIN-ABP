@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../services/notification_service.dart';
+import '../../screens/chat_screen.dart';
 
 class NotificationButton extends StatefulWidget {
   final Color iconColor;
@@ -162,68 +163,77 @@ class _NotificationButtonState extends State<NotificationButton> {
                         final type = item['type']?.toString() ?? '';
                         final visual = _notificationVisual(type);
 
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: visual.color.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                visual.icon,
-                                color: visual.color,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => _openNotificationTarget(context, item),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: visual.color.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    visual.icon,
+                                    color: visual.color,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Expanded(
-                                        child: Text(
-                                          item['title']?.toString() ?? '',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 14,
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              item['title']?.toString() ?? '',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 14,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            item['created_at']?.toString() ??
+                                                '',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.black45,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(width: 8),
+                                      const SizedBox(height: 4),
                                       Text(
-                                        item['created_at']?.toString() ?? '',
+                                        item['body']?.toString() ?? '',
                                         style: const TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.black45,
+                                          fontSize: 12,
+                                          color: Colors.black87,
                                         ),
+                                        maxLines: type == 'product_deleted' ||
+                                                type == 'account'
+                                            ? 5
+                                            : 3,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    item['body']?.toString() ?? '',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.black87,
-                                    ),
-                                    maxLines: type == 'product_deleted' ||
-                                            type == 'account'
-                                        ? 5
-                                        : 3,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         );
                       },
                     );
@@ -257,6 +267,42 @@ class _NotificationButtonState extends State<NotificationButton> {
         return const _NotificationVisual(Icons.person_off_outlined, Colors.red);
       default:
         return const _NotificationVisual(Icons.notifications, Colors.blue);
+    }
+  }
+
+  void _openNotificationTarget(
+    BuildContext context,
+    Map<String, dynamic> item,
+  ) {
+    final targetType = item['target_type']?.toString();
+    final targetId = item['target_id'] is num
+        ? (item['target_id'] as num).toInt()
+        : int.tryParse(item['target_id']?.toString() ?? '');
+    Navigator.pop(context);
+
+    if (targetType == 'chat_room' && targetId != null && targetId > 0) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChatRoomScreen(
+            roomId: targetId,
+            roomName: 'Chat',
+          ),
+        ),
+      );
+      return;
+    }
+
+    switch (targetType ?? item['type']?.toString()) {
+      case 'order':
+      case 'payment':
+        Navigator.pushNamed(context, '/purchase_history');
+        break;
+      case 'wallet':
+        Navigator.pushNamed(context, '/wallet');
+        break;
+      default:
+        break;
     }
   }
 }

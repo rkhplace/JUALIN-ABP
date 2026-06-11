@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "614205822769",
+    "project_id": "jualin-46db8",
+    "storage_bucket": "jualin-46db8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:614205822769:android:1dd5990b78d3d5eae9c210",
+        "android_client_info": {
+          "package_name": "com.example.mobile_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhORue1Ti2CeQylLDPNNk3jvqtq5CvwG0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

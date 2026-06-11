@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'navigation/app_navigator.dart';
 import 'screens/admin_home_screen.dart';
 import 'screens/auth_gate_screen.dart';
 import 'screens/auth_required_screen.dart';
@@ -24,11 +25,15 @@ import 'screens/seller/seller_stats_screen.dart';
 import 'screens/seller/seller_withdraw_screen.dart';
 import 'screens/checkout_screen.dart';
 import 'screens/purchase_history_screen.dart';
+import 'services/push_notification_service.dart';
 import 'models/product.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  await PushNotificationService.instance.initialize(
+    navigatorKey: appNavigatorKey,
+  );
   runApp(const MyApp());
 }
 
@@ -66,6 +71,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Jualin Mobile',
+      navigatorKey: appNavigatorKey,
       scrollBehavior: const NoStretchScrollBehavior(),
       // ── Global font scaling ──────────────────────────────────────────────
       // Reduces all text in the app by ~12% so it fits better on small screens.
@@ -109,13 +115,15 @@ class _MyAppState extends State<MyApp> {
               child: ProfileEditScreen(),
             ),
         '/purchase_history': (context) => const AuthRequiredScreen(
-              message: 'Silakan login terlebih dahulu untuk melihat riwayat pembelian.',
+              message:
+                  'Silakan login terlebih dahulu untuk melihat riwayat pembelian.',
               child: PurchaseHistoryScreen(),
             ),
 
         // ── Legacy seller routes (kept for backward compatibility) ──
         '/seller_dashboard': (context) => const AuthRequiredScreen(
-              message: 'Silakan login terlebih dahulu untuk mengakses dashboard penjual.',
+              message:
+                  'Silakan login terlebih dahulu untuk mengakses dashboard penjual.',
               child: SellerDashboardScreen(),
             ),
         '/seller_products': (context) => const AuthRequiredScreen(
@@ -132,30 +140,32 @@ class _MyAppState extends State<MyApp> {
             ),
 
         // ── Seller module routes ─────────────────────────────
-'/seller_main': (context) => const AuthRequiredScreen(
-      message: 'Silakan login terlebih dahulu untuk mengakses menu penjual.',
-      child: SellerMainScreen(),
-),
+        '/seller_main': (context) => const AuthRequiredScreen(
+              message:
+                  'Silakan login terlebih dahulu untuk mengakses menu penjual.',
+              child: SellerMainScreen(),
+            ),
 
-'/seller_orders': (context) => const AuthRequiredScreen(
-      message: 'Silakan login terlebih dahulu untuk melihat pesanan.',
-      child: SellerOrdersScreen(),
-),
+        '/seller_orders': (context) => const AuthRequiredScreen(
+              message: 'Silakan login terlebih dahulu untuk melihat pesanan.',
+              child: SellerOrdersScreen(),
+            ),
 
-'/seller_stats': (context) => const AuthRequiredScreen(
-      message: 'Silakan login terlebih dahulu untuk melihat statistik penjualan.',
-      child: SellerStatsScreen(),
-),
+        '/seller_stats': (context) => const AuthRequiredScreen(
+              message:
+                  'Silakan login terlebih dahulu untuk melihat statistik penjualan.',
+              child: SellerStatsScreen(),
+            ),
 
-'/seller_withdraw': (context) => const AuthRequiredScreen(
-      message: 'Silakan login terlebih dahulu untuk menarik saldo.',
-      child: SellerWithdrawScreen(),
-),
+        '/seller_withdraw': (context) => const AuthRequiredScreen(
+              message: 'Silakan login terlebih dahulu untuk menarik saldo.',
+              child: SellerWithdrawScreen(),
+            ),
 
-'/wallet': (context) => const AuthRequiredScreen(
-      message: 'Silakan login terlebih dahulu untuk mengakses dompet.',
-      child: WalletScreen(),
-),
+        '/wallet': (context) => const AuthRequiredScreen(
+              message: 'Silakan login terlebih dahulu untuk mengakses dompet.',
+              child: WalletScreen(),
+            ),
       },
       onGenerateRoute: (settings) {
         final routeName = settings.name ?? '';

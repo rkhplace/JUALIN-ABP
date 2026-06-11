@@ -2,27 +2,22 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Notification extends Model
+class UserDeviceToken extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'user_id',
-        'title',
-        'body',
-        'type',
-        'target_type',
-        'target_id',
-        'is_read',
+        'token',
+        'platform',
+        'is_active',
+        'last_seen_at',
     ];
 
     protected $casts = [
-        'is_read' => 'boolean',
-        'target_id' => 'integer',
+        'is_active' => 'boolean',
+        'last_seen_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

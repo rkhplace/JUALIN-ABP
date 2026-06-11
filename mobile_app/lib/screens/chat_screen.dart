@@ -446,92 +446,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       ],
       body: Column(
         children: [
-          if (widget.product != null) _buildProductCard(widget.product!),
           Expanded(child: _buildMessageList()),
           _buildInputBar(),
         ],
-      ),
-    );
-  }
-
-  Widget _buildProductCard(ChatProduct product) {
-    final imageUrl = ImageUrlHelper.resolve(product.image);
-
-    return InkWell(
-      onTap: product.id > 0
-          ? () => Navigator.pushNamed(
-                context,
-                '/product_detail',
-                arguments: product.id,
-              )
-          : null,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFFFD6D6)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: imageUrl.isNotEmpty
-                  ? Image.network(
-                      imageUrl,
-                      width: 56,
-                      height: 56,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _productImageFallback(),
-                    )
-                  : _productImageFallback(),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    formatCurrency(product.price),
-                    style: const TextStyle(
-                      color: Color(0xFFE83030),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  if ((product.sellerName ?? '').isNotEmpty)
-                    Text(
-                      product.sellerName!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: Color(0xFFE83030)),
-          ],
-        ),
       ),
     );
   }
@@ -589,6 +506,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Widget _buildBubble(ChatMessage msg, bool isMe) {
+    if (msg.isProductPreview) {
+      return _buildProductBubble(msg, isMe);
+    }
+
     // ─── Debug: verify alignment logic ───────────────────────────────────────
     debugPrint(
         '[Chat] senderId: ${msg.senderId}  |  currentUserId: $_currentUserId  |  isMe: $isMe');
@@ -652,6 +573,161 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                               ? Colors.white.withValues(alpha: 0.7)
                               : Colors.black38)),
                 ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductBubble(ChatMessage msg, bool isMe) {
+    final product = msg.product!;
+    final imageUrl = ImageUrlHelper.resolve(product.image);
+    final time = msg.sentAt != null
+        ? '${msg.sentAt!.hour.toString().padLeft(2, '0')}:${msg.sentAt!.minute.toString().padLeft(2, '0')}'
+        : '';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment:
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!isMe) ...[
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: Colors.grey[200],
+              child: Text(
+                (msg.sender?.username ?? '?')[0].toUpperCase(),
+                style: const TextStyle(fontSize: 11, color: Colors.black54),
+              ),
+            ),
+            const SizedBox(width: 6),
+          ],
+          Flexible(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: product.id > 0
+                  ? () => Navigator.pushNamed(
+                        context,
+                        '/product_detail',
+                        arguments: product.id,
+                      )
+                  : null,
+              child: Container(
+                constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.78),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(18),
+                    topRight: const Radius.circular(18),
+                    bottomLeft: Radius.circular(isMe ? 18 : 6),
+                    bottomRight: Radius.circular(isMe ? 6 : 18),
+                  ),
+                  border: Border.all(color: const Color(0xFFFFD6D6)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFFE83030).withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: const Text(
+                            'Preview Produk',
+                            style: TextStyle(
+                              color: Color(0xFFE83030),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          time,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.black38,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: imageUrl.isNotEmpty
+                              ? Image.network(
+                                  imageUrl,
+                                  width: 64,
+                                  height: 64,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      _productImageFallback(),
+                                )
+                              : _productImageFallback(),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                product.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                formatCurrency(product.price),
+                                style: const TextStyle(
+                                  color: Color(0xFFE83030),
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              if ((product.sellerName ?? '').isNotEmpty)
+                                Text(
+                                  product.sellerName!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black45,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right,
+                          color: Color(0xFFE83030),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

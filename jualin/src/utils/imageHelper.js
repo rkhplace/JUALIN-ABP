@@ -23,8 +23,8 @@ export const getImageUrl = (imagePath) => {
   }
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const cleanBaseUrl = baseUrl.replace(/\/$/, '');
-  const cleanImagePath = normalizedPath.replace(/^\//, '');
-  return `${cleanBaseUrl}/storage/${cleanImagePath}`;
+  const cleanImagePath = normalizedPath.replace(/^\/+/, '').replace(/^storage\//, '');
+  return `${cleanBaseUrl}/api/v1/files/${cleanImagePath}`;
 };
 
 /**

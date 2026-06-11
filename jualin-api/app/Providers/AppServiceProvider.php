@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Http\Middleware\RoleMiddleware;
+use App\Models\Notification;
+use App\Observers\NotificationObserver;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Route::aliasMiddleware('role', RoleMiddleware::class);
+        Notification::observe(NotificationObserver::class);
 
         $createResetUrl = function (object $notifiable, string $token) {
             $frontendUrl = rtrim(config('app.frontend_url') ?: config('app.url'), '/');

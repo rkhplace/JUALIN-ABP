@@ -253,19 +253,50 @@ class AuthController extends Controller
     private function generateFirebaseToken($userId)
     {
         try {
-            $serviceAccountPath = storage_path('app/firebase-credentials.json');
+            $credentials = $this->resolveFirebaseCredentials();
 
-            if (!file_exists($serviceAccountPath)) {
-                \Illuminate\Support\Facades\Log::warning("Firebase credentials not found at: " . $serviceAccountPath);
+            if (!$credentials) {
+                \Illuminate\Support\Facades\Log::warning('Firebase credentials not found for custom token generation');
                 return null;
             }
 
-            $factory = (new \Kreait\Firebase\Factory)->withServiceAccount($serviceAccountPath);
+            $factory = (new Factory)->withServiceAccount($credentials);
             $auth = $factory->createAuth();
             return $auth->createCustomToken((string) $userId)->toString();
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Firebase Token Generation Error: " . $e->getMessage());
             return null;
         }
+    }
+
+    private function resolveFirebaseCredentials(): string|array|null
+    {
+        $json = env('FIREBASE_CREDENTIALS_JSON');
+        if ($json) {
+            $decoded = json_decode($json, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+
+            Log::warning('FIREBASE_CREDENTIALS_JSON is not valid JSON');
+        }
+
+        $base64 = env('FIREBASE_CREDENTIALS_BASE64');
+        if ($base64) {
+            $decodedJson = base64_decode($base64, true);
+            $decoded = $decodedJson ? json_decode($decodedJson, true) : null;
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+
+            Log::warning('FIREBASE_CREDENTIALS_BASE64 is not valid base64 JSON');
+        }
+
+        $serviceAccountPath = storage_path('app/firebase-credentials.json');
+        if (file_exists($serviceAccountPath)) {
+            return $serviceAccountPath;
+        }
+
+        return null;
     }
 }

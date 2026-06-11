@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Responses\ApiResponse;
 use App\Models\ChatMessage;
 use App\Models\ChatRoom;
+use App\Models\Notification;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -134,6 +135,7 @@ class ChatController extends Controller
         $room->touch();
 
         $message->load('sender:id,username,profile_picture');
+        $this->notifyRoomMembers($room, $user->id, $user->username ?? 'Pengguna', $message->message);
 
         return ApiResponse::success('Message sent', $message, 201);
     }
@@ -163,6 +165,10 @@ class ChatController extends Controller
         ]);
 
         $productData = $request->input('product_data');
+        $product = Product::with('seller:id,username,profile_picture')->find($productData['id']);
+        if ($product) {
+            $productData = $this->serializeProduct($product);
+        }
 
         // Check if a product message with same product ID already exists in this room
         $exists = ChatMessage::where('chat_room_id', $roomId)
@@ -189,6 +195,12 @@ class ChatController extends Controller
 
         $room->touch();
         $message->load('sender:id,username,profile_picture');
+        $this->notifyRoomMembers(
+            $room,
+            $user->id,
+            $user->username ?? 'Pengguna',
+            'Membagikan preview produk: ' . $productData['name']
+        );
 
         return ApiResponse::success('Product message sent', $message, 201);
     }
@@ -275,5 +287,29 @@ class ChatController extends Controller
             'seller_id' => $product->seller_id,
             'seller_name' => $product->seller?->username,
         ];
+    }
+
+    private function notifyRoomMembers(
+        ChatRoom $room,
+        int $senderId,
+        string $senderName,
+        string $body
+    ): void {
+        $room->loadMissing('members:id');
+
+        foreach ($room->members as $member) {
+            if ((int) $member->id === (int) $senderId) {
+                continue;
+            }
+
+            Notification::create([
+                'user_id' => $member->id,
+                'title' => 'Pesan baru dari ' . $senderName,
+                'body' => $body,
+                'type' => 'chat',
+                'target_type' => 'chat_room',
+                'target_id' => $room->id,
+            ]);
+        }
     }
 }

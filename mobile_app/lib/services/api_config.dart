@@ -43,7 +43,10 @@ class ApiConfig {
   static const String chatRooms = '/chat/rooms';
   static const String chatRoomsStart = '/chat/rooms/start';
   static String chatMessages(int roomId) => '/chat/rooms/$roomId/messages';
+  static String chatProductMessage(int roomId) =>
+      '/chat/rooms/$roomId/product-message';
 
   // ── Notifications ───────────────────────────────
   static const String notifications = '/notifications';
+  static const String notificationDeviceTokens = '/notifications/device-tokens';
 }

@@ -76,4 +76,22 @@ class User extends Authenticatable implements JWTSubject
     {
         return [];
     }
+
+    public function getProfilePictureAttribute($value): ?string
+    {
+        if (!$value || !is_string($value)) {
+            return $value;
+        }
+
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
+
+        $cleanPath = ltrim($value, '/');
+        $storagePath = str_starts_with($cleanPath, 'storage/')
+            ? substr($cleanPath, strlen('storage/'))
+            : $cleanPath;
+
+        return url('/api/v1/files/' . $storagePath);
+    }
 }
