@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/ui/custom_button.dart';
 import '../services/product_service.dart';
@@ -114,6 +115,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         throw Exception('Room ID tidak diterima dari server.');
       }
 
+      final chatProduct = ChatProduct(
+        id: _product!.id,
+        name: _product!.title,
+        price: _product!.price,
+        image: _product!.imagePath,
+        sellerId: _product!.sellerId,
+        sellerName: _product!.sellerName,
+      );
+      unawaited(
+        _chatService.sendProductMessage(roomId, chatProduct).catchError(
+          (Object error, StackTrace stackTrace) {
+            debugPrint(
+                '[ProductDetail] Failed to send product preview: $error');
+            return null;
+          },
+        ),
+      );
+
       // Navigate directly to the ChatRoomScreen with the room ID
       Navigator.push(
         context,
@@ -121,13 +140,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           builder: (_) => ChatRoomScreen(
             roomId: roomId,
             roomName: _product!.sellerName,
-            product: ChatProduct(
-              id: _product!.id,
-              name: _product!.title,
-              price: _product!.price,
-              image: _product!.imagePath,
-              sellerName: _product!.sellerName,
-            ),
+            product: chatProduct,
           ),
         ),
       );
@@ -716,21 +729,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: _isChatLoading
-                          ? const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12),
-                              child: Center(
-                                  child: SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2))),
-                            )
-                          : CustomButton(
-                              text: 'Chat Penjual',
-                              isSecondary: true,
-                              onPressed: _handleChatPenjual,
-                            ),
+                      child: CustomButton(
+                        text: 'Chat Penjual',
+                        isSecondary: true,
+                        isLoading: _isChatLoading,
+                        onPressed: _handleChatPenjual,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(

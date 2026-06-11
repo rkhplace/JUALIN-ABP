@@ -15,16 +15,20 @@ class ChatService {
   /// Returns: { success, data: [...rooms] }
   Future<List<ChatRoom>> getChatRooms() async {
     try {
-      debugPrint('[ChatService] getChatRooms → calling ${ApiConfig.baseUrl}${ApiConfig.chatRooms}');
+      debugPrint(
+          '[ChatService] getChatRooms → calling ${ApiConfig.baseUrl}${ApiConfig.chatRooms}');
       final response = await _client.get(ApiConfig.chatRooms);
-      debugPrint('[ChatService] getChatRooms ← response keys: ${response.keys.toList()}');
+      debugPrint(
+          '[ChatService] getChatRooms ← response keys: ${response.keys.toList()}');
 
       // API returns: { success, data: [...rooms] }
       final rawList = response['data'];
-      debugPrint('[ChatService] getChatRooms data type: ${rawList.runtimeType}  content: $rawList');
+      debugPrint(
+          '[ChatService] getChatRooms data type: ${rawList.runtimeType}  content: $rawList');
 
       if (rawList is! List) {
-        debugPrint('[ChatService] getChatRooms: data is not a List, returning []');
+        debugPrint(
+            '[ChatService] getChatRooms: data is not a List, returning []');
         return [];
       }
 
@@ -34,7 +38,8 @@ class ChatService {
       debugPrint('[ChatService] getChatRooms: parsed ${rooms.length} rooms');
       return rooms;
     } on ApiException catch (e) {
-      debugPrint('[ChatService] getChatRooms ApiException: ${e.statusCode} ${e.message}');
+      debugPrint(
+          '[ChatService] getChatRooms ApiException: ${e.statusCode} ${e.message}');
       if (e.statusCode == 401) {
         throw Exception('Sesi habis. Silakan login ulang.');
       }
@@ -54,9 +59,11 @@ class ChatService {
   ///   { success, data: { data: [...messages], links: {...}, meta: {...} } }
   Future<List<ChatMessage>> getMessages(int roomId) async {
     try {
-      debugPrint('[ChatService] getMessages(roomId=$roomId) → calling ${ApiConfig.chatMessages(roomId)}');
+      debugPrint(
+          '[ChatService] getMessages(roomId=$roomId) → calling ${ApiConfig.chatMessages(roomId)}');
       final response = await _client.get(ApiConfig.chatMessages(roomId));
-      debugPrint('[ChatService] getMessages ← response keys: ${response.keys.toList()}');
+      debugPrint(
+          '[ChatService] getMessages ← response keys: ${response.keys.toList()}');
 
       // Backend uses ->paginate(), so data is a paginator object.
       // ApiResponse::success wraps it as: { success, data: { data: [...], links: {...}, meta: {...} } }
@@ -72,7 +79,8 @@ class ChatService {
         // Paginated: { data: [...], meta: {...}, links: {...} }
         rawList = outer['data'] as List;
       } else {
-        debugPrint('[ChatService] getMessages: unexpected data shape, returning []');
+        debugPrint(
+            '[ChatService] getMessages: unexpected data shape, returning []');
         return [];
       }
 
@@ -81,8 +89,11 @@ class ChatService {
           .map((json) => ChatMessage.fromJson(json as Map<String, dynamic>))
           .toList();
     } on ApiException catch (e) {
-      debugPrint('[ChatService] getMessages ApiException: ${e.statusCode} ${e.message}');
-      if (e.statusCode == 401) throw Exception('Sesi habis. Silakan login ulang.');
+      debugPrint(
+          '[ChatService] getMessages ApiException: ${e.statusCode} ${e.message}');
+      if (e.statusCode == 401) {
+        throw Exception('Sesi habis. Silakan login ulang.');
+      }
       if (e.statusCode == 404) throw Exception('Ruang chat tidak ditemukan.');
       throw Exception('Gagal memuat pesan: ${e.message}');
     } catch (e) {
@@ -98,7 +109,8 @@ class ChatService {
   /// API: POST /v1/chat/rooms/{roomId}/messages
   Future<ChatMessage?> sendMessage(int roomId, String text) async {
     try {
-      debugPrint('[ChatService] sendMessage(roomId=$roomId) text="${text.substring(0, text.length > 30 ? 30 : text.length)}"');
+      debugPrint(
+          '[ChatService] sendMessage(roomId=$roomId) text="${text.substring(0, text.length > 30 ? 30 : text.length)}"');
       final response = await _client.post(
         ApiConfig.chatMessages(roomId),
         body: {'message': text},
@@ -111,13 +123,42 @@ class ChatService {
       if (data is Map<String, dynamic>) {
         return ChatMessage.fromJson(data);
       }
-      debugPrint('[ChatService] sendMessage: unexpected data type: ${data.runtimeType}');
+      debugPrint(
+          '[ChatService] sendMessage: unexpected data type: ${data.runtimeType}');
       return null;
     } on ApiException catch (e) {
-      debugPrint('[ChatService] sendMessage ApiException: ${e.statusCode} ${e.message}');
+      debugPrint(
+          '[ChatService] sendMessage ApiException: ${e.statusCode} ${e.message}');
       throw Exception('Gagal mengirim pesan: ${e.message}');
     } catch (e) {
       debugPrint('[ChatService] sendMessage error: $e');
+      throw Exception('Tidak dapat terhubung ke server: $e');
+    }
+  }
+
+  Future<ChatMessage?> sendProductMessage(
+    int roomId,
+    ChatProduct product,
+  ) async {
+    try {
+      debugPrint(
+          '[ChatService] sendProductMessage(roomId=$roomId, productId=${product.id})');
+      final response = await _client.post(
+        ApiConfig.chatProductMessage(roomId),
+        body: {'product_data': product.toJson()},
+      );
+
+      final data = response['data'];
+      if (data is Map<String, dynamic>) {
+        return ChatMessage.fromJson(data);
+      }
+      return null;
+    } on ApiException catch (e) {
+      debugPrint(
+          '[ChatService] sendProductMessage ApiException: ${e.statusCode} ${e.message}');
+      throw Exception('Gagal mengirim preview produk: ${e.message}');
+    } catch (e) {
+      debugPrint('[ChatService] sendProductMessage error: $e');
       throw Exception('Tidak dapat terhubung ke server: $e');
     }
   }
@@ -130,7 +171,8 @@ class ChatService {
   /// Returns the room ID, or null on failure.
   Future<int?> startRoom(int sellerId, int productId) async {
     try {
-      debugPrint('[ChatService] startRoom(sellerId=$sellerId, productId=$productId)');
+      debugPrint(
+          '[ChatService] startRoom(sellerId=$sellerId, productId=$productId)');
       final response = await _client.post(
         ApiConfig.chatRoomsStart,
         body: {
@@ -146,7 +188,8 @@ class ChatService {
       }
       return null;
     } on ApiException catch (e) {
-      debugPrint('[ChatService] startRoom ApiException: ${e.statusCode} ${e.message}');
+      debugPrint(
+          '[ChatService] startRoom ApiException: ${e.statusCode} ${e.message}');
       throw Exception('Gagal membuka chat: ${e.message}');
     } catch (e) {
       debugPrint('[ChatService] startRoom error: $e');
@@ -163,9 +206,11 @@ class ChatService {
   /// it returns it as-is. So we read 'id' directly from response, not response['data']['id'].
   Future<int?> getMe() async {
     try {
-      debugPrint('[ChatService] getMe() → calling ${ApiConfig.baseUrl}${ApiConfig.me}');
+      debugPrint(
+          '[ChatService] getMe() → calling ${ApiConfig.baseUrl}${ApiConfig.me}');
       final response = await _client.get(ApiConfig.me);
-      debugPrint('[ChatService] getMe ← response keys: ${response.keys.toList()}');
+      debugPrint(
+          '[ChatService] getMe ← response keys: ${response.keys.toList()}');
 
       // /me returns the user directly: { id, username, email, role, ... }
       // ApiClient._decode() returns it as-is since it's already a Map<String, dynamic>.

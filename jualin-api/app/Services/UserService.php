@@ -39,8 +39,9 @@ class UserService
 
         if (isset($data['profile_picture']) && $data['profile_picture'] instanceof \Illuminate\Http\UploadedFile) {
             // Delete old profile picture if exists
-            if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
-                Storage::disk('public')->delete($user->profile_picture);
+            $oldProfilePicture = $user->getRawOriginal('profile_picture');
+            if ($oldProfilePicture && Storage::disk('public')->exists($oldProfilePicture)) {
+                Storage::disk('public')->delete($oldProfilePicture);
             }
             $data['profile_picture'] = $data['profile_picture']->store('profile_pictures', 'public');
         }
@@ -56,8 +57,9 @@ class UserService
         $user = $this->users->find($id);
 
         // Delete profile picture if exists
-        if ($user && $user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
-            Storage::disk('public')->delete($user->profile_picture);
+        $profilePicture = $user?->getRawOriginal('profile_picture');
+        if ($profilePicture && Storage::disk('public')->exists($profilePicture)) {
+            Storage::disk('public')->delete($profilePicture);
         }
 
         return $this->users->delete($id);

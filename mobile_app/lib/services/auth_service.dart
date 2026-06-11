@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_client.dart';
 import 'api_config.dart';
+import 'push_notification_service.dart';
 
 class AuthService {
   final ApiClient _client = ApiClient();
@@ -25,6 +26,7 @@ class AuthService {
       );
 
       await _persistAuthPayload(response);
+      await PushNotificationService.instance.registerDeviceToken();
       return null;
     } on ApiException catch (e) {
       if (e.statusCode == 401) return 'Email atau password salah.';
@@ -56,7 +58,9 @@ class AuthService {
         requiresAuth: false,
       );
 
-      await _persistAuthPayload(response, fallbackUsername: username, fallbackRole: role);
+      await _persistAuthPayload(response,
+          fallbackUsername: username, fallbackRole: role);
+      await PushNotificationService.instance.registerDeviceToken();
       return null;
     } on ApiException catch (e) {
       if (e.statusCode == 422) return e.message;
@@ -126,6 +130,7 @@ class AuthService {
 
   Future<void> logout() async {
     try {
+      await PushNotificationService.instance.unregisterDeviceToken();
       await _client.post(ApiConfig.logout);
     } catch (_) {
       // Keep logout local-first, matching the web app behavior.
@@ -240,7 +245,9 @@ class AuthService {
     final user = payload['user'];
     if (user is Map) return Map<String, dynamic>.from(user);
 
-    if (payload['id'] != null || payload['email'] != null || payload['username'] != null) {
+    if (payload['id'] != null ||
+        payload['email'] != null ||
+        payload['username'] != null) {
       return Map<String, dynamic>.from(payload);
     }
 
@@ -250,7 +257,8 @@ class AuthService {
   Future<void> _persistUser(Map<String, dynamic> user) async {
     final prefs = await SharedPreferences.getInstance();
     final role = _normalizeRole(user['role']?.toString());
-    final name = (user['username'] ?? user['name'] ?? user['email'] ?? '').toString();
+    final name =
+        (user['username'] ?? user['name'] ?? user['email'] ?? '').toString();
     final email = (user['email'] ?? '').toString();
 
     final id = _parseInt(user['id'] ?? user['user_id'] ?? user['userId']);

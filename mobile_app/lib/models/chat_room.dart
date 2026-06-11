@@ -42,6 +42,7 @@ class ChatProduct {
   final String name;
   final num price;
   final dynamic image;
+  final int? sellerId;
   final String? sellerName;
 
   ChatProduct({
@@ -49,6 +50,7 @@ class ChatProduct {
     required this.name,
     required this.price,
     this.image,
+    this.sellerId,
     this.sellerName,
   });
 
@@ -62,9 +64,21 @@ class ChatProduct {
           ? json['price'] as num
           : num.tryParse(json['price']?.toString() ?? '') ?? 0,
       image: json['image'],
+      sellerId: json['seller_id'] is num
+          ? (json['seller_id'] as num).toInt()
+          : int.tryParse(json['seller_id']?.toString() ?? ''),
       sellerName: json['seller_name']?.toString(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'price': price,
+        'image': image,
+        if (sellerId != null) 'seller_id': sellerId,
+        if ((sellerName ?? '').isNotEmpty) 'seller_name': sellerName,
+      };
 }
 
 class ChatUser {

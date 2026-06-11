@@ -75,6 +75,8 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
 
     // ── Notifications ────────────────────────────────────────────────────
     Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/device-tokens', [NotificationController::class, 'storeDeviceToken']);
+    Route::delete('/notifications/device-tokens', [NotificationController::class, 'destroyDeviceToken']);
 
     // ── Chat ─────────────────────────────────────────────────────────────
     Route::prefix('chat')->group(function () {

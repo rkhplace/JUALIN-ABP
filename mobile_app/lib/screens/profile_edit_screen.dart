@@ -8,6 +8,8 @@ import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 import '../widgets/ui/frosted_app_bar.dart';
 import '../widgets/ui/logo_loader.dart';
+import '../widgets/profile/profile_form.dart';
+import '../widgets/profile/profile_image_uploader.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   const ProfileEditScreen({super.key});
@@ -100,6 +102,47 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       initialDate: initialDate,
       firstDate: DateTime(1940),
       lastDate: DateTime.now(),
+      helpText: 'Pilih Tanggal Lahir',
+      cancelText: 'Batal',
+      confirmText: 'Pilih',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFFE83030),
+              onPrimary: Colors.white,
+              onSurface: Colors.black87,
+            ),
+            dialogTheme: DialogThemeData(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+            ),
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: Colors.white,
+              headerBackgroundColor: const Color(0xFFE83030),
+              headerForegroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+              dayShape: WidgetStateProperty.all(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              todayBorder: const BorderSide(color: Color(0xFFE83030)),
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFE83030),
+                textStyle: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (selected == null) return;
     _birthdayController.text =
@@ -199,20 +242,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   @override
   Widget build(BuildContext context) {
     return FrostedScaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8F8F8),
       title: 'Edit Profil',
-      actions: [
-        TextButton(
-          onPressed: _isSaving ? null : _saveProfile,
-          child: _isSaving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Simpan'),
-        ),
-      ],
+      bottomNavigationBar: _isLoading || _user == null ? null : _buildSaveBar(),
       body: _isLoading
           ? const JualinLogoLoader(size: 64)
           : _errorMessage != null && _user == null
@@ -220,74 +252,80 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               : Form(
                   key: _formKey,
                   child: ListView(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
                     children: [
                       _buildProfilePhotoPicker(),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
                       if (_errorMessage != null) ...[
                         _buildErrorBanner(_errorMessage!),
                         const SizedBox(height: 16),
                       ],
-                      _buildTextField(
-                        controller: _nameController,
-                        label: 'Nama',
-                        validator: (value) =>
-                            value == null || value.trim().length < 3
-                                ? 'Nama minimal 3 karakter'
-                                : null,
+                      _buildSection(
+                        title: 'Informasi Dasar',
+                        subtitle: 'Data utama yang terlihat di akun Jualin.',
+                        children: [
+                          _buildTextField(
+                            controller: _nameController,
+                            label: 'Nama Pengguna',
+                            icon: Icons.person_outline,
+                            validator: (value) =>
+                                value == null || value.trim().length < 3
+                                    ? 'Nama minimal 3 karakter'
+                                    : null,
+                          ),
+                          _buildTextField(
+                            controller: _emailController,
+                            label: 'Email',
+                            icon: Icons.mail_outline,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) =>
+                                value == null || !value.contains('@')
+                                    ? 'Email tidak valid'
+                                    : null,
+                          ),
+                          _buildGenderField(),
+                          _buildTextField(
+                            controller: _birthdayController,
+                            label: 'Tanggal Lahir',
+                            icon: Icons.cake_outlined,
+                            readOnly: true,
+                            onTap: _pickBirthday,
+                            suffixIcon:
+                                const Icon(Icons.calendar_today_outlined),
+                          ),
+                        ],
                       ),
-                      _buildTextField(
-                        controller: _emailController,
-                        label: 'Email',
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (value) =>
-                            value == null || !value.contains('@')
-                                ? 'Email tidak valid'
-                                : null,
+                      const SizedBox(height: 14),
+                      _buildSection(
+                        title: 'Lokasi',
+                        subtitle:
+                            'Bantu penjual dan pembeli mengenali area kamu.',
+                        children: [
+                          _buildTextField(
+                            controller: _regionController,
+                            label: 'Alamat / Provinsi',
+                            icon: Icons.location_on_outlined,
+                          ),
+                          _buildTextField(
+                            controller: _cityController,
+                            label: 'Kota',
+                            icon: Icons.location_city_outlined,
+                          ),
+                        ],
                       ),
-                      _buildTextField(
-                        controller: _phoneController,
-                        label: 'Nomor HP',
-                        enabled: false,
-                        helperText: 'Field ini belum tersedia di API akun.',
-                      ),
-                      _buildGenderField(),
-                      _buildTextField(
-                        controller: _regionController,
-                        label: 'Alamat / Provinsi',
-                      ),
-                      _buildTextField(
-                        controller: _cityController,
-                        label: 'Kota',
-                      ),
-                      _buildTextField(
-                        controller: _birthPlaceController,
-                        label: 'Tempat Lahir',
-                        enabled: false,
-                        helperText: 'Field ini belum tersedia di API akun.',
-                      ),
-                      _buildTextField(
-                        controller: _birthdayController,
-                        label: 'Tanggal Lahir',
-                        readOnly: true,
-                        onTap: _pickBirthday,
-                        suffixIcon: const Icon(Icons.calendar_today_outlined),
-                      ),
-                      _buildTextField(
-                        controller: _bioController,
-                        label: 'Bio',
-                        maxLines: 4,
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: _isSaving ? null : _saveProfile,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE83030),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: Text(
-                            _isSaving ? 'Menyimpan...' : 'Simpan Perubahan'),
+                      const SizedBox(height: 14),
+                      _buildSection(
+                        title: 'Tentang Saya',
+                        subtitle:
+                            'Ceritakan singkat tentang diri atau toko kamu.',
+                        children: [
+                          _buildTextField(
+                            controller: _bioController,
+                            label: 'Bio',
+                            icon: Icons.short_text_outlined,
+                            maxLines: 4,
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -303,47 +341,66 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       imageProvider = NetworkImage(_user!.avatarUrl);
     }
 
-    return Center(
-      child: Column(
-        children: [
-          InkWell(
-            customBorder: const CircleBorder(),
-            onTap: _isSaving ? null : _showProfileImageOptions,
-            child: Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                CircleAvatar(
-                  radius: 52,
-                  backgroundColor: const Color(0xFFF5F5F5),
-                  backgroundImage: imageProvider,
-                  child: imageProvider == null
-                      ? const Icon(Icons.person, size: 52, color: Colors.grey)
-                      : null,
-                ),
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE83030),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: const Icon(
-                    Icons.photo_camera_outlined,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                ),
-              ],
+    return ProfileImageUploader(
+      imageProvider: imageProvider,
+      title: _nameController.text.trim().isEmpty
+          ? 'Foto Profil'
+          : _nameController.text.trim(),
+      subtitle: _emailController.text.trim().isEmpty
+          ? 'Lengkapi identitas akun kamu'
+          : _emailController.text.trim(),
+      isLoading: _isSaving,
+      onTap: _showProfileImageOptions,
+    );
+  }
+
+  Widget _buildSaveBar() {
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 18,
+              offset: const Offset(0, -6),
             ),
+          ],
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _isSaving ? null : _saveProfile,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE83030),
+              disabledBackgroundColor:
+                  const Color(0xFFE83030).withValues(alpha: 0.45),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: _isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text(
+                    'Simpan Perubahan',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
           ),
-          const SizedBox(height: 10),
-          TextButton.icon(
-            onPressed: _isSaving ? null : _showProfileImageOptions,
-            icon: const Icon(Icons.camera_alt_outlined, size: 18),
-            label: const Text('Ubah Foto Profil'),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -383,28 +440,202 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     );
   }
 
+  Widget _buildSection({
+    required String title,
+    required String subtitle,
+    required List<Widget> children,
+  }) {
+    return ProfileFormSection(
+      title: title,
+      subtitle: subtitle,
+      children: children,
+    );
+  }
+
   Widget _buildGenderField() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: DropdownButtonFormField<String>(
-        initialValue: _gender.isEmpty ? null : _gender,
-        decoration: const InputDecoration(
-          labelText: 'Gender',
-          border: OutlineInputBorder(),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: _isSaving ? null : _showGenderPicker,
+        child: InputDecorator(
+          decoration: _inputDecoration(
+            labelText: 'Gender',
+            icon: Icons.wc_outlined,
+            suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
+          ),
+          child: Text(
+            _genderLabel(_gender),
+            style: TextStyle(
+              color: _gender.isEmpty ? Colors.black38 : Colors.black87,
+              fontSize: 14,
+              fontWeight: _gender.isEmpty ? FontWeight.w500 : FontWeight.w700,
+            ),
+          ),
         ),
-        items: const [
-          DropdownMenuItem(value: 'male', child: Text('Laki-laki')),
-          DropdownMenuItem(value: 'female', child: Text('Perempuan')),
-          DropdownMenuItem(value: 'other', child: Text('Lainnya')),
-        ],
-        onChanged: (value) => setState(() => _gender = value ?? ''),
       ),
     );
+  }
+
+  Future<void> _showGenderPicker() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return SafeArea(
+          child: Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'Pilih Gender',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Informasi ini membantu melengkapi identitas profil kamu.',
+                  style: TextStyle(color: Colors.black45, fontSize: 12),
+                ),
+                const SizedBox(height: 16),
+                _buildGenderOption(
+                  value: 'male',
+                  label: 'Laki-laki',
+                  icon: Icons.male_rounded,
+                ),
+                _buildGenderOption(
+                  value: 'female',
+                  label: 'Perempuan',
+                  icon: Icons.female_rounded,
+                ),
+                _buildGenderOption(
+                  value: 'other',
+                  label: 'Lainnya',
+                  icon: Icons.diversity_1_outlined,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selected == null) return;
+    setState(() => _gender = selected);
+  }
+
+  Widget _buildGenderOption({
+    required String value,
+    required String label,
+    required IconData icon,
+  }) {
+    final isSelected = _gender == value;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: isSelected
+            ? const Color(0xFFE83030).withValues(alpha: 0.08)
+            : const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => Navigator.pop(context, value),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected
+                    ? const Color(0xFFE83030)
+                    : Colors.black.withValues(alpha: 0.06),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFE83030)
+                        : const Color(0xFFFFEFEF),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isSelected ? Colors.white : const Color(0xFFE83030),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: Color(0xFFE83030),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _genderLabel(String value) {
+    switch (value) {
+      case 'male':
+        return 'Laki-laki';
+      case 'female':
+        return 'Perempuan';
+      case 'other':
+        return 'Lainnya';
+      default:
+        return 'Pilih gender';
+    }
   }
 
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
+    required IconData icon,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
     bool enabled = true,
@@ -424,12 +655,49 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         readOnly: readOnly,
         maxLines: maxLines,
         onTap: onTap,
-        decoration: InputDecoration(
+        decoration: _inputDecoration(
           labelText: label,
+          icon: icon,
           helperText: helperText,
-          border: const OutlineInputBorder(),
           suffixIcon: suffixIcon,
         ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    required String labelText,
+    required IconData icon,
+    String? helperText,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: labelText,
+      helperText: helperText,
+      prefixIcon: Icon(icon, size: 20, color: const Color(0xFFE83030)),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: const Color(0xFFFAFAFA),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFFE83030), width: 1.4),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.red),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.red, width: 1.4),
+      ),
+      disabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
       ),
     );
   }
