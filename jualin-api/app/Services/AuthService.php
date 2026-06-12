@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Support\Arr;
 
 class AuthService
 {
@@ -39,7 +40,9 @@ class AuthService
 
     public function login(array $credentials)
     {
-        if (!$token = Auth::guard('api')->attempt($credentials)) {
+        $loginCredentials = Arr::only($credentials, ['email', 'password']);
+
+        if (!$token = Auth::guard('api')->attempt($loginCredentials)) {
             return [
                 'success' => false,
                 'message' => 'Invalid credentials'

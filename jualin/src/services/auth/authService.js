@@ -1,10 +1,13 @@
 import { fetcher } from "@/lib/fetcher";
 
+const REMEMBER_ME_KEY = "remember_me";
+const REMEMBERED_EMAIL_KEY = "remembered_email";
+
 export const authService = {
-  async login(email, password) {
+  async login(email, password, remember = false) {
     const response = await fetcher.post(
       "/api/v1/login",
-      { email, password },
+      { email, password, remember },
       { auth: false, skipAuthRedirect: true }
     );
     const data = response?.data || response;
@@ -16,6 +19,36 @@ export const authService = {
       role: data.role,
       user: data.user || null,
     };
+  },
+
+  getRememberedLogin() {
+    if (typeof window === "undefined") {
+      return { rememberMe: false, email: "" };
+    }
+
+    const rememberMe = localStorage.getItem(REMEMBER_ME_KEY) === "true";
+    return {
+      rememberMe,
+      email: rememberMe
+        ? localStorage.getItem(REMEMBERED_EMAIL_KEY) || ""
+        : "",
+    };
+  },
+
+  saveRememberedLogin(email, rememberMe) {
+    if (typeof window === "undefined") return;
+
+    if (rememberMe) {
+      localStorage.setItem(REMEMBER_ME_KEY, "true");
+      localStorage.setItem(
+        REMEMBERED_EMAIL_KEY,
+        String(email || "").trim().toLowerCase()
+      );
+      return;
+    }
+
+    localStorage.removeItem(REMEMBER_ME_KEY);
+    localStorage.removeItem(REMEMBERED_EMAIL_KEY);
   },
 
   async register({ username, email, password, password_confirmation, role }) {

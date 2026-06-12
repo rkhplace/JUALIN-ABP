@@ -99,6 +99,7 @@ class AuthControllerTest extends TestCase
         $res = $this->json('POST', '/api/v1/login', [
             'email' => 'nope@example.com',
             'password' => 'password123',
+            'remember' => true,
         ]);
 
         $res->assertStatus(401)->assertJson(['message' => 'Invalid credentials']);

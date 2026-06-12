@@ -16,16 +16,27 @@ class AuthService {
   static const String userNameKey = 'user_name';
   static const String userEmailKey = 'user_email';
   static const String userJsonKey = 'user_json';
+  static const String rememberMeKey = 'remember_me';
+  static const String rememberedEmailKey = 'remembered_email';
 
-  Future<String?> login(String email, String password) async {
+  Future<String?> login(
+    String email,
+    String password, {
+    bool rememberMe = false,
+  }) async {
     try {
       final response = await _client.post(
         ApiConfig.login,
-        body: {'email': email, 'password': password},
+        body: {
+          'email': email,
+          'password': password,
+          'remember': rememberMe,
+        },
         requiresAuth: false,
       );
 
       await _persistAuthPayload(response);
+      await saveRememberedLogin(email, rememberMe);
       await PushNotificationService.instance.registerDeviceToken();
       return null;
     } on ApiException catch (e) {
@@ -148,6 +159,32 @@ class AuthService {
     await prefs.remove(userNameKey);
     await prefs.remove(userEmailKey);
     await prefs.remove(userJsonKey);
+  }
+
+  Future<void> saveRememberedLogin(String email, bool rememberMe) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (rememberMe) {
+      await prefs.setBool(rememberMeKey, true);
+      await prefs.setString(
+        rememberedEmailKey,
+        email.trim().toLowerCase(),
+      );
+      return;
+    }
+
+    await prefs.remove(rememberMeKey);
+    await prefs.remove(rememberedEmailKey);
+  }
+
+  Future<Map<String, dynamic>> getRememberedLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rememberMe = prefs.getBool(rememberMeKey) ?? false;
+
+    return {
+      'rememberMe': rememberMe,
+      'email': rememberMe ? prefs.getString(rememberedEmailKey) ?? '' : '',
+    };
   }
 
   Future<bool> isLoggedIn() async {
