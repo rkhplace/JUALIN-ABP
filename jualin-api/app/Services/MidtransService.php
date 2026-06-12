@@ -176,6 +176,8 @@ class MidtransService
                 'title' => 'Pembayaran Berhasil',
                 'body' => "Hore! Pembayaran pesanan {$productName} sudah berhasil diverifikasi.",
                 'type' => 'payment',
+                'target_type' => 'payment',
+                'target_id' => $transaction->id,
             ]);
         }
 

@@ -185,6 +185,9 @@ class PushNotificationService {
     }
 
     switch (targetType ?? data['type']) {
+      case 'seller_order':
+        navigator.pushNamed('/seller_orders');
+        break;
       case 'order':
       case 'payment':
         navigator.pushNamed('/purchase_history');

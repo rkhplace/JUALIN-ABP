@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/ui/app_chrome.dart';
@@ -326,8 +328,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   List<ChatMessage> _messages = [];
   bool _isLoading = true;
   bool _isSending = false;
+  bool _isFetchingMessages = false;
   String? _errorMessage;
   int? _currentUserId; // real authenticated user ID for bubble alignment
+  Timer? _messagePoller;
 
   @override
   void initState() {
@@ -337,6 +341,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   @override
   void dispose() {
+    _messagePoller?.cancel();
     _msgController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -370,30 +375,65 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
 
     await _loadMessages();
+    _startMessagePolling();
   }
 
-  Future<void> _loadMessages() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+  void _startMessagePolling() {
+    _messagePoller?.cancel();
+    _messagePoller = Timer.periodic(const Duration(seconds: 3), (_) {
+      _loadMessages(showLoader: false);
     });
+  }
+
+  Future<void> _loadMessages({bool showLoader = true}) async {
+    if (_isFetchingMessages) return;
+    _isFetchingMessages = true;
+
+    if (showLoader && mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
+
     try {
       final messages = await _chatService.getMessages(widget.roomId);
       if (mounted) {
+        final hasNewMessages = _hasNewMessages(messages);
+        final shouldScroll = showLoader || (_isNearBottom() && hasNewMessages);
         setState(() {
           _messages = messages;
           _isLoading = false;
+          _errorMessage = null;
         });
-        _scrollToBottom();
+        if (shouldScroll) _scrollToBottom();
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _errorMessage = e.toString().replaceFirst('Exception: ', '');
-          _isLoading = false;
-        });
+        if (showLoader) {
+          setState(() {
+            _errorMessage = e.toString().replaceFirst('Exception: ', '');
+            _isLoading = false;
+          });
+        } else {
+          debugPrint('[Chat] background message refresh failed: $e');
+        }
       }
+    } finally {
+      _isFetchingMessages = false;
     }
+  }
+
+  bool _hasNewMessages(List<ChatMessage> nextMessages) {
+    if (nextMessages.length != _messages.length) return true;
+    if (nextMessages.isEmpty && _messages.isEmpty) return false;
+    return nextMessages.last.id != _messages.last.id;
+  }
+
+  bool _isNearBottom() {
+    if (!_scrollController.hasClients) return true;
+    final position = _scrollController.position;
+    return position.maxScrollExtent - position.pixels < 120;
   }
 
   void _scrollToBottom() {
@@ -442,7 +482,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     return FrostedScaffold(
       title: widget.roomName,
       actions: [
-        IconButton(icon: const Icon(Icons.refresh), onPressed: _loadMessages),
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: () => _loadMessages(),
+        ),
       ],
       body: Column(
         children: [
@@ -476,7 +519,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.black54)),
             TextButton.icon(
-                onPressed: _loadMessages,
+                onPressed: () => _loadMessages(),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Coba lagi')),
           ],

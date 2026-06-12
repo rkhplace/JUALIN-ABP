@@ -91,6 +91,8 @@ class TransactionController extends Controller
                 'title' => 'Menunggu Pembayaran',
                 'body' => 'Jangan lupa selesaikan pembayaran untuk pesanan Anda sebelum batas waktu habis.',
                 'type' => 'order',
+                'target_type' => 'order',
+                'target_id' => $transaction->id,
             ]);
 
             $productNames = collect($productsToUpdate)
@@ -108,6 +110,8 @@ class TransactionController extends Controller
                     number_format($totalAmount, 0, ',', '.')
                 ),
                 'type' => 'order',
+                'target_type' => 'seller_order',
+                'target_id' => $transaction->id,
             ]);
 
             $transaction->load(['items.product', 'customer', 'seller']);
@@ -210,6 +214,8 @@ class TransactionController extends Controller
                     'title' => 'Pembayaran Berhasil',
                     'body' => "Hore! Pembayaran pesanan {$product->name} sudah berhasil diverifikasi.",
                     'type' => 'payment',
+                    'target_type' => 'payment',
+                    'target_id' => $transaction->id,
                 ]);
 
                 Notification::create([
@@ -221,6 +227,8 @@ class TransactionController extends Controller
                         number_format($totalAmount, 0, ',', '.')
                     ),
                     'type' => 'order',
+                    'target_type' => 'seller_order',
+                    'target_id' => $transaction->id,
                 ]);
 
                 $transaction->load(['items.product', 'customer', 'seller']);
