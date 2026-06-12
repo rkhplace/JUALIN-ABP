@@ -131,6 +131,8 @@ class EscrowController extends Controller
                 'title' => 'Refund Berhasil',
                 'body' => "Refund {$productName} telah diproses pada {$refundDate}. Status: refunded. Alasan: {$transaction->refund_reason}. Dana Rp{$formattedAmount} telah masuk ke Saldo Dompet Anda.",
                 'type' => 'payment',
+                'target_type' => 'payment',
+                'target_id' => $transaction->id,
             ]);
 
             \App\Models\Notification::create([
@@ -138,6 +140,8 @@ class EscrowController extends Controller
                 'title' => 'Pesanan Direfund',
                 'body' => "Refund {$productName} telah diproses pada {$refundDate}. Status: refunded. Alasan: {$transaction->refund_reason}.",
                 'type' => 'order',
+                'target_type' => 'seller_order',
+                'target_id' => $transaction->id,
             ]);
             
             // Restore stock since the transaction is refunded

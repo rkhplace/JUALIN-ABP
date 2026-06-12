@@ -100,142 +100,146 @@ class _HomeScreenState extends State<HomeScreen> {
       showNavbar: true,
       showSearch: true,
       onSearch: _onSearch,
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            // 1. Hero Banner — Auto-Sliding
-            _buildHeroBanner(),
-            // 2. Section Title
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                'Produk yang mungkin kamu suka',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black87,
+      child: RefreshIndicator(
+        onRefresh: _fetchProducts,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              // 1. Hero Banner — Auto-Sliding
+              _buildHeroBanner(),
+              // 2. Section Title
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'Produk yang mungkin kamu suka',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
               ),
-            ),
 
-            // 3. Category Pills — tapping navigates to Products tab with filter
-            // --- Category row with compact left/right buttons ---
-            SizedBox(
-              height: 48,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ScrollConfiguration(
-                      behavior: ScrollConfiguration.of(context)
-                          .copyWith(scrollbars: false),
-                      child: SingleChildScrollView(
-                        controller: _categoryScrollController,
-                        scrollDirection: Axis.horizontal,
-                        physics: const ClampingScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        child: Row(
-                          children: List.generate(
-                            _categories.length,
-                            (index) =>
-                                _buildCategoryPill(_categories[index], index),
+              // 3. Category Pills — tapping navigates to Products tab with filter
+              // --- Category row with compact left/right buttons ---
+              SizedBox(
+                height: 48,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context)
+                            .copyWith(scrollbars: false),
+                        child: SingleChildScrollView(
+                          controller: _categoryScrollController,
+                          scrollDirection: Axis.horizontal,
+                          physics: const ClampingScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          child: Row(
+                            children: List.generate(
+                              _categories.length,
+                              (index) =>
+                                  _buildCategoryPill(_categories[index], index),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // 4. Product Grid (top 8 featured)
-            if (_isLoading)
-              const Padding(
-                padding: EdgeInsets.all(48.0),
-                child: JualinLogoLoader(size: 64),
-              )
-            else if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  children: [
-                    const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
-                    const SizedBox(height: 12),
-                    Text(
-                      _errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.black54),
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton.icon(
-                      onPressed: _fetchProducts,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Coba lagi'),
-                    )
                   ],
                 ),
-              )
-            else if (_products.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(48.0),
-                child: Center(child: Text('Belum ada produk.')),
-              )
-            else
-              GridView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                physics: const NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  mainAxisExtent: 300,
-                ),
-                itemCount: _products.length,
-                itemBuilder: (context, index) {
-                  final product = _products[index];
-                  return ProductCard(
-                    productId: product.id,
-                    title: product.title,
-                    category: product.categoryName,
-                    description: product.description,
-                    sellerName: product.sellerName,
-                    price: product.price,
-                    stock: product.stock,
-                    imagePath: product.imagePath,
-                  );
-                },
               ),
 
-            if (!_isLoading && _errorMessage == null && _products.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
-                child: Center(
-                  child: TextButton(
-                    onPressed: () => widget.onNavigateToProducts?.call(),
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFFE83030),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+              const SizedBox(height: 16),
+
+              // 4. Product Grid (top 8 featured)
+              if (_isLoading)
+                const Padding(
+                  padding: EdgeInsets.all(48.0),
+                  child: JualinLogoLoader(size: 64),
+                )
+              else if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
+                      const SizedBox(height: 12),
+                      Text(
+                        _errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.black54),
                       ),
-                    ),
-                    child: const Text(
-                      'Lihat semua produk',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                      const SizedBox(height: 12),
+                      TextButton.icon(
+                        onPressed: _fetchProducts,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Coba lagi'),
+                      )
+                    ],
+                  ),
+                )
+              else if (_products.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(48.0),
+                  child: Center(child: Text('Belum ada produk.')),
+                )
+              else
+                GridView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    mainAxisExtent: 300,
+                  ),
+                  itemCount: _products.length,
+                  itemBuilder: (context, index) {
+                    final product = _products[index];
+                    return ProductCard(
+                      productId: product.id,
+                      title: product.title,
+                      category: product.categoryName,
+                      description: product.description,
+                      sellerName: product.sellerName,
+                      price: product.price,
+                      stock: product.stock,
+                      imagePath: product.imagePath,
+                    );
+                  },
+                ),
+
+              if (!_isLoading && _errorMessage == null && _products.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                  child: Center(
+                    child: TextButton(
+                      onPressed: () => widget.onNavigateToProducts?.call(),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFE83030),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                      child: const Text(
+                        'Lihat semua produk',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
 
-            const SizedBox(height: 48),
-          ],
+              const SizedBox(height: 48),
+            ],
+          ),
         ),
       ),
     );

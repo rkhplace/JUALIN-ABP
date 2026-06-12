@@ -294,6 +294,9 @@ class _NotificationButtonState extends State<NotificationButton> {
     }
 
     switch (targetType ?? item['type']?.toString()) {
+      case 'seller_order':
+        Navigator.pushNamed(context, '/seller_orders');
+        break;
       case 'order':
       case 'payment':
         Navigator.pushNamed(context, '/purchase_history');
