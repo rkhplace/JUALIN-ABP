@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
@@ -17,6 +17,15 @@ const LoginForm = ({ onSuccess, onError }) => {
   });
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    const remembered = authService.getRememberedLogin();
+    setFormData((prev) => ({
+      ...prev,
+      email: remembered.email,
+      rememberMe: remembered.rememberMe,
+    }));
+  }, []);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -30,9 +39,15 @@ const LoginForm = ({ onSuccess, onError }) => {
     setIsLoading(true);
 
     try {
-      const data = await authService.login(formData.email, formData.password);
+      const data = await authService.login(
+        formData.email,
+        formData.password,
+        formData.rememberMe
+      );
       if (!data?.access_token)
         throw new Error("Login gagal: token tidak ditemukan.");
+
+      authService.saveRememberedLogin(formData.email, formData.rememberMe);
 
       const role = String(
         data.role || data.user?.role || "customer"
