@@ -7,6 +7,8 @@ import { authService } from '@/services/auth/authService';
 jest.mock('@/services/auth/authService', () => ({
     authService: {
         login: jest.fn(),
+        getRememberedLogin: jest.fn(() => ({ rememberMe: false, email: '' })),
+        saveRememberedLogin: jest.fn(),
     },
 }));
 
@@ -31,6 +33,7 @@ jest.mock('next/navigation', () => ({
 describe('Form Handling Feature (LoginForm)', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        authService.getRememberedLogin.mockReturnValue({ rememberMe: false, email: '' });
     });
 
     test('should render login form elements', () => {
@@ -72,13 +75,48 @@ describe('Form Handling Feature (LoginForm)', () => {
         fireEvent.click(submitBtn);
 
         await waitFor(() => {
-            expect(authService.login).toHaveBeenCalledWith('test@example.com', 'password123');
+            expect(authService.login).toHaveBeenCalledWith('test@example.com', 'password123', false);
         });
 
         await waitFor(() => {
             expect(mockLoginContext).toHaveBeenCalled();
             expect(mockRefetchUser).toHaveBeenCalled();
             expect(mockPush).toHaveBeenCalledWith('/dashboard');
+            expect(authService.saveRememberedLogin).toHaveBeenCalledWith('test@example.com', false);
+        });
+    });
+
+    test('should restore and persist remembered email', async () => {
+        authService.getRememberedLogin.mockReturnValue({
+            rememberMe: true,
+            email: 'remembered@example.com',
+        });
+        authService.login.mockResolvedValue({
+            access_token: 'fake-jwt-token',
+            role: 'customer',
+            email: 'remembered@example.com',
+        });
+
+        render(<LoginForm />);
+
+        expect(screen.getByLabelText(/Email/i)).toHaveValue('remembered@example.com');
+        expect(screen.getByLabelText(/Ingat Saya/i)).toBeChecked();
+
+        fireEvent.change(screen.getByLabelText(/Kata Sandi/i), {
+            target: { value: 'password123' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: /Masuk/i }));
+
+        await waitFor(() => {
+            expect(authService.login).toHaveBeenCalledWith(
+                'remembered@example.com',
+                'password123',
+                true
+            );
+            expect(authService.saveRememberedLogin).toHaveBeenCalledWith(
+                'remembered@example.com',
+                true
+            );
         });
     });
 

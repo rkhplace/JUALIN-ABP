@@ -74,6 +74,36 @@ class AuthServiceTest extends TestCase
         $this->assertNotNull($user->fresh()->refresh_token);
     }
 
+    public function testLoginDoesNotPassRememberFlagAsJwtCredential()
+    {
+        $user = User::create([
+            'username' => 'remember-user',
+            'email' => 'remember@example.com',
+            'password' => 'secretpassword',
+            'role' => 'customer',
+        ]);
+
+        $guard = Mockery::mock();
+        $guard->shouldReceive('attempt')
+            ->once()
+            ->with([
+                'email' => $user->email,
+                'password' => 'secretpassword',
+            ])
+            ->andReturn('jwt-access-token');
+        $guard->shouldReceive('user')->andReturn($user);
+        Auth::shouldReceive('guard')->with('api')->andReturn($guard);
+
+        $service = new AuthService(new UserRepository());
+        $result = $service->login([
+            'email' => $user->email,
+            'password' => 'secretpassword',
+            'remember' => true,
+        ]);
+
+        $this->assertTrue($result['success']);
+    }
+
     public function testLoginBannedUserReturnsSuspensionMessage()
     {
         $user = User::create([

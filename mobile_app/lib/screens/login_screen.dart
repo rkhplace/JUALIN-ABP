@@ -21,6 +21,22 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    _loadRememberedLogin();
+  }
+
+  Future<void> _loadRememberedLogin() async {
+    final remembered = await _authService.getRememberedLogin();
+    if (!mounted) return;
+
+    setState(() {
+      _rememberMe = remembered['rememberMe'] == true;
+      _emailController.text = remembered['email']?.toString() ?? '';
+    });
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -45,7 +61,11 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    final error = await _authService.login(email, password);
+    final error = await _authService.login(
+      email,
+      password,
+      rememberMe: _rememberMe,
+    );
     if (!mounted) return;
 
     if (error == null) {
