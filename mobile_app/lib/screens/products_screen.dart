@@ -146,6 +146,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       showTopBar: false,
       showNavbar: true,
       showSearch: true,
+      showLogo: false,
       onSearch: _onSearch,
       child: Column(
         children: [

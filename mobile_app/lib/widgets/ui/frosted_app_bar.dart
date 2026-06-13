@@ -106,6 +106,7 @@ class FrostedScaffold extends StatefulWidget {
   final Widget? floatingActionButton;
   final Widget? bottomNavigationBar;
   final bool? resizeToAvoidBottomInset;
+  final bool showAppBar;
 
   const FrostedScaffold({
     super.key,
@@ -120,6 +121,7 @@ class FrostedScaffold extends StatefulWidget {
     this.floatingActionButton,
     this.bottomNavigationBar,
     this.resizeToAvoidBottomInset,
+    this.showAppBar = true,
   });
 
   @override
@@ -143,15 +145,17 @@ class _FrostedScaffoldState extends State<FrostedScaffold> {
     return Scaffold(
       backgroundColor: widget.backgroundColor ?? Colors.white,
       resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
-      appBar: FrostedAppBar(
-        title: widget.title,
-        titleWidget: widget.titleWidget,
-        actions: widget.actions,
-        leading: widget.leading,
-        automaticallyImplyLeading: widget.automaticallyImplyLeading,
-        centerTitle: widget.centerTitle,
-        scrolled: _scrolled,
-      ),
+      appBar: widget.showAppBar
+          ? FrostedAppBar(
+              title: widget.title,
+              titleWidget: widget.titleWidget,
+              actions: widget.actions,
+              leading: widget.leading,
+              automaticallyImplyLeading: widget.automaticallyImplyLeading,
+              centerTitle: widget.centerTitle,
+              scrolled: _scrolled,
+            )
+          : null,
       floatingActionButton: widget.floatingActionButton,
       bottomNavigationBar: widget.bottomNavigationBar,
       body: NotificationListener<ScrollNotification>(

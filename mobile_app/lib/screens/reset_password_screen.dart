@@ -91,11 +91,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       return;
     }
     if (password.length < 8) {
-      setState(() => _setError('Password minimal 8 karakter.'));
+      setState(() => _setError('Kata sandi minimal 8 karakter.'));
       return;
     }
     if (password != confirmation) {
-      setState(() => _setError('Konfirmasi password tidak cocok.'));
+      setState(() => _setError('Konfirmasi kata sandi tidak cocok.'));
       return;
     }
 
@@ -116,7 +116,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       setState(() {
         _isLoading = false;
         _isSuccess = true;
-        _message = 'Password berhasil direset. Silakan login kembali.';
+        _message = 'Kata sandi berhasil direset. Silakan masuk kembali.';
         _passwordController.clear();
         _confirmPasswordController.clear();
       });
@@ -221,7 +221,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               ),
                               SizedBox(height: isCompact ? 16 : 20),
                               Text(
-                                'Buat Password Baru',
+                                'Buat Kata Sandi Baru',
                                 style: TextStyle(
                                   color: const Color(0xFF111827),
                                   fontSize: titleSize,
@@ -257,7 +257,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               ),
                               SizedBox(height: isCompact ? 15 : 17),
                               _buildAuthInput(
-                                label: 'Password Baru',
+                                label: 'Kata Sandi Baru',
                                 hintText: 'Minimal 8 karakter',
                                 obscureText: !_showNewPassword,
                                 controller: _passwordController,
@@ -274,8 +274,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               _buildStrengthMeter(),
                               SizedBox(height: isCompact ? 15 : 17),
                               _buildAuthInput(
-                                label: 'Konfirmasi Password',
-                                hintText: 'Ulangi password baru',
+                                label: 'Konfirmasi Kata Sandi',
+                                hintText: 'Ulangi kata sandi baru',
                                 obscureText: !_showConfirmPassword,
                                 controller: _confirmPasswordController,
                                 textInputAction: TextInputAction.done,
@@ -330,7 +330,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                             ),
                                           )
                                         : const Text(
-                                            'Set Password Baru',
+                                            'Atur Kata Sandi Baru',
                                             style: TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.w700,
@@ -378,7 +378,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     required VoidCallback onPressed,
   }) {
     return IconButton(
-      tooltip: isVisible ? 'Sembunyikan password' : 'Tampilkan password',
+      tooltip: isVisible ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi',
       icon: Icon(
         isVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
         color: Colors.grey[600],

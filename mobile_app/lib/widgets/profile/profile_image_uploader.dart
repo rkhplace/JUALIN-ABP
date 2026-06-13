@@ -23,13 +23,14 @@ class ProfileImageUploader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: 0.055),
+            blurRadius: 24,
+            spreadRadius: -10,
+            offset: const Offset(0, 14),
           ),
         ],
       ),
@@ -56,6 +57,13 @@ class ProfileImageUploader extends StatelessWidget {
                     color: const Color(0xFFE83030),
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFE83030).withValues(alpha: 0.28),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: const Icon(
                     Icons.photo_camera_outlined,
@@ -97,8 +105,13 @@ class ProfileImageUploader extends StatelessWidget {
                   label: const Text('Ubah Foto'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFE83030),
+                    backgroundColor: const Color(0xFFFFFAFA),
                     side: const BorderSide(color: Color(0xFFFFC7C7)),
                     visualDensity: VisualDensity.compact,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
               ],

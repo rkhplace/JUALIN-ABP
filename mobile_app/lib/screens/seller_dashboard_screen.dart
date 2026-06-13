@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/seller_service.dart';
@@ -25,6 +27,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   String _sellerName = '';
   double? _profileWalletBalance;
   int _totalProducts = 0;
+  bool _didCheckVerificationBenefit = false;
 
   @override
   void initState() {
@@ -73,7 +76,124 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         _profileWalletBalance = profileWalletBalance;
         _isLoading = false;
       });
+      _maybeShowVerifiedBenefitPopup();
     }
+  }
+
+  Future<void> _maybeShowVerifiedBenefitPopup() async {
+    if (_didCheckVerificationBenefit) return;
+    _didCheckVerificationBenefit = true;
+
+    try {
+      final status = await _sellerService.getVerificationStatus();
+      final isVerified = status['is_verified'] == true;
+      if (isVerified || !mounted) return;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        showDialog<void>(
+          context: context,
+          barrierColor: Colors.black.withValues(alpha: 0.35),
+          barrierDismissible: true,
+          builder: (dialogContext) => BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+            child: Dialog(
+              backgroundColor: Colors.white,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(22)),
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEAF4FF),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.verified_user,
+                          color: Color(0xFF1D8BFF),
+                          size: 34,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Center(
+                      child: Text(
+                        'Keuntungan Penjual Terverifikasi',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.w800),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Ayo tingkatkan kepercayaan pembeli dengan menjadi penjual terverifikasi. Selesaikan target verifikasi agar badge biru tampil di tokomu.',
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 14),
+                    _benefitRow(
+                        'Badge terverifikasi tampil di profil dan produk.'),
+                    _benefitRow(
+                        'Pembeli lebih mudah percaya saat melihat toko.'),
+                    _benefitRow(
+                        'Produk terlihat lebih kredibel saat dibandingkan.'),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE83030),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text('Mengerti'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      });
+    } catch (_) {
+      // Verification benefit is informational; ignore if the status endpoint fails.
+    }
+  }
+
+  Widget _benefitRow(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.check_circle, color: Color(0xFF1D8BFF), size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                  color: Colors.black87, fontSize: 13, height: 1.35),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _formatCurrency(dynamic val) {
@@ -156,7 +276,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                               context,
                               Icons.add_box_outlined,
                               'Tambah Produk',
-                              'Upload produk baru',
+                              'Unggah produk baru',
                               () async {
                                 await Navigator.pushNamed(
                                     context, '/seller_product_new');
@@ -214,7 +334,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   }
 
   Widget _buildHeroHeader(int totalProducts, dynamic walletBalance) {
-    final displayName = _sellerName.trim().isEmpty ? 'Seller' : _sellerName;
+    final displayName = _sellerName.trim().isEmpty ? 'Penjual' : _sellerName;
 
     return Container(
       width: double.infinity,
@@ -234,6 +354,20 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
           bottomLeft: Radius.circular(44),
           bottomRight: Radius.circular(44),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x26000000),
+            blurRadius: 24,
+            spreadRadius: -8,
+            offset: Offset(0, 14),
+          ),
+          BoxShadow(
+            color: Color(0x24E83030),
+            blurRadius: 30,
+            spreadRadius: -10,
+            offset: Offset(0, 18),
+          ),
+        ],
       ),
       child: Stack(
         children: [
@@ -259,7 +393,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                 children: [
                   const Expanded(
                     child: Text(
-                      'Dashboard Penjual',
+                      'Dasbor Penjual',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -301,21 +435,48 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              Row(
+              Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  Expanded(
-                    child: _buildSummaryCard(
-                      'Total Produk',
-                      totalProducts.toString(),
-                      Icons.inventory_2_outlined,
+                  Positioned(
+                    right: 22,
+                    top: -92,
+                    child: IgnorePointer(
+                      child: Image.asset(
+                        'assets/images/seller_mascot.png',
+                        width: 118,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildSummaryCard(
-                      'Saldo Dompet',
-                      _formatCurrency(walletBalance),
-                      Icons.account_balance_wallet_outlined,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildSummaryCard(
+                          'Total Produk',
+                          totalProducts.toString(),
+                          Icons.inventory_2_outlined,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildSummaryCard(
+                          'Saldo Dompet',
+                          _formatCurrency(walletBalance),
+                          Icons.account_balance_wallet_outlined,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Positioned(
+                    right: 18,
+                    top: 0,
+                    child: IgnorePointer(
+                      child: Image.asset(
+                        'assets/images/seller_mascot_hands.png',
+                        width: 122,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                 ],

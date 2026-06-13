@@ -7,8 +7,8 @@ class NotFoundScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const FrostedScaffold(
-      title: 'NotFound Screen',
-      body: Center(child: Text("NotFound Screen Screen")),
+      title: 'Halaman Tidak Ditemukan',
+      body: Center(child: Text('Halaman tidak ditemukan')),
     );
   }
 }

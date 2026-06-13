@@ -7,8 +7,8 @@ class AuthScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const FrostedScaffold(
-      title: 'Auth Screen',
-      body: Center(child: Text("Auth Screen Screen")),
+      title: 'Autentikasi',
+      body: Center(child: Text('Halaman autentikasi')),
     );
   }
 }

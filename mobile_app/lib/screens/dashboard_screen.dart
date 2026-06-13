@@ -7,8 +7,8 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const FrostedScaffold(
-      title: 'Dashboard Screen',
-      body: Center(child: Text("Dashboard Screen Screen")),
+      title: 'Dasbor',
+      body: Center(child: Text('Halaman dasbor')),
     );
   }
 }

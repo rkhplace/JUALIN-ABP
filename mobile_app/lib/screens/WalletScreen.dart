@@ -100,8 +100,8 @@ class _WalletScreenState extends State<WalletScreen> {
                           TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   ..._transactions.map((t) {
-                    final title =
-                        t['first_item_name'] ?? 'Order #${t['order_id'] ?? ''}';
+                    final title = t['first_item_name'] ??
+                        'Pesanan #${t['order_id'] ?? ''}';
                     final amount = t['gross_amount'] ?? 0;
                     final status = t['transaction_status'] ?? '';
                     final transactionTime = t['transaction_time']?.toString();

@@ -52,8 +52,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() {
       _isLoading = false;
       _isSuccess = error == null;
-      _message =
-          error ?? 'Link reset password telah dikirim. Silakan cek email Anda.';
+      _message = error ??
+          'Tautan reset kata sandi telah dikirim. Silakan cek email Anda.';
       if (error == null) _emailController.clear();
     });
   }
@@ -130,7 +130,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               ),
                               SizedBox(height: isCompact ? 16 : 20),
                               Text(
-                                'Lupa Password',
+                                'Lupa Kata Sandi',
                                 style: TextStyle(
                                   color: const Color(0xFF111827),
                                   fontSize: titleSize,
@@ -140,7 +140,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               ),
                               const SizedBox(height: 8),
                               const Text(
-                                'Masukkan email Anda untuk menerima tautan reset password.',
+                                'Masukkan email Anda untuk menerima tautan reset kata sandi.',
                                 style: TextStyle(
                                   color: Color(0xFF566174),
                                   fontSize: 13,
@@ -199,7 +199,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                             ),
                                           )
                                         : const Text(
-                                            'Kirim Link Reset',
+                                            'Kirim Tautan Reset',
                                             style: TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.w700,

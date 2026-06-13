@@ -19,25 +19,67 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
     with WidgetsBindingObserver {
   final PaymentService _paymentService = PaymentService();
   final EscrowService _escrowService = EscrowService();
+  final TextEditingController _searchController = TextEditingController();
 
   List<dynamic> _purchases = [];
   bool _isLoading = true;
   String? _errorMessage;
   bool _isProcessingAction = false;
+  String _statusFilter = 'all';
 
   bool _isWaitingForPayment = false;
   String? _currentOrderId;
+
+  List<dynamic> get _filteredPurchases {
+    final query = _searchController.text.trim().toLowerCase();
+
+    return _purchases.where((purchase) {
+      final p = purchase as Map<String, dynamic>;
+      final status =
+          p['transaction_status']?.toString().toLowerCase() ?? 'pending';
+      final statusMatches = switch (_statusFilter) {
+        'pending' => status == 'pending',
+        'waiting_cod' => status == 'waiting_cod',
+        'completed' => status == 'verified' ||
+            status == 'completed' ||
+            status == 'settlement' ||
+            status == 'capture' ||
+            status == 'paid',
+        'refunded' => status == 'refunded' || status == 'cancelled',
+        _ => true,
+      };
+
+      if (!statusMatches) return false;
+      if (query.isEmpty) return true;
+
+      final transactionInfo = p['transaction'] as Map<String, dynamic>? ?? {};
+      final searchable = [
+        p['order_id'],
+        p['first_item_name'],
+        p['seller_name'],
+        p['transaction_time'],
+        p['gross_amount'],
+        transactionInfo['auth_code'],
+        _statusLabel(status),
+        status,
+      ].whereType<Object>().join(' ').toLowerCase();
+
+      return searchable.contains(query);
+    }).toList();
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _searchController.addListener(() => setState(() {}));
     _fetchHistory();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -164,7 +206,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
                       ),
                     ),
                     const Text(
-                      'Request Refund',
+                      'Ajukan Pengembalian Dana',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -177,7 +219,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
                     ),
                     const SizedBox(height: 18),
                     const Text(
-                      'Alasan refund',
+                      'Alasan pengembalian dana',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.black54,
@@ -249,12 +291,12 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
                           }
                         },
                         decoration: InputDecoration(
-                          hintText: 'Tulis alasan refund',
+                          hintText: 'Tulis alasan pengembalian dana',
                           hintStyle: const TextStyle(fontSize: 13),
                           filled: true,
                           fillColor: const Color(0xFFF8F8F8),
                           errorText: customReasonError
-                              ? 'Alasan refund wajib diisi.'
+                              ? 'Alasan pengembalian dana wajib diisi.'
                               : null,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -311,7 +353,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
 
                               Navigator.pop(sheetContext, reason);
                             },
-                            child: const Text('Ya, Refund'),
+                            child: const Text('Ya, Ajukan'),
                           ),
                         ),
                       ],
@@ -407,7 +449,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
               ),
               SizedBox(height: 12),
               Text(
-                'Dana refund telah dikembalikan ke saldo Jualin Anda.',
+                'Dana pengembalian telah masuk ke saldo Jualin Anda.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.black54, fontSize: 13),
               ),
@@ -498,13 +540,15 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
   Widget build(BuildContext context) {
     return FrostedScaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      title: 'Riwayat Pembelian',
+      showAppBar: false,
       body: Stack(
         children: [
-          RefreshIndicator(
-            color: const Color(0xFFE83030),
-            onRefresh: _fetchHistory,
-            child: _buildBody(),
+          SafeArea(
+            child: RefreshIndicator(
+              color: const Color(0xFFE83030),
+              onRefresh: _fetchHistory,
+              child: _buildBody(),
+            ),
           ),
           if (_isProcessingAction)
             Container(
@@ -563,12 +607,36 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
       );
     }
 
+    final purchases = _filteredPurchases;
+
     return ListView.separated(
       padding: const EdgeInsets.all(16),
-      itemCount: _purchases.length,
+      itemCount: purchases.length + 1,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        final p = _purchases[index];
+        if (index == 0) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildPageHeader(purchases.length),
+              const SizedBox(height: 14),
+              _buildSearchAndFilterBar(),
+              if (purchases.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(top: 80),
+                  child: Center(
+                    child: Text(
+                      'Tidak ada riwayat sesuai pencarian atau filter.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        }
+
+        final p = purchases[index - 1];
         final String status =
             p['transaction_status']?.toString().toLowerCase() ?? 'pending';
 
@@ -579,7 +647,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
         final bool isPending = displayStatus == 'pending';
 
         final String title =
-            p['first_item_name']?.toString() ?? 'Order #${p['order_id']}';
+            p['first_item_name']?.toString() ?? 'Pesanan #${p['order_id']}';
         final String subtitle = p['seller_name']?.toString() ?? 'Penjual';
         final transactionInfo = p['transaction'] as Map<String, dynamic>? ?? {};
         final refundReason = p['refund_reason']?.toString() ??
@@ -777,7 +845,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
                                   ),
                                   onPressed: () =>
                                       _handleRefund(p['transaction_id']),
-                                  child: const Text('Refund Dana',
+                                  child: const Text('Kembalikan Dana',
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold)),
                                 ),
@@ -804,7 +872,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Alasan refund: $refundReason',
+                          'Alasan pengembalian dana: $refundReason',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.black87,
@@ -831,6 +899,319 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildPageHeader(int purchaseCount) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE83030), Color(0xFFF64A4A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE83030).withValues(alpha: 0.22),
+            blurRadius: 24,
+            spreadRadius: -8,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -24,
+            top: -30,
+            child: Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.13),
+                  width: 2,
+                ),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(15),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                ),
+                child: const Icon(
+                  Icons.receipt_long_outlined,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Riwayat Pembelian',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '$purchaseCount transaksi ditampilkan',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchAndFilterBar() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 18,
+            spreadRadius: -8,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Cari riwayat...',
+                prefixIcon:
+                    const Icon(Icons.search, color: Colors.black45, size: 20),
+                suffixIcon: _searchController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: _searchController.clear,
+                      ),
+                filled: true,
+                fillColor: const Color(0xFFF7F7F7),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            height: 48,
+            width: 48,
+            child: ElevatedButton(
+              onPressed: _showHistoryFilterSheet,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE83030),
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Icon(Icons.tune),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showHistoryFilterSheet() {
+    var tempStatus = _statusFilter;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 42,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.black12,
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Filter Riwayat',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Status Transaksi',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _historyFilterChip(
+                          label: 'Semua',
+                          active: tempStatus == 'all',
+                          onTap: () => setSheetState(() => tempStatus = 'all'),
+                        ),
+                        _historyFilterChip(
+                          label: 'Menunggu Bayar',
+                          active: tempStatus == 'pending',
+                          onTap: () =>
+                              setSheetState(() => tempStatus = 'pending'),
+                        ),
+                        _historyFilterChip(
+                          label: 'Menunggu COD',
+                          active: tempStatus == 'waiting_cod',
+                          onTap: () =>
+                              setSheetState(() => tempStatus = 'waiting_cod'),
+                        ),
+                        _historyFilterChip(
+                          label: 'Selesai',
+                          active: tempStatus == 'completed',
+                          onTap: () =>
+                              setSheetState(() => tempStatus = 'completed'),
+                        ),
+                        _historyFilterChip(
+                          label: 'Dana Dikembalikan',
+                          active: tempStatus == 'refunded',
+                          onTap: () =>
+                              setSheetState(() => tempStatus = 'refunded'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setState(() => _statusFilter = 'all');
+                              Navigator.pop(context);
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFE83030),
+                              side: const BorderSide(color: Color(0xFFE83030)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const Text('Reset'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              setState(() => _statusFilter = tempStatus);
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE83030),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const Text('Terapkan'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _historyFilterChip({
+    required String label,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: active ? const Color(0xFFE83030) : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: active
+                ? const Color(0xFFE83030)
+                : Colors.black.withValues(alpha: 0.16),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (active) ...[
+              const Icon(Icons.check, color: Colors.white, size: 16),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: active ? Colors.white : Colors.black54,
+                fontWeight: active ? FontWeight.bold : FontWeight.w500,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

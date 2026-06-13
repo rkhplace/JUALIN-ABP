@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/user.dart';
@@ -91,8 +93,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content:
-            Text('Link reset telah dikirim ke email Anda. Silakan cek inbox.'),
+        content: Text(
+            'Tautan reset telah dikirim ke email Anda. Silakan cek kotak masuk.'),
         backgroundColor: Colors.green,
       ),
     );
@@ -102,52 +104,107 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<bool?> _showLogoutConfirmation() {
     return showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        backgroundColor: Colors.white,
-        title: const Text(
-          'Konfirmasi Logout',
-          style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        content: const Text(
-          'Apakah Anda yakin ingin keluar?',
-          style: TextStyle(
-            color: Colors.black54,
-            fontSize: 14,
-          ),
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        actionsAlignment: MainAxisAlignment.end,
-        actions: [
-          TextButton(
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFFE83030),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-                side: const BorderSide(color: Color(0xFFE83030)),
-              ),
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      builder: (dialogContext) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 34,
+                  spreadRadius: -12,
+                  offset: const Offset(0, 18),
+                ),
+              ],
             ),
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE83030),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEEEE),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(
+                    Icons.logout_rounded,
+                    color: Color(0xFFE83030),
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Konfirmasi Keluar',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Apakah Anda yakin ingin keluar dari akun Jualin?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFE83030),
+                          side: const BorderSide(color: Color(0xFFFFC7C7)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        child: const Text(
+                          'Batal',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE83030),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(dialogContext).pop(true),
+                        child: const Text(
+                          'Ya, Keluar',
+                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Logout'),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -178,8 +235,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 if (_userRole != 'seller') ...[
                                   _buildWalletBalanceCard(_user!),
                                   const SizedBox(height: 12),
-                                  _buildPurchaseHistoryMenu(),
-                                  const SizedBox(height: 12),
                                 ] else ...[
                                   _buildVerificationMission(_user!),
                                   const SizedBox(height: 12),
@@ -202,9 +257,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 _buildProfileMenuItem(
                                   icon: Icons.lock_reset_outlined,
                                   title: _isSendingResetLink
-                                      ? 'Mengirim link reset...'
-                                      : 'Ubah Password',
-                                  subtitle: 'Ganti password akun Anda',
+                                      ? 'Mengirim tautan reset...'
+                                      : 'Ubah Kata Sandi',
+                                  subtitle: 'Ganti kata sandi akun Anda',
                                   isOutlined: true,
                                   isLoading: _isSendingResetLink,
                                   onTap: _isSendingResetLink
@@ -227,7 +282,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 const SizedBox(height: 12),
                                 _buildProfileMenuItem(
                                   icon: Icons.logout_outlined,
-                                  title: 'Logout',
+                                  title: 'Keluar',
                                   subtitle: 'Keluar dari akun Anda',
                                   isDanger: true,
                                   showChevron: false,
@@ -251,15 +306,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
       ),
-    );
-  }
-
-  Widget _buildPurchaseHistoryMenu() {
-    return _buildProfileMenuItem(
-      icon: Icons.receipt_long_outlined,
-      title: 'Riwayat Pembelian',
-      subtitle: 'Lihat pesanan dan transaksi Anda',
-      onTap: () => Navigator.pushNamed(context, '/purchase_history'),
     );
   }
 
@@ -400,14 +446,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Jualin',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
                   const Spacer(),
                   InkWell(
                     borderRadius: BorderRadius.circular(12),
@@ -448,17 +486,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.only(top: 98),
+          padding: const EdgeInsets.only(top: 90),
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 26,
+                      spreadRadius: -5,
+                      offset: const Offset(0, 14),
+                    ),
+                    BoxShadow(
+                      color: const Color(0xFFE83030).withValues(alpha: 0.16),
+                      blurRadius: 22,
+                      spreadRadius: -8,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
                 child: CircleAvatar(
-                  radius: 48,
+                  radius: 52,
                   backgroundColor: const Color(0xFFF1F1F1),
                   backgroundImage: user.avatarUrl.isNotEmpty
                       ? NetworkImage(user.avatarUrl)
@@ -466,7 +518,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: user.avatarUrl.isEmpty
                       ? const Icon(
                           Icons.person,
-                          size: 48,
+                          size: 50,
                           color: Colors.grey,
                         )
                       : null,
@@ -920,7 +972,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildInfoRow('Tempat Lahir', user.birthPlace),
                   _buildInfoRow('Tanggal Lahir', user.birthday),
                   _buildInfoRow(
-                      'Role', _userRole == 'seller' ? 'Penjual' : 'Pembeli'),
+                      'Peran', _userRole == 'seller' ? 'Penjual' : 'Pembeli'),
                   _buildInfoRow('Status Akun', user.status),
                   _buildInfoRow(
                     'Status Verifikasi',
