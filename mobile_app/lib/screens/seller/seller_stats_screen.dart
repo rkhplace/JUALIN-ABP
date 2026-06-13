@@ -57,7 +57,7 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
     } else if (val is String) {
       amount = double.tryParse(val)?.toInt() ?? 0;
     }
-    return 'Rp ${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
+    return 'Rp${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
   }
 
   @override

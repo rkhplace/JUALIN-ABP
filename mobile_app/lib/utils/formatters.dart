@@ -10,7 +10,7 @@ String formatCurrency(dynamic amount) {
 
   return NumberFormat.currency(
     locale: 'id_ID',
-    symbol: 'Rp. ',
+    symbol: 'Rp',
     decimalDigits: 0,
   ).format(value);
 }

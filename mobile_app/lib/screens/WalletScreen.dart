@@ -52,7 +52,7 @@ class _WalletScreenState extends State<WalletScreen> {
     } else if (amount is String) {
       val = double.tryParse(amount)?.toInt() ?? 0;
     }
-    return 'Rp ${val.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
+    return 'Rp${val.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
   }
 
   @override

@@ -1221,9 +1221,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   Widget _buildImageBubble(ChatMessage msg, bool isMe) {
     final imageUrl = ImageUrlHelper.resolve(msg.message);
-    final time = msg.sentAt != null
-        ? '${msg.sentAt!.hour.toString().padLeft(2, '0')}:${msg.sentAt!.minute.toString().padLeft(2, '0')}'
-        : '';
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -1270,71 +1267,30 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment:
-                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: AspectRatio(
-                      aspectRatio: 1,
-                      child: imageUrl.isNotEmpty
-                          ? Image.network(
-                              imageUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                color: Colors.grey[100],
-                                child: const Icon(
-                                  Icons.broken_image_outlined,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            )
-                          : Container(
-                              color: Colors.grey[100],
-                              child: const Icon(
-                                Icons.image_outlined,
-                                color: Colors.grey,
-                              ),
-                            ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.image_outlined,
-                          size: 13,
-                          color: isMe ? Colors.white : const Color(0xFFE83030),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Foto Produk',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color:
-                                isMe ? Colors.white : const Color(0xFFE83030),
-                          ),
-                        ),
-                        if (time.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            time,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: isMe
-                                  ? Colors.white.withValues(alpha: 0.75)
-                                  : Colors.black38,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: imageUrl.isNotEmpty
+                      ? Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: Colors.grey[100],
+                            child: const Icon(
+                              Icons.broken_image_outlined,
+                              color: Colors.grey,
                             ),
                           ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
+                        )
+                      : Container(
+                          color: Colors.grey[100],
+                          child: const Icon(
+                            Icons.image_outlined,
+                            color: Colors.grey,
+                          ),
+                        ),
+                ),
               ),
             ),
           ),

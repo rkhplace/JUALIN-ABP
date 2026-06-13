@@ -15,12 +15,6 @@ export const profileService = {
   },
 
   async updateProfile(profileData, imageFile = null) {
-    const storedUser = typeof window !== 'undefined'
-      ? JSON.parse(localStorage.getItem('user') || 'null')
-      : null;
-    const userId = storedUser?.id;
-    if (!userId) throw new Error('User ID not found. Please login again.');
-
     const birthday = normalizeDateString(profileData.birthday);
     let response;
 
@@ -32,18 +26,20 @@ export const profileService = {
       formData.append('birthday', birthday ?? '');
       formData.append('region', profileData.region || '');
       formData.append('city', profileData.city || '');
+      formData.append('phone', profileData.phone || '');
       formData.append('bio', profileData.bio || '');
       formData.append('profile_picture', imageFile);
 
-      response = await fetcher.upload(`/api/v1/users/${userId}/update?_method=PATCH`, formData);
+      response = await fetcher.upload('/api/v1/profile/update?_method=PATCH', formData);
     } else {
-      response = await fetcher.post(`/api/v1/users/${userId}/update?_method=PATCH`, {
+      response = await fetcher.post('/api/v1/profile/update?_method=PATCH', {
         username: profileData.username,
         email: profileData.email,
         gender: profileData.gender || 'male',
         birthday,
         region: profileData.region || '',
         city: profileData.city || '',
+        phone: profileData.phone || '',
         bio: profileData.bio || '',
       });
     }

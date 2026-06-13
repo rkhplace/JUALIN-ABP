@@ -2,45 +2,30 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Responses\ApiResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\File;
+use App\Services\UserService;
 
 class ProfileController extends Controller
 {
-    public function update(Request $request)
+    public function __construct(private readonly UserService $userService)
     {
-        try {
-            $fullName = $request->input('fullName', '');
-            $email = $request->input('email', '');
-            $phone = $request->input('phone', '');
-            $location = $request->input('location', '');
-            $bio = $request->input('bio', '');
-            $profilePicturePath = $request->input('profilePicture', '');
+    }
 
-            if ($request->hasFile('profilePicture')) {
-                $file = $request->file('profilePicture');
-                $dir = public_path('uploads/profile');
-                if (!File::exists($dir)) {
-                    File::makeDirectory($dir, 0755, true);
-                }
-                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $file->move($dir, $filename);
-                $profilePicturePath = '/uploads/profile/' . $filename;
-            }
+    public function update(UpdateProfileRequest $request)
+    {
+        $user = $request->user();
+        $data = $request->validated();
 
-            $data = [
-                'fullName' => $fullName,
-                'email' => $email,
-                'phone' => $phone,
-                'location' => $location,
-                'bio' => $bio,
-                'profilePicture' => $profilePicturePath,
-            ];
-
-            return ApiResponse::success('Profile updated', $data);
-        } catch (\Throwable $e) {
-            return ApiResponse::error('Update failed', 500);
+        if ($request->hasFile('profile_picture')) {
+            $data['profile_picture'] = $request->file('profile_picture');
         }
+
+        $updatedUser = $this->userService->update($user->id, $data);
+
+        return ApiResponse::success(
+            'Profile updated',
+            $updatedUser->fresh()
+        );
     }
 }

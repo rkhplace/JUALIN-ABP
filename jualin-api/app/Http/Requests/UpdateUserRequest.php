@@ -34,6 +34,7 @@ class UpdateUserRequest extends FormRequest
             'birthday' => 'sometimes|nullable|date',
             'region'   => 'sometimes|nullable|string',
             'city'     => 'sometimes|nullable|string',
+            'phone'    => 'sometimes|nullable|string|max:20',
             'followers' => 'sometimes|nullable|integer|min:0',
             'following' => 'sometimes|nullable|integer|min:0',
         ];

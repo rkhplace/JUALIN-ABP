@@ -29,7 +29,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   final _phoneController = TextEditingController();
   final _regionController = TextEditingController();
   final _cityController = TextEditingController();
-  final _birthPlaceController = TextEditingController();
   final _birthdayController = TextEditingController();
   final _bioController = TextEditingController();
 
@@ -53,7 +52,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     _phoneController.dispose();
     _regionController.dispose();
     _cityController.dispose();
-    _birthPlaceController.dispose();
     _birthdayController.dispose();
     _bioController.dispose();
     super.dispose();
@@ -79,7 +77,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         _phoneController.text = user.phone;
         _regionController.text = user.region;
         _cityController.text = user.city;
-        _birthPlaceController.text = user.birthPlace;
         _birthdayController.text = user.birthday;
         _bioController.text = user.bio;
         _gender = user.gender;
@@ -207,7 +204,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
     try {
       await _profileService.updateProfile(
-        userId: _user!.id,
         username: _nameController.text.trim(),
         email: _emailController.text.trim(),
         gender: _gender.isEmpty ? null : _gender,
@@ -216,6 +212,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             : _birthdayController.text.trim(),
         region: _regionController.text.trim(),
         city: _cityController.text.trim(),
+        phone: _phoneController.text.trim(),
         bio: _bioController.text.trim(),
         profilePicture: _selectedProfileImage,
       );
@@ -286,6 +283,21 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                                   value == null || !value.contains('@')
                                       ? 'Email tidak valid'
                                       : null,
+                            ),
+                            _buildTextField(
+                              controller: _phoneController,
+                              label: 'Nomor HP',
+                              icon: Icons.phone_outlined,
+                              keyboardType: TextInputType.phone,
+                              validator: (value) {
+                                final phone = value?.trim() ?? '';
+                                if (phone.isEmpty) return null;
+                                if (!RegExp(r'^[0-9+ -]{8,20}$')
+                                    .hasMatch(phone)) {
+                                  return 'Nomor HP tidak valid';
+                                }
+                                return null;
+                              },
                             ),
                             _buildGenderField(),
                             _buildTextField(
