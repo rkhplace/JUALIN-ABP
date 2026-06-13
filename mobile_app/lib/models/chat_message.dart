@@ -43,6 +43,7 @@ class ChatMessage {
   }
 
   bool get isProductPreview => type == 'product' && product != null;
+  bool get isImage => type == 'image' && message.isNotEmpty;
 
   static ChatProduct? _parseProduct(dynamic value) {
     if (value is Map<String, dynamic>) {

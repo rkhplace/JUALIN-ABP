@@ -48,6 +48,7 @@ class ChatController extends Controller
                     ] : null,
                     'latest_message' => $latest ? [
                         'message'    => $latest->message,
+                        'type'       => $latest->type ?? 'text',
                         'sent_at'    => $latest->sent_at,
                         'sender_id'  => $latest->sender_id,
                         'is_read'    => $latest->is_read,
@@ -116,16 +117,25 @@ class ChatController extends Controller
         }
 
         $request->validate([
-            'message'      => 'required|string|max:2000',
-            'type'         => 'sometimes|string|in:text,product',
+            'message'      => 'required_without:image|nullable|string|max:2000',
+            'type'         => 'sometimes|string|in:text,product,image',
             'product_data' => 'sometimes|array',
+            'image'        => 'sometimes|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
+
+        $type = $request->hasFile('image') ? 'image' : $request->input('type', 'text');
+        $messageText = trim((string) $request->input('message', ''));
+
+        if ($type === 'image') {
+            $imagePath = $request->file('image')->store('chat-images', 'public');
+            $messageText = url('/api/v1/files/' . $imagePath);
+        }
 
         $message = ChatMessage::create([
             'chat_room_id' => $roomId,
             'sender_id'    => $user->id,
-            'message'      => $request->message,
-            'type'         => $request->input('type', 'text'),
+            'message'      => $messageText,
+            'type'         => $type,
             'product_data' => $request->input('product_data'),
             'sent_at'      => now(),
             'is_read'      => false,
@@ -135,7 +145,10 @@ class ChatController extends Controller
         $room->touch();
 
         $message->load('sender:id,username,profile_picture');
-        $this->notifyRoomMembers($room, $user->id, $user->username ?? 'Pengguna', $message->message);
+        $notificationBody = $type === 'image'
+            ? 'Mengirim foto di chat'
+            : $message->message;
+        $this->notifyRoomMembers($room, $user->id, $user->username ?? 'Pengguna', $notificationBody);
 
         return ApiResponse::success('Message sent', $message, 201);
     }

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import '../models/chat_room.dart';
 import '../models/chat_message.dart';
@@ -132,6 +134,33 @@ class ChatService {
       throw Exception('Gagal mengirim pesan: ${e.message}');
     } catch (e) {
       debugPrint('[ChatService] sendMessage error: $e');
+      throw Exception('Tidak dapat terhubung ke server: $e');
+    }
+  }
+
+  Future<ChatMessage?> sendImageMessage(int roomId, File imageFile) async {
+    try {
+      debugPrint('[ChatService] sendImageMessage(roomId=$roomId)');
+      final response = await _client.postMultipart(
+        ApiConfig.chatMessages(roomId),
+        {'type': 'image'},
+        imageFile: imageFile,
+        imageField: 'image',
+      );
+
+      final data = response['data'];
+      if (data is Map<String, dynamic>) {
+        return ChatMessage.fromJson(data);
+      }
+      debugPrint(
+          '[ChatService] sendImageMessage: unexpected data type: ${data.runtimeType}');
+      return null;
+    } on ApiException catch (e) {
+      debugPrint(
+          '[ChatService] sendImageMessage ApiException: ${e.statusCode} ${e.message}');
+      throw Exception('Gagal mengirim gambar: ${e.message}');
+    } catch (e) {
+      debugPrint('[ChatService] sendImageMessage error: $e');
       throw Exception('Tidak dapat terhubung ke server: $e');
     }
   }

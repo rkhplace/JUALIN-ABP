@@ -99,12 +99,14 @@ class ChatUser {
 
 class ChatPreviewMessage {
   final String message;
+  final String type;
   final DateTime? sentAt;
   final int senderId;
   final bool isRead;
 
   ChatPreviewMessage({
     required this.message,
+    this.type = 'text',
     this.sentAt,
     required this.senderId,
     required this.isRead,
@@ -113,6 +115,7 @@ class ChatPreviewMessage {
   factory ChatPreviewMessage.fromJson(Map<String, dynamic> json) {
     return ChatPreviewMessage(
       message: json['message']?.toString() ?? '',
+      type: json['type']?.toString() ?? 'text',
       sentAt: json['sent_at'] != null
           ? DateTime.tryParse(json['sent_at'].toString())
           : null,
