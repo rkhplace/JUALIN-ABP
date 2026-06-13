@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/ui/app_chrome.dart';
 import '../widgets/ui/login_required_dialog.dart';
@@ -189,7 +191,11 @@ class _ChatScreenState extends State<ChatScreen> {
     final other = room.otherUser;
     final latest = room.latestMessage;
     final name = other?.username ?? 'Ruang Chat #${room.id}';
-    final preview = latest?.message ?? 'Mulai percakapan...';
+    final preview = latest == null
+        ? 'Mulai percakapan...'
+        : latest.type == 'image'
+            ? 'Mengirim foto'
+            : latest.message;
     final time = room.updatedAt != null
         ? '${room.updatedAt!.day}/${room.updatedAt!.month}'
         : '';
@@ -324,10 +330,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final ChatService _chatService = ChatService();
   final TextEditingController _msgController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final ImagePicker _imagePicker = ImagePicker();
 
   List<ChatMessage> _messages = [];
   bool _isLoading = true;
   bool _isSending = false;
+  bool _isSendingImage = false;
   bool _isFetchingMessages = false;
   String? _errorMessage;
   int? _currentUserId; // real authenticated user ID for bubble alignment
@@ -463,10 +471,131 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           _isSending = false;
         });
         _scrollToBottom();
+      } else if (mounted) {
+        setState(() => _isSending = false);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isSending = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickAndSendImage() async {
+    if (_isSending || _isSendingImage) return;
+
+    final source = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.black12,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Kirim Foto',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Bagikan kondisi barang, kelengkapan, atau bukti pengiriman.',
+                style: TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildImageSourceButton(
+                      icon: Icons.photo_camera_outlined,
+                      label: 'Kamera',
+                      onTap: () => Navigator.pop(
+                        sheetContext,
+                        'camera',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildImageSourceButton(
+                      icon: Icons.photo_library_outlined,
+                      label: 'Galeri',
+                      onTap: () => Navigator.pop(
+                        sheetContext,
+                        'gallery',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      final pickedImages = <XFile>[];
+      if (source == 'gallery') {
+        pickedImages.addAll(
+          await _imagePicker.pickMultiImage(
+            imageQuality: 82,
+            maxWidth: 1600,
+          ),
+        );
+      } else {
+        final picked = await _imagePicker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 82,
+          maxWidth: 1600,
+        );
+        if (picked != null) pickedImages.add(picked);
+      }
+
+      if (pickedImages.isEmpty) return;
+
+      if (mounted) setState(() => _isSendingImage = true);
+
+      for (final picked in pickedImages) {
+        final sent = await _chatService.sendImageMessage(
+          widget.roomId,
+          File(picked.path),
+        );
+
+        if (!mounted) return;
+        if (sent != null) {
+          setState(() => _messages.add(sent));
+          _scrollToBottom();
+        }
+      }
+
+      if (mounted) setState(() => _isSendingImage = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSendingImage = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceFirst('Exception: ', '')),
@@ -552,6 +681,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (msg.isProductPreview) {
       return _buildProductBubble(msg, isMe);
     }
+    if (msg.isImage) {
+      return _buildImageBubble(msg, isMe);
+    }
 
     // ─── Debug: verify alignment logic ───────────────────────────────────────
     debugPrint(
@@ -615,6 +747,129 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           color: isMe
                               ? Colors.white.withValues(alpha: 0.7)
                               : Colors.black38)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageBubble(ChatMessage msg, bool isMe) {
+    final imageUrl = ImageUrlHelper.resolve(msg.message);
+    final time = msg.sentAt != null
+        ? '${msg.sentAt!.hour.toString().padLeft(2, '0')}:${msg.sentAt!.minute.toString().padLeft(2, '0')}'
+        : '';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment:
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!isMe) ...[
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: Colors.grey[200],
+              child: Text(
+                (msg.sender?.username ?? '?')[0].toUpperCase(),
+                style: const TextStyle(fontSize: 11, color: Colors.black54),
+              ),
+            ),
+            const SizedBox(width: 6),
+          ],
+          Flexible(
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.72,
+              ),
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: isMe ? const Color(0xFFE83030) : Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(18),
+                  topRight: const Radius.circular(18),
+                  bottomLeft: Radius.circular(isMe ? 18 : 6),
+                  bottomRight: Radius.circular(isMe ? 6 : 18),
+                ),
+                border: Border.all(
+                  color:
+                      isMe ? const Color(0xFFE83030) : const Color(0xFFFFD6D6),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment:
+                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: imageUrl.isNotEmpty
+                          ? Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: Colors.grey[100],
+                                child: const Icon(
+                                  Icons.broken_image_outlined,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            )
+                          : Container(
+                              color: Colors.grey[100],
+                              child: const Icon(
+                                Icons.image_outlined,
+                                color: Colors.grey,
+                              ),
+                            ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.image_outlined,
+                          size: 13,
+                          color: isMe ? Colors.white : const Color(0xFFE83030),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Foto Produk',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color:
+                                isMe ? Colors.white : const Color(0xFFE83030),
+                          ),
+                        ),
+                        if (time.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            time,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: isMe
+                                  ? Colors.white.withValues(alpha: 0.75)
+                                  : Colors.black38,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -779,7 +1034,45 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
+  Widget _buildImageSourceButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFEFEF),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: const Color(0xFFE83030).withValues(alpha: 0.18),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: const Color(0xFFE83030), size: 24),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFFE83030),
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildInputBar() {
+    final isBusy = _isSending || _isSendingImage;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
       decoration: BoxDecoration(
@@ -795,9 +1088,40 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       child: SafeArea(
         child: Row(
           children: [
+            GestureDetector(
+              onTap: isBusy ? null : _pickAndSendImage,
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: _isSendingImage
+                      ? const Color(0xFFE83030).withValues(alpha: 0.12)
+                      : const Color(0xFFFFEFEF),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFFE83030).withValues(alpha: 0.18),
+                  ),
+                ),
+                child: _isSendingImage
+                    ? const Padding(
+                        padding: EdgeInsets.all(11),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFFE83030),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.add_photo_alternate_outlined,
+                        color: Color(0xFFE83030),
+                        size: 21,
+                      ),
+              ),
+            ),
+            const SizedBox(width: 8),
             Expanded(
               child: TextField(
                 controller: _msgController,
+                enabled: !isBusy,
                 minLines: 1,
                 maxLines: 4,
                 textCapitalization: TextCapitalization.sentences,
@@ -817,7 +1141,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            _isSending
+            isBusy
                 ? const SizedBox(
                     width: 40,
                     height: 40,
