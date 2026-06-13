@@ -9,7 +9,7 @@ import { ChatContext } from "@/context/ChatProvider";
 
 export function ChatInterface() {
   const { user, loading: authLoading } = useContext(AuthContext);
-  const { chats, currentChat, messages, selectChat, sendMessage, loading } =
+  const { chats, currentChat, messages, selectChat, sendMessage, sendImages, loading } =
     useContext(ChatContext);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -36,6 +36,15 @@ export function ChatInterface() {
       await sendMessage(text.trim());
     } catch {
       alert("Failed to send message. Please try again.");
+    }
+  };
+
+  const handleSendImages = async (files) => {
+    if (!files?.length) return;
+    try {
+      await sendImages(files);
+    } catch {
+      alert("Failed to send image. Please try again.");
     }
   };
 
@@ -117,6 +126,7 @@ export function ChatInterface() {
           chat={currentChat}
           messages={messages}
           onSend={handleSend}
+          onSendImages={handleSendImages}
         />
       </div>
     </div>
