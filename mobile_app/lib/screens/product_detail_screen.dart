@@ -29,7 +29,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Product? _product;
   bool _isLoading = true;
   bool _isChatLoading = false;
-  bool _verifiedPopupChecked = false;
   int _activeImageIndex = 0;
   String? _errorMessage;
 
@@ -78,9 +77,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           _activeImageIndex = 0;
           _isLoading = false;
         });
-        if (product != null) {
-          _maybeShowVerifiedSellerPopup(product);
-        }
       }
     } catch (e) {
       if (mounted) {
@@ -92,79 +88,73 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  Future<void> _maybeShowVerifiedSellerPopup(Product product) async {
-    if (_verifiedPopupChecked || !product.sellerIsVerified) return;
-    _verifiedPopupChecked = true;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      showDialog<void>(
-        context: context,
-        barrierColor: Colors.black.withValues(alpha: 0.35),
-        barrierDismissible: true,
-        builder: (dialogContext) => BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-          child: Dialog(
-            backgroundColor: Colors.white,
-            insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-            child: Padding(
-              padding: const EdgeInsets.all(22),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFEAF4FF),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.verified,
-                      color: Color(0xFF1D8BFF),
-                      size: 36,
-                    ),
+  Future<void> _showVerifiedSellerPopup(Product product) {
+    return showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      barrierDismissible: true,
+      builder: (dialogContext) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Dialog(
+          backgroundColor: Colors.white,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+          child: Padding(
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEAF4FF),
+                    shape: BoxShape.circle,
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Penjual Terverifikasi',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-                    textAlign: TextAlign.center,
+                  child: const Icon(
+                    Icons.verified,
+                    color: Color(0xFF1D8BFF),
+                    size: 36,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${product.sellerName} sudah melewati proses verifikasi Jualin. Badge ini membantu kamu membedakan penjual yang sudah tervalidasi dengan yang belum.',
-                    style: const TextStyle(
-                      color: Colors.black54,
-                      fontSize: 13,
-                      height: 1.45,
-                    ),
-                    textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Penjual Terverifikasi',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${product.sellerName} sudah melewati proses verifikasi Jualin. Badge ini membantu kamu membedakan penjual yang sudah tervalidasi dengan yang belum.',
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 13,
+                    height: 1.45,
                   ),
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE83030),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE83030),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Text('Mengerti'),
                     ),
+                    child: const Text('Mengerti'),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
-      );
-    });
+      ),
+    );
   }
 
   @override
@@ -992,11 +982,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ),
                   if (product.sellerIsVerified) ...[
-                    const SizedBox(width: 5),
-                    const Icon(
-                      Icons.verified,
-                      size: 15,
-                      color: Color(0xFF1D8BFF),
+                    const SizedBox(width: 2),
+                    Tooltip(
+                      message: 'Informasi penjual terverifikasi',
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () => _showVerifiedSellerPopup(product),
+                        child: const Padding(
+                          padding: EdgeInsets.all(3),
+                          child: Icon(
+                            Icons.verified,
+                            size: 15,
+                            color: Color(0xFF1D8BFF),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ],

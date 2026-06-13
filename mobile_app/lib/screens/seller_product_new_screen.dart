@@ -45,6 +45,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
   SellerProduct? _editingProduct;
   File? _selectedImage;
   bool _isLoading = false;
+  bool _isFormattingStock = false;
   String? _errorMessage;
   bool _didInitializeEditData = false;
   String? _selectedCategory;
@@ -65,7 +66,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
           ? args.condition
           : 'used';
       _priceController.text = _formatPriceInput(args.price.toString());
-      _stockController.text = args.stock.toString();
+      _stockController.text = _formatPriceInput(args.stock.toString());
       _descriptionController.text = args.description;
     }
     _didInitializeEditData = true;
@@ -83,7 +84,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
   Future<void> _handleSave() async {
     final name = _nameController.text.trim();
     final price = _priceController.text.replaceAll(RegExp(r'[^0-9]'), '');
-    final stock = _stockController.text.trim();
+    final stock = _stockController.text.replaceAll(RegExp(r'[^0-9]'), '');
     final description = _descriptionController.text.trim();
     final priceValue = int.tryParse(price);
     final stockValue = int.tryParse(stock);
@@ -184,8 +185,8 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
 
   String _formatCurrencyPreview(String value) {
     final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.isEmpty) return 'Rp 0';
-    return 'Rp ${_formatPriceInput(digits)}';
+    if (digits.isEmpty) return 'Rp0';
+    return 'Rp${_formatPriceInput(digits)}';
   }
 
   void _handlePriceChanged(String value) {
@@ -197,6 +198,17 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
       selection: TextSelection.collapsed(offset: formatted.length),
     );
     _isFormattingPrice = false;
+  }
+
+  void _handleStockChanged(String value) {
+    if (_isFormattingStock) return;
+    final formatted = _formatPriceInput(value);
+    _isFormattingStock = true;
+    _stockController.value = TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+    _isFormattingStock = false;
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -318,6 +330,8 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
                       hintText: '0',
                       keyboardType: TextInputType.number,
                       controller: _stockController,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: _handleStockChanged,
                     ),
                   ],
                 ),
@@ -541,6 +555,8 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
     required String hintText,
     required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
+    ValueChanged<String>? onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,6 +573,8 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          onChanged: onChanged,
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
@@ -759,7 +777,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           onChanged: _handlePriceChanged,
           decoration: InputDecoration(
-            prefixText: 'Rp ',
+            prefixText: 'Rp',
             hintText: '0',
             hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
             contentPadding:

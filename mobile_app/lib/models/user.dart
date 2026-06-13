@@ -13,7 +13,6 @@ class User {
   final String region;
   final String city;
   final String phone;
-  final String birthPlace;
   final String status;
   final String verificationStatus;
 
@@ -30,7 +29,6 @@ class User {
     this.region = '',
     this.city = '',
     this.phone = '',
-    this.birthPlace = '',
     this.status = 'active',
     this.verificationStatus = '',
   });
@@ -61,9 +59,6 @@ class User {
       phone: json['phone']?.toString() ??
           json['phone_number']?.toString() ??
           json['no_hp']?.toString() ??
-          '',
-      birthPlace: json['birth_place']?.toString() ??
-          json['place_of_birth']?.toString() ??
           '',
       status: json['status']?.toString() ?? 'active',
       verificationStatus: json['verification_status']?.toString() ??
@@ -97,7 +92,6 @@ class User {
         'region': region,
         'city': city,
         'phone': phone,
-        'birth_place': birthPlace,
         'status': status,
         'verification_status': verificationStatus,
       };

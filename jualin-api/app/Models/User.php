@@ -29,6 +29,7 @@ class User extends Authenticatable implements JWTSubject
         'birthday',
         'region',
         'city',
+        'phone',
         'followers',
         'following',
         'refresh_token',

@@ -380,7 +380,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } else if (val is String) {
       amount = double.tryParse(val)?.toInt() ?? 0;
     }
-    return 'Rp ${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
+    return 'Rp${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
   }
 
   Widget _buildErrorState(BuildContext context) {
@@ -969,7 +969,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildInfoRow('Nomor HP', user.phone),
                   _buildInfoRow('Alamat / Provinsi', user.region),
                   _buildInfoRow('Kota', user.city),
-                  _buildInfoRow('Tempat Lahir', user.birthPlace),
                   _buildInfoRow('Tanggal Lahir', user.birthday),
                   _buildInfoRow(
                       'Peran', _userRole == 'seller' ? 'Penjual' : 'Pembeli'),

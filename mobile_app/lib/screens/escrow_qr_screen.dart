@@ -36,7 +36,7 @@ class EscrowQrScreen extends StatelessWidget {
   String _formatRp(int val) {
     final f = NumberFormat.currency(
       locale: 'id_ID',
-      symbol: 'Rp ',
+      symbol: 'Rp',
       decimalDigits: 0,
     );
     return f.format(val);
