@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../services/api_config.dart';
 
 class ImageUrlHelper {
@@ -25,6 +27,11 @@ class ImageUrlHelper {
     return _apiFileUrl(storagePath);
   }
 
+  static List<String> resolveAll(dynamic value) {
+    final paths = _allPaths(value);
+    return paths.map(resolve).where((path) => path.isNotEmpty).toList();
+  }
+
   static String _apiFileUrl(String storagePath) {
     final cleanPath = storagePath.replaceFirst(RegExp(r'^/+'), '');
     final base = ApiConfig.baseUrl
@@ -45,5 +52,26 @@ class ImageUrlHelper {
     final text = value.toString().trim();
     if (text.isEmpty || text == '[]') return '';
     return text;
+  }
+
+  static List<String> _allPaths(dynamic value) {
+    if (value == null) return [];
+    if (value is List) {
+      return value.expand(_allPaths).toList();
+    }
+
+    final text = value.toString().trim();
+    if (text.isEmpty || text == '[]') return [];
+
+    if (text.startsWith('[')) {
+      try {
+        final decoded = jsonDecode(text);
+        if (decoded is List) return _allPaths(decoded);
+      } catch (_) {
+        return [text];
+      }
+    }
+
+    return [text];
   }
 }
