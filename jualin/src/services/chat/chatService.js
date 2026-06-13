@@ -52,8 +52,13 @@ function formatRoomData(room, currentUserId) {
   let unreadCount = { [currentIdStr]: 0 };
 
   if (room.latest_message) {
+    const latestType = room.latest_message.type || "text";
     lastMessage = {
-      text: room.latest_message.message,
+      text:
+        latestType === "image"
+          ? "Mengirim foto"
+          : room.latest_message.message,
+      type: latestType,
       timestamp: new Date(room.latest_message.sent_at),
       senderId: room.latest_message.sender_id.toString(),
     };
@@ -224,6 +229,67 @@ export async function sendMessage(
   return res;
 }
 
+export async function sendImageMessage(
+  chatId,
+  senderId,
+  senderName,
+  imageFile,
+  senderAvatar = null,
+  participants = []
+) {
+  let res;
+  try {
+    const formData = new FormData();
+    formData.append("type", "image");
+    formData.append("image", imageFile);
+
+    res = await fetcher.upload(
+      `/api/v1/chat/rooms/${chatId}/messages`,
+      formData
+    );
+  } catch (e) {
+    console.error("❌ Error sending image to Laravel:", e);
+    throw e;
+  }
+
+  try {
+    const isAuthed = await ensureFirebaseAuth();
+    if (!isAuthed) {
+      console.warn("⚠️ Firestore skip: user tidak terautentikasi ke Firebase");
+      return res;
+    }
+
+    if (participants.length > 0) {
+      await _ensureFirestoreRoom(chatId, participants.map(String));
+    }
+
+    const savedMsg = res?.data || res;
+    const msgId = savedMsg?.id?.toString() ?? Date.now().toString();
+    const imageUrl = savedMsg?.message || "";
+
+    const msgsRef = collection(db, "chats", chatId.toString(), "messages");
+    await addDoc(msgsRef, {
+      id: msgId,
+      text: imageUrl,
+      type: "image",
+      senderId: senderId.toString(),
+      senderName,
+      senderAvatar: senderAvatar || null,
+      timestamp: serverTimestamp(),
+      read: false,
+    });
+
+    const roomRef = doc(db, "chats", chatId.toString());
+    setDoc(roomRef, { updatedAt: serverTimestamp() }, { merge: true }).catch(
+      (e) => console.warn("⚠️ Firestore room update failed:", e.code)
+    );
+  } catch (e) {
+    console.error("❌ Error mirroring image message to Firestore:", e.code, e.message);
+  }
+
+  return res;
+}
+
 // ---------------------------------------------------------------------------
 // Real-time room list via Firestore onSnapshot
 // Falls back to initial REST fetch so the list isn't empty on first load
@@ -293,17 +359,25 @@ function parseLaravelMessages(res) {
   else if (Array.isArray(res?.data)) msgsData = res.data;
   else if (Array.isArray(res)) msgsData = res;
 
-  return msgsData.map((m) => ({
-    id: m.id,
-    text: m.message,
-    senderId: m.sender_id.toString(),
-    senderName: m.sender?.username || "User",
-    senderAvatar: m.sender?.profile_picture || null,
-    timestamp: new Date(m.sent_at),
-    read: m.is_read,
-    type: m.type || "text",
-    product: m.product_data || null,
-  }));
+  return msgsData.map((m) => {
+    const messageType =
+      m.type ||
+      (typeof m.message === "string" && m.message.includes("/chat-images/")
+        ? "image"
+        : "text");
+
+    return {
+      id: m.id,
+      text: m.message,
+      senderId: m.sender_id.toString(),
+      senderName: m.sender?.username || "User",
+      senderAvatar: m.sender?.profile_picture || null,
+      timestamp: new Date(m.sent_at),
+      read: m.is_read,
+      type: messageType,
+      product: m.product_data || null,
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------

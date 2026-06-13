@@ -8,7 +8,7 @@ import { AuthContext } from '@/context/AuthProvider';
 import { getProfilePictureUrl } from '@/utils/imageHelper';
 import { fetchChatPartnerProfile } from '@/services/chat/chatService';
 
-export function ChatWindow({ chat, messages = [], onSend }) {
+export function ChatWindow({ chat, messages = [], onSend, onSendImages }) {
   const { user } = useContext(AuthContext);
   const messagesEndRef = useRef(null);
   const [fetchedUser, setFetchedUser] = useState(null);
@@ -126,7 +126,7 @@ export function ChatWindow({ chat, messages = [], onSend }) {
       </div>
 
       {/* Input */}
-      <ChatInput onSend={onSend} disabled={!chat} />
+      <ChatInput onSend={onSend} onSendImages={onSendImages} disabled={!chat} />
     </div>
   );
 }

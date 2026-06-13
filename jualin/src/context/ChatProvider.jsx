@@ -12,6 +12,7 @@ import {
   getUserChatRooms,
   getChatMessages,
   sendMessage as sendMessageService,
+  sendImageMessage as sendImageMessageService,
   sendProductMessage as sendProductMessageService,
   getOrCreateChatRoom,
   getChatRoomInfo,
@@ -234,6 +235,60 @@ export function ChatProvider({ children }) {
     [currentChat, user]
   );
 
+  const sendImages = useCallback(
+    async (files) => {
+      const imageFiles = Array.from(files || []).filter((file) =>
+        file?.type?.startsWith("image/")
+      );
+
+      if (!currentChat?.id || !user?.id || imageFiles.length === 0) {
+        console.warn("⚠️ Cannot send image: missing data");
+        return;
+      }
+
+      const optimisticMessages = imageFiles.map((file, index) => ({
+        id: `optimistic-image-${Date.now()}-${index}`,
+        text: URL.createObjectURL(file),
+        senderId: user.id.toString(),
+        senderName: user.name || user.username || user.email,
+        senderAvatar: user.avatar || user.profile_picture || null,
+        timestamp: new Date(),
+        read: false,
+        type: "image",
+        _optimistic: true,
+      }));
+
+      setMessages((prev) => [...prev, ...optimisticMessages]);
+
+      try {
+        for (const file of imageFiles) {
+          await sendImageMessageService(
+            currentChat.id,
+            user.id,
+            user.name || user.username || user.email,
+            file,
+            user.avatar || user.profile_picture || null,
+            currentChat.participants || []
+          );
+        }
+
+        setMessages((prev) =>
+          prev.filter((m) => !optimisticMessages.some((opt) => opt.id === m.id))
+        );
+        optimisticMessages.forEach((msg) => URL.revokeObjectURL(msg.text));
+        refreshMessagesRef.current?.();
+      } catch (error) {
+        setMessages((prev) =>
+          prev.filter((m) => !optimisticMessages.some((opt) => opt.id === m.id))
+        );
+        optimisticMessages.forEach((msg) => URL.revokeObjectURL(msg.text));
+        console.error("❌ Error sending image:", error);
+        throw error;
+      }
+    },
+    [currentChat, user]
+  );
+
   const selectChat = useCallback((chat) => {
     setCurrentChat(chat);
   }, []);
@@ -248,6 +303,7 @@ export function ChatProvider({ children }) {
         startChat,
         openChatWithUser,
         sendMessage,
+        sendImages,
         selectChat,
       }}
     >

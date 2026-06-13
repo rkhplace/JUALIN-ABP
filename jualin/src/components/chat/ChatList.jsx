@@ -50,6 +50,13 @@ export function ChatList({
       }
     }
 
+    const lastText = chat.lastMessage?.text || "No messages yet";
+    const lastType =
+      chat.lastMessage?.type ||
+      (typeof lastText === "string" && lastText.includes("/chat-images/")
+        ? "image"
+        : "text");
+
     return {
       id: chat.id,
       otherUserId: otherParticipantId,
@@ -57,7 +64,7 @@ export function ChatList({
       handle: otherParticipant?.name
         ? `@${otherParticipant.name.toLowerCase().replace(/\s+/g, "")}`
         : "@user",
-      message: chat.lastMessage?.text || "No messages yet",
+      message: lastType === "image" ? "Mengirim foto" : lastText,
       time: timeStr,
       unread: chat.unreadCount?.[user?.id?.toString()] || 0,
       avatar: getProfilePictureUrl(otherParticipant?.profile_picture || otherParticipant?.avatar),
