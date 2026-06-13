@@ -238,7 +238,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                 child: Column(
                   children: [
                     if (orderId != null) ...[
-                      _buildDetailRow('Order ID', orderId),
+                      _buildDetailRow('ID Pesanan', orderId),
                       const SizedBox(height: 8),
                     ],
                     if (amount != null) ...[
@@ -317,7 +317,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
 
     return FrostedScaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      title: 'Checkout',
+      title: 'Pembayaran',
       body: _isLoadingWallet
           ? const JualinLogoLoader(size: 64)
           : SingleChildScrollView(
@@ -539,7 +539,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                                     Icon(Icons.credit_card,
                                         size: 20, color: Colors.black87),
                                     SizedBox(width: 8),
-                                    Text('Payment Gateway',
+                                    Text('Pembayaran Online',
                                         style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 16)),
@@ -547,7 +547,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                                 ),
                                 SizedBox(height: 4),
                                 Text(
-                                    'Bayar via Midtrans (Transfer Bank, E-Wallet, dll)',
+                                    'Bayar via Midtrans (transfer bank, dompet digital, dll)',
                                     style: TextStyle(
                                         color: Colors.black54, fontSize: 13)),
                               ],

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -19,6 +21,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   final TextEditingController _productSearchController =
       TextEditingController();
   final TextEditingController _userSearchController = TextEditingController();
+  final TextEditingController _reportSearchController = TextEditingController();
 
   List<Map<String, dynamic>> _users = [];
   List<Map<String, dynamic>> _products = [];
@@ -26,6 +29,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   List<Map<String, dynamic>> _reports = [];
   String _productSearchQuery = '';
   String _userSearchQuery = '';
+  String _reportSearchQuery = '';
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -39,6 +43,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   void dispose() {
     _productSearchController.dispose();
     _userSearchController.dispose();
+    _reportSearchController.dispose();
     super.dispose();
   }
 
@@ -50,7 +55,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           .toLowerCase();
       final email = _text(user['email']).toLowerCase();
       final role = _text(user['role']).toLowerCase();
-      final status = _isCurrentlyBanned(user) ? 'banned diban' : 'aktif';
+      final status = _isCurrentlyBanned(user) ? 'diblokir' : 'aktif';
 
       return query.isEmpty ||
           username.contains(query) ||
@@ -76,6 +81,34 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           name.contains(query) ||
           category.contains(query) ||
           seller.contains(query);
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> get _filteredReports {
+    final query = _reportSearchQuery.trim().toLowerCase();
+
+    return _reports.where((report) {
+      final id = _parseInt(report['id']).toString();
+      final status =
+          _formatReportStatus(_uiReportStatus(_text(report['status'])))
+              .toLowerCase();
+      final type = _text(report['type'], 'Laporan').toLowerCase();
+      final reporter = _text(report['reporter_username'] ?? report['username'])
+          .toLowerCase();
+      final reported =
+          _text(report['reported_username'] ?? report['target_username'])
+              .toLowerCase();
+      final product = _text(report['reported_product_name']).toLowerCase();
+      final description = _text(report['description']).toLowerCase();
+
+      return query.isEmpty ||
+          id.contains(query) ||
+          status.contains(query) ||
+          type.contains(query) ||
+          reporter.contains(query) ||
+          reported.contains(query) ||
+          product.contains(query) ||
+          description.contains(query);
     }).toList();
   }
 
@@ -133,8 +166,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   unselectedLabelStyle:
                       TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                   tabs: [
-                    Tab(text: 'Overview'),
-                    Tab(text: 'Users'),
+                    Tab(text: 'Ringkasan'),
+                    Tab(text: 'Pengguna'),
                     Tab(text: 'Produk'),
                     Tab(text: 'Laporan'),
                   ],
@@ -210,7 +243,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Backoffice Admin',
+                      'Panel Admin',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -219,7 +252,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     ),
                     SizedBox(height: 5),
                     Text(
-                      'Super Admin',
+                      'Admin Utama',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 29,
@@ -246,7 +279,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 icon: const Icon(Icons.refresh, color: Colors.white),
               ),
               IconButton(
-                tooltip: 'Logout',
+                tooltip: 'Keluar',
                 onPressed: _logout,
                 icon: const Icon(Icons.logout, color: Colors.white),
               ),
@@ -293,14 +326,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           physics: const NeverScrollableScrollPhysics(),
           childAspectRatio: 1.75,
           children: [
-            _buildSummaryTile('Users', _users.length.toString(),
+            _buildSummaryTile('Pengguna', _users.length.toString(),
                 'Total pengguna', Icons.people_alt_outlined),
             _buildSummaryTile('Produk', _products.length.toString(),
                 'Total produk', Icons.inventory_2_outlined),
             _buildSummaryTile('Transaksi', _transactions.length.toString(),
                 'Total transaksi', Icons.receipt_long_outlined),
             _buildSummaryTile(
-                'Laporan Pending',
+                'Laporan Menunggu',
                 pendingReports.length.toString(),
                 'Perlu ditinjau',
                 Icons.report_outlined),
@@ -381,11 +414,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text(
-          'Users',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 12),
         _buildUserSearch(),
         const SizedBox(height: 12),
         if (filteredUsers.isEmpty)
@@ -435,13 +463,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ],
                 ),
               ),
-              _buildStatusChip(role, Colors.blue),
+              _buildStatusChip(_formatUserRole(role), Colors.blue),
             ],
           ),
           if (isBanned) ...[
             const SizedBox(height: 10),
             Text(
-              'Diban sampai ${_formatDate(user['banned_until'])}',
+              'Diblokir sampai ${_formatDate(user['banned_until'])}',
               style: const TextStyle(color: Color(0xFFE83030), fontSize: 12),
             ),
           ],
@@ -456,7 +484,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           ? _unbanUser(id)
                           : _showBanDurationDialog(id, username),
                   icon: Icon(isBanned ? Icons.lock_open : Icons.block),
-                  label: Text(isBanned ? 'Unban' : 'Ban'),
+                  label: Text(isBanned ? 'Buka Blokir' : 'Blokir'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFE83030),
                     side: const BorderSide(color: Color(0xFFE83030)),
@@ -502,7 +530,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         onChanged: (value) => setState(() => _userSearchQuery = value),
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
-          hintText: 'Cari nama, email, atau role',
+          hintText: 'Cari nama, email, atau peran',
           hintStyle: const TextStyle(color: Colors.black38, fontSize: 13),
           prefixIcon: const Icon(Icons.search, color: Color(0xFFE83030)),
           suffixIcon: _userSearchQuery.isEmpty
@@ -544,7 +572,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             Icon(Icons.search_off, color: Colors.black38, size: 42),
             SizedBox(height: 10),
             Text(
-              'User tidak ditemukan',
+              'Pengguna tidak ditemukan',
               style: TextStyle(fontWeight: FontWeight.w800),
             ),
             SizedBox(height: 4),
@@ -565,11 +593,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text(
-          'Produk',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 12),
         _buildProductSearch(),
         const SizedBox(height: 12),
         if (filteredProducts.isEmpty)
@@ -605,7 +628,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         onChanged: (value) => setState(() => _productSearchQuery = value),
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
-          hintText: 'Cari produk, seller, atau kategori',
+          hintText: 'Cari produk, penjual, atau kategori',
           hintStyle: const TextStyle(color: Colors.black38, fontSize: 13),
           prefixIcon: const Icon(Icons.search, color: Color(0xFFE83030)),
           suffixIcon: _productSearchQuery.isEmpty
@@ -662,12 +685,104 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
+  Widget _buildReportSearch() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _reportSearchController,
+        onChanged: (value) => setState(() => _reportSearchQuery = value),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Cari laporan, pelapor, status, atau produk',
+          hintStyle: const TextStyle(color: Colors.black38, fontSize: 13),
+          prefixIcon: const Icon(Icons.search, color: Color(0xFFE83030)),
+          suffixIcon: _reportSearchQuery.isEmpty
+              ? null
+              : IconButton(
+                  onPressed: () {
+                    _reportSearchController.clear();
+                    setState(() => _reportSearchQuery = '');
+                  },
+                  icon: const Icon(Icons.close, size: 18),
+                ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: Color(0xFFE83030), width: 1.2),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyReportSearchState() {
+    return _buildCard(
+      child: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 28),
+        child: Column(
+          children: [
+            Icon(Icons.search_off, color: Colors.black38, size: 42),
+            SizedBox(height: 10),
+            Text(
+              'Laporan tidak ditemukan',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Coba ubah kata kunci pencarian.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black45, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildReportsTab() {
+    final filteredReports = _filteredReports;
+
     return ListView.separated(
       padding: const EdgeInsets.all(16),
-      itemCount: _reports.length,
+      itemCount: filteredReports.length + 1,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) => _buildReportCard(_reports[index]),
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return Column(
+            children: [
+              _buildReportSearch(),
+              if (filteredReports.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: _buildEmptyReportSearchState(),
+                ),
+            ],
+          );
+        }
+
+        return _buildReportCard(filteredReports[index - 1]);
+      },
     );
   }
 
@@ -753,14 +868,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
-                _buildStatusChip(
-                    _formatTransactionStatus(status), Colors.green),
+                _buildStatusChip(_formatAdminOptionLabel(status), Colors.green),
               ],
             ),
             const SizedBox(height: 10),
-            Text('Customer: $customer',
+            Text('Pembeli: $customer',
                 style: const TextStyle(color: Colors.black54, fontSize: 12)),
-            Text('Seller: $seller',
+            Text('Penjual: $seller',
                 style: const TextStyle(color: Colors.black54, fontSize: 12)),
             Text(_formatCurrency(total),
                 style: const TextStyle(
@@ -841,7 +955,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ? () => _unbanUser(reportedUserId)
                   : () => _showBanDurationDialog(reportedUserId, reported),
               icon: Icon(isReportedBanned ? Icons.lock_open : Icons.block),
-              label: Text(isReportedBanned ? 'Unban Akun' : 'Ban Akun'),
+              label: Text(
+                isReportedBanned ? 'Buka Blokir Akun' : 'Blokir Akun',
+              ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFFE83030),
                 side: const BorderSide(color: Color(0xFFE83030)),
@@ -921,7 +1037,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Akun Ter-ban',
+                    'Akun Diblokir',
                     style: TextStyle(
                       color: Color(0xFFE83030),
                       fontWeight: FontWeight.w800,
@@ -1409,7 +1525,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   const SizedBox(height: 18),
                   const Text(
-                    'Akun Ter-ban',
+                    'Akun Diblokir',
                     style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 12),
@@ -1739,20 +1855,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: Colors.white,
           surfaceTintColor: Colors.white,
-          title: Text('Ban $username'),
+          title: Text('Blokir $username'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Pilih durasi ban akun.'),
+              const Text('Pilih durasi blokir akun.'),
               const SizedBox(height: 14),
               _buildChoiceField(
                 value:
                     selectedDuration == null ? null : '$selectedDuration hari',
-                hint: 'Pilih durasi ban',
+                hint: 'Pilih durasi blokir',
                 onTap: () async {
                   final picked = await _showAdminOptionSheet(
-                    title: 'Durasi Ban',
+                    title: 'Durasi Blokir',
                     selected: selectedDuration,
                     options: durationOptions,
                     labelBuilder: (value) => '$value hari',
@@ -1778,7 +1894,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFFE83030),
               ),
-              child: const Text('Ban'),
+              child: const Text('Blokir'),
             ),
           ],
         ),
@@ -1791,14 +1907,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   Future<void> _banUser(int userId, int durationDays) async {
     await _runAdminAction(
       action: () => _adminService.banUser(userId, durationDays),
-      successMessage: 'User berhasil diban.',
+      successMessage: 'Pengguna berhasil diblokir.',
     );
   }
 
   Future<void> _unbanUser(int userId) async {
     await _runAdminAction(
       action: () => _adminService.unbanUser(userId),
-      successMessage: 'User berhasil di-unban.',
+      successMessage: 'Blokir pengguna berhasil dibuka.',
     );
   }
 
@@ -1969,25 +2085,107 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   Future<void> _logout() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        title: const Text('Konfirmasi Logout'),
-        content: const Text('Apakah Anda yakin ingin keluar?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE83030),
-              foregroundColor: Colors.white,
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      builder: (dialogContext) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 34,
+                  spreadRadius: -12,
+                  offset: const Offset(0, 18),
+                ),
+              ],
             ),
-            child: const Text('Ya'),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEEEE),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(
+                    Icons.logout_rounded,
+                    color: Color(0xFFE83030),
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Konfirmasi Keluar',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Apakah Anda yakin ingin keluar dari Panel Admin?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFE83030),
+                          side: const BorderSide(color: Color(0xFFFFC7C7)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(dialogContext, false),
+                        child: const Text(
+                          'Batal',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(dialogContext, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE83030),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Ya, Keluar',
+                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
 
@@ -2086,7 +2284,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       case 'cancelled':
         return 'Dibatalkan';
       case 'refunded':
-        return 'Refund';
+        return 'Pengembalian Dana';
       case 'accepted':
       case 'reviewed':
         return 'Diterima';
@@ -2099,11 +2297,42 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   String _formatTransactionStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'Menunggu';
+      case 'waiting_cod':
+        return 'Menunggu COD';
+      case 'paid':
+        return 'Dibayar';
+      case 'processing':
+      case 'processed':
+        return 'Diproses';
+      case 'completed':
+      case 'verified':
+        return 'Selesai';
+      case 'cancelled':
+        return 'Dibatalkan';
+      case 'refunded':
+        return 'Pengembalian Dana';
+    }
     return status
         .replaceAll('_', ' ')
         .split(' ')
         .where((part) => part.isNotEmpty)
         .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
         .join(' ');
+  }
+
+  String _formatUserRole(String role) {
+    switch (role.toLowerCase()) {
+      case 'customer':
+        return 'Pembeli';
+      case 'seller':
+        return 'Penjual';
+      case 'admin':
+        return 'Admin';
+      default:
+        return role;
+    }
   }
 }

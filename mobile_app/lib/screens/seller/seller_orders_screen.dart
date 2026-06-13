@@ -18,17 +18,61 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
   final SellerService _sellerService = SellerService();
   final AuthService _authService = AuthService();
   final EscrowService _escrowService = EscrowService();
+  final TextEditingController _searchController = TextEditingController();
 
   List<Map<String, dynamic>> _orders = [];
   bool _isLoading = true;
   String? _errorMessage;
   int _currentUserId = 0;
   bool _isClaiming = false;
+  String _statusFilter = 'all';
+
+  List<Map<String, dynamic>> get _filteredOrders {
+    final query = _searchController.text.trim().toLowerCase();
+
+    return _orders.where((order) {
+      final status = (order['status'] ?? '').toString().toLowerCase();
+      final statusMatches = switch (_statusFilter) {
+        'waiting_cod' => status == 'waiting_cod',
+        'completed' => status == 'verified' || status == 'completed',
+        'cancelled' => status == 'cancelled' || status == 'refunded',
+        'pending' => status == 'pending' || status == 'processing',
+        _ => true,
+      };
+
+      if (!statusMatches) return false;
+      if (query.isEmpty) return true;
+
+      final customer = order['customer'] as Map<String, dynamic>? ?? {};
+      final items = (order['items'] as List<dynamic>?) ?? [];
+      final firstItem =
+          items.isNotEmpty ? (items[0] as Map<String, dynamic>?) ?? {} : {};
+      final product = firstItem['product'] as Map<String, dynamic>? ?? {};
+      final searchable = [
+        order['id'],
+        order['order_id'],
+        product['name'],
+        customer['username'],
+        customer['name'],
+        _statusLabel(status),
+        status,
+      ].whereType<Object>().join(' ').toLowerCase();
+
+      return searchable.contains(query);
+    }).toList();
+  }
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(() => setState(() {}));
     _init();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _init() async {
@@ -340,13 +384,15 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
   Widget build(BuildContext context) {
     return FrostedScaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      title: 'Pesanan Masuk',
+      showAppBar: false,
       body: Stack(
         children: [
-          RefreshIndicator(
-            color: const Color(0xFFE83030),
-            onRefresh: _fetchOrders,
-            child: _buildBody(),
+          SafeArea(
+            child: RefreshIndicator(
+              color: const Color(0xFFE83030),
+              onRefresh: _fetchOrders,
+              child: _buildBody(),
+            ),
           ),
           if (_isClaiming)
             Container(
@@ -405,12 +451,35 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
       );
     }
 
+    final orders = _filteredOrders;
+
     return ListView.separated(
       padding: const EdgeInsets.all(16),
-      itemCount: _orders.length,
+      itemCount: orders.length + 1,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        final order = _orders[index];
+        if (index == 0) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildPageHeader(orders.length),
+              const SizedBox(height: 14),
+              _buildSearchAndFilterBar(),
+              if (orders.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(top: 80),
+                  child: Center(
+                    child: Text(
+                      'Tidak ada pesanan sesuai filter.',
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        }
+
+        final order = orders[index - 1];
         final customer = order['customer'] as Map<String, dynamic>? ?? {};
         final items = (order['items'] as List<dynamic>?) ?? [];
         final firstItem =
@@ -424,13 +493,14 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.black12),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 20,
+                spreadRadius: -9,
+                offset: const Offset(0, 12),
               ),
             ],
           ),
@@ -442,9 +512,9 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Order #${order['id'] ?? '-'}',
+                    'Pesanan #${order['id'] ?? '-'}',
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 14),
+                        fontWeight: FontWeight.w800, fontSize: 15),
                   ),
                   _StatusBadge(
                       label: _statusLabel(status), color: _statusColor(status)),
@@ -485,12 +555,15 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Total',
-                      style: TextStyle(color: Colors.black54, fontSize: 13)),
+                      style: TextStyle(
+                          color: Colors.black45,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600)),
                   Text(
                     _formatCurrency(order['total_amount']),
                     style: const TextStyle(
                       color: Color(0xFFE83030),
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
                       fontSize: 15,
                     ),
                   ),
@@ -505,7 +578,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.purple[50],
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: Colors.purple[100]!),
                   ),
                   child: Column(
@@ -564,6 +637,321 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildPageHeader(int orderCount) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE83030), Color(0xFFF64A4A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE83030).withValues(alpha: 0.22),
+            blurRadius: 24,
+            spreadRadius: -8,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -24,
+            top: -30,
+            child: Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.13),
+                  width: 2,
+                ),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(15),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                ),
+                child: const Icon(
+                  Icons.receipt_long_outlined,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Pesanan Masuk',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '$orderCount pesanan ditampilkan',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrderFilterPanel() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 18,
+            spreadRadius: -8,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Cari pesanan...',
+                prefixIcon:
+                    const Icon(Icons.search, color: Colors.black45, size: 20),
+                suffixIcon: _searchController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: _searchController.clear,
+                      ),
+                filled: true,
+                fillColor: const Color(0xFFF7F7F7),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            height: 48,
+            width: 48,
+            child: ElevatedButton(
+              onPressed: _showOrderFilterSheet,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE83030),
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Icon(Icons.tune),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchAndFilterBar() => _buildOrderFilterPanel();
+
+  void _showOrderFilterSheet() {
+    var tempStatus = _statusFilter;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 42,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.black12,
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Filter Pesanan',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Status Pesanan',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _filterChip(
+                          label: 'Semua',
+                          active: tempStatus == 'all',
+                          onTap: () => setSheetState(() => tempStatus = 'all'),
+                        ),
+                        _filterChip(
+                          label: 'Diproses',
+                          active: tempStatus == 'pending',
+                          onTap: () =>
+                              setSheetState(() => tempStatus = 'pending'),
+                        ),
+                        _filterChip(
+                          label: 'Menunggu COD',
+                          active: tempStatus == 'waiting_cod',
+                          onTap: () =>
+                              setSheetState(() => tempStatus = 'waiting_cod'),
+                        ),
+                        _filterChip(
+                          label: 'Selesai',
+                          active: tempStatus == 'completed',
+                          onTap: () =>
+                              setSheetState(() => tempStatus = 'completed'),
+                        ),
+                        _filterChip(
+                          label: 'Batal/Pengembalian',
+                          active: tempStatus == 'cancelled',
+                          onTap: () =>
+                              setSheetState(() => tempStatus = 'cancelled'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setState(() => _statusFilter = 'all');
+                              Navigator.pop(context);
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFE83030),
+                              side: const BorderSide(color: Color(0xFFE83030)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const Text('Reset'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              setState(() => _statusFilter = tempStatus);
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE83030),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const Text('Terapkan'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _filterChip({
+    required String label,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: active ? const Color(0xFFE83030) : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: active
+                ? const Color(0xFFE83030)
+                : Colors.black.withValues(alpha: 0.16),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (active) ...[
+              const Icon(Icons.check, color: Colors.white, size: 16),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: active ? Colors.white : Colors.black54,
+                fontWeight: active ? FontWeight.bold : FontWeight.w500,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

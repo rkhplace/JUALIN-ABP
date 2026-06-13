@@ -48,7 +48,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      setState(() => _errorMessage = 'Email dan password tidak boleh kosong.');
+      setState(
+          () => _errorMessage = 'Email dan kata sandi tidak boleh kosong.');
       return;
     }
     if (!_isValidEmail(email)) {
@@ -190,8 +191,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 onSubmitted: (_) => _handleLogin(),
                                 suffixIcon: IconButton(
                                   tooltip: _showPassword
-                                      ? 'Sembunyikan password'
-                                      : 'Tampilkan password',
+                                      ? 'Sembunyikan kata sandi'
+                                      : 'Tampilkan kata sandi',
                                   icon: Icon(
                                     _showPassword
                                         ? Icons.visibility_off_outlined

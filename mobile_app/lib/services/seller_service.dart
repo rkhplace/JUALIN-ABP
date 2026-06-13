@@ -116,13 +116,16 @@ class SellerService {
 
   /// Fetches income statistics for the seller dashboard.
   ///
-  /// API: GET /v1/transactions/income/statistics?period=Month
+  /// API: GET /v1/transactions/income/statistics?period=Month&type=sales
   /// Returns { balance, transferred, chart_data, period }
-  Future<Map<String, dynamic>> getSellerStats({String period = 'Month'}) async {
+  Future<Map<String, dynamic>> getSellerStats({
+    String period = 'Month',
+    String type = 'sales',
+  }) async {
     try {
       final response = await _client.get(
         ApiConfig.sellerStats,
-        queryParams: {'period': period},
+        queryParams: {'period': period, 'type': type},
       );
       final stats = Map<String, dynamic>.from(
         (response['data'] as Map<String, dynamic>?) ?? response,

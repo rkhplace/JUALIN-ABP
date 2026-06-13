@@ -58,12 +58,7 @@ class _CustomNavbarState extends State<CustomNavbar> {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor =
-        widget.scrolled ? Colors.white.withValues(alpha: 0.78) : Colors.white;
-    final dividerColor = widget.scrolled
-        ? Colors.black.withValues(alpha: 0.10)
-        : Colors.grey.withValues(alpha: 0.18);
-
+    const backgroundColor = Colors.white;
     return AppBar(
       toolbarHeight: 52,
       backgroundColor: Colors.transparent,
@@ -76,18 +71,12 @@ class _CustomNavbarState extends State<CustomNavbar> {
       titleSpacing: 14,
       flexibleSpace: ClipRect(
         child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: widget.scrolled ? 10 : 0,
-            sigmaY: widget.scrolled ? 10 : 0,
-          ),
+          filter: ImageFilter.blur(sigmaX: 0, sigmaY: 0),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
             curve: Curves.easeOut,
             decoration: BoxDecoration(
               color: backgroundColor,
-              border: Border(
-                bottom: BorderSide(color: dividerColor, width: 1),
-              ),
               boxShadow: widget.scrolled
                   ? [
                       BoxShadow(
@@ -113,22 +102,31 @@ class _CustomNavbarState extends State<CustomNavbar> {
             if (widget.showLogo) const SizedBox(width: 8),
             Expanded(
               child: Container(
-                height: 32,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: widget.scrolled
-                      ? Colors.white.withValues(alpha: 0.86)
-                      : const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: widget.scrolled
-                        ? Colors.black.withValues(alpha: 0.12)
-                        : Colors.grey[300]!,
-                  ),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(999),
+                  border:
+                      Border.all(color: Colors.black.withValues(alpha: 0.06)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.10),
+                      blurRadius: 16,
+                      spreadRadius: -6,
+                      offset: const Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: const Color(0xFFE83030).withValues(alpha: 0.035),
+                      blurRadius: 14,
+                      spreadRadius: -8,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
-                    const SizedBox(width: 10),
-                    Icon(Icons.search, size: 20, color: Colors.grey[500]),
+                    const SizedBox(width: 14),
+                    Icon(Icons.search, size: 19, color: Colors.grey[500]),
                     const SizedBox(width: 6),
                     Expanded(
                       child: TextField(
@@ -145,7 +143,7 @@ class _CustomNavbarState extends State<CustomNavbar> {
                           border: InputBorder.none,
                           isDense: true,
                           contentPadding:
-                              const EdgeInsets.symmetric(vertical: 9),
+                              const EdgeInsets.symmetric(vertical: 10),
                         ),
                       ),
                     ),

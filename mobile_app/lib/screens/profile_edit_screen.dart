@@ -243,93 +243,175 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   Widget build(BuildContext context) {
     return FrostedScaffold(
       backgroundColor: const Color(0xFFF8F8F8),
-      title: 'Edit Profil',
+      showAppBar: false,
       bottomNavigationBar: _isLoading || _user == null ? null : _buildSaveBar(),
       body: _isLoading
           ? const JualinLogoLoader(size: 64)
           : _errorMessage != null && _user == null
               ? _buildError()
-              : Form(
-                  key: _formKey,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-                    children: [
-                      _buildProfilePhotoPicker(),
-                      const SizedBox(height: 20),
-                      if (_errorMessage != null) ...[
-                        _buildErrorBanner(_errorMessage!),
+              : SafeArea(
+                  bottom: false,
+                  child: Form(
+                    key: _formKey,
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                      children: [
+                        _buildEditHeader(),
                         const SizedBox(height: 16),
+                        _buildProfilePhotoPicker(),
+                        const SizedBox(height: 20),
+                        if (_errorMessage != null) ...[
+                          _buildErrorBanner(_errorMessage!),
+                          const SizedBox(height: 16),
+                        ],
+                        _buildSection(
+                          title: 'Informasi Dasar',
+                          subtitle: 'Data utama yang terlihat di akun Jualin.',
+                          children: [
+                            _buildTextField(
+                              controller: _nameController,
+                              label: 'Nama Pengguna',
+                              icon: Icons.person_outline,
+                              validator: (value) =>
+                                  value == null || value.trim().length < 3
+                                      ? 'Nama minimal 3 karakter'
+                                      : null,
+                            ),
+                            _buildTextField(
+                              controller: _emailController,
+                              label: 'Email',
+                              icon: Icons.mail_outline,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (value) =>
+                                  value == null || !value.contains('@')
+                                      ? 'Email tidak valid'
+                                      : null,
+                            ),
+                            _buildGenderField(),
+                            _buildTextField(
+                              controller: _birthdayController,
+                              label: 'Tanggal Lahir',
+                              icon: Icons.cake_outlined,
+                              readOnly: true,
+                              onTap: _pickBirthday,
+                              suffixIcon:
+                                  const Icon(Icons.calendar_today_outlined),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        _buildSection(
+                          title: 'Lokasi',
+                          subtitle:
+                              'Bantu penjual dan pembeli mengenali area kamu.',
+                          children: [
+                            _buildTextField(
+                              controller: _regionController,
+                              label: 'Alamat / Provinsi',
+                              icon: Icons.location_on_outlined,
+                            ),
+                            _buildTextField(
+                              controller: _cityController,
+                              label: 'Kota',
+                              icon: Icons.location_city_outlined,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        _buildSection(
+                          title: 'Tentang Saya',
+                          subtitle:
+                              'Ceritakan singkat tentang diri atau toko kamu.',
+                          children: [
+                            _buildTextField(
+                              controller: _bioController,
+                              label: 'Bio',
+                              icon: Icons.short_text_outlined,
+                              maxLines: 4,
+                            ),
+                          ],
+                        ),
                       ],
-                      _buildSection(
-                        title: 'Informasi Dasar',
-                        subtitle: 'Data utama yang terlihat di akun Jualin.',
-                        children: [
-                          _buildTextField(
-                            controller: _nameController,
-                            label: 'Nama Pengguna',
-                            icon: Icons.person_outline,
-                            validator: (value) =>
-                                value == null || value.trim().length < 3
-                                    ? 'Nama minimal 3 karakter'
-                                    : null,
-                          ),
-                          _buildTextField(
-                            controller: _emailController,
-                            label: 'Email',
-                            icon: Icons.mail_outline,
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (value) =>
-                                value == null || !value.contains('@')
-                                    ? 'Email tidak valid'
-                                    : null,
-                          ),
-                          _buildGenderField(),
-                          _buildTextField(
-                            controller: _birthdayController,
-                            label: 'Tanggal Lahir',
-                            icon: Icons.cake_outlined,
-                            readOnly: true,
-                            onTap: _pickBirthday,
-                            suffixIcon:
-                                const Icon(Icons.calendar_today_outlined),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      _buildSection(
-                        title: 'Lokasi',
-                        subtitle:
-                            'Bantu penjual dan pembeli mengenali area kamu.',
-                        children: [
-                          _buildTextField(
-                            controller: _regionController,
-                            label: 'Alamat / Provinsi',
-                            icon: Icons.location_on_outlined,
-                          ),
-                          _buildTextField(
-                            controller: _cityController,
-                            label: 'Kota',
-                            icon: Icons.location_city_outlined,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      _buildSection(
-                        title: 'Tentang Saya',
-                        subtitle:
-                            'Ceritakan singkat tentang diri atau toko kamu.',
-                        children: [
-                          _buildTextField(
-                            controller: _bioController,
-                            label: 'Bio',
-                            icon: Icons.short_text_outlined,
-                            maxLines: 4,
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
                 ),
+    );
+  }
+
+  Widget _buildEditHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE83030), Color(0xFFF64A4A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE83030).withValues(alpha: 0.24),
+            blurRadius: 28,
+            spreadRadius: -10,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -34,
+            top: -42,
+            child: _buildHeaderCircle(118),
+          ),
+          Positioned(
+            right: 34,
+            bottom: -42,
+            child: _buildHeaderCircle(92),
+          ),
+          Row(
+            children: [
+              Material(
+                color: Colors.white.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => Navigator.pop(context),
+                  child: const SizedBox(
+                    width: 42,
+                    height: 42,
+                    child: Icon(Icons.arrow_back, color: Colors.white),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Edit Profil',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderCircle(double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
+      ),
     );
   }
 
@@ -383,8 +465,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 15),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(18),
               ),
+              elevation: 6,
+              shadowColor: const Color(0xFFE83030).withValues(alpha: 0.24),
             ),
             child: _isSaving
                 ? const SizedBox(
@@ -448,6 +532,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     return ProfileFormSection(
       title: title,
       subtitle: subtitle,
+      icon: switch (title) {
+        'Informasi Dasar' => Icons.badge_outlined,
+        'Lokasi' => Icons.location_on_outlined,
+        _ => Icons.notes_outlined,
+      },
       children: children,
     );
   }
@@ -455,24 +544,40 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   Widget _buildGenderField() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: _isSaving ? null : _showGenderPicker,
-        child: InputDecorator(
-          decoration: _inputDecoration(
-            labelText: 'Gender',
-            icon: Icons.wc_outlined,
-            suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildFieldLabel('Gender'),
+          const SizedBox(height: 7),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildFieldIcon(Icons.wc_outlined),
+              const SizedBox(width: 10),
+              Expanded(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: _isSaving ? null : _showGenderPicker,
+                  child: InputDecorator(
+                    decoration: _inputDecoration(
+                      suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
+                    ),
+                    child: Text(
+                      _genderLabel(_gender),
+                      style: TextStyle(
+                        color:
+                            _gender.isEmpty ? Colors.black38 : Colors.black87,
+                        fontSize: 14,
+                        fontWeight:
+                            _gender.isEmpty ? FontWeight.w500 : FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          child: Text(
-            _genderLabel(_gender),
-            style: TextStyle(
-              color: _gender.isEmpty ? Colors.black38 : Colors.black87,
-              fontSize: 14,
-              fontWeight: _gender.isEmpty ? FontWeight.w500 : FontWeight.w700,
-            ),
-          ),
-        ),
+        ],
       ),
     );
   }
@@ -647,56 +752,106 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        validator: validator,
-        enabled: enabled,
-        readOnly: readOnly,
-        maxLines: maxLines,
-        onTap: onTap,
-        decoration: _inputDecoration(
-          labelText: label,
-          icon: icon,
-          helperText: helperText,
-          suffixIcon: suffixIcon,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildFieldLabel(label),
+          const SizedBox(height: 7),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildFieldIcon(icon),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextFormField(
+                  controller: controller,
+                  keyboardType: keyboardType,
+                  validator: validator,
+                  enabled: enabled,
+                  readOnly: readOnly,
+                  maxLines: maxLines,
+                  onTap: onTap,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  decoration: _inputDecoration(
+                    hintText: label,
+                    helperText: helperText,
+                    suffixIcon: suffixIcon,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFieldLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.black87,
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
   }
 
+  Widget _buildFieldIcon(IconData icon) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFEFEF),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Icon(icon, size: 18, color: const Color(0xFFE83030)),
+    );
+  }
+
   InputDecoration _inputDecoration({
-    required String labelText,
-    required IconData icon,
+    String? hintText,
     String? helperText,
     Widget? suffixIcon,
   }) {
     return InputDecoration(
-      labelText: labelText,
+      hintText: hintText,
       helperText: helperText,
-      prefixIcon: Icon(icon, size: 20, color: const Color(0xFFE83030)),
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: const Color(0xFFFAFAFA),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      fillColor: Colors.white,
+      hintStyle: const TextStyle(
+        color: Colors.black26,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+      helperStyle: const TextStyle(color: Colors.black38, fontSize: 11),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.04)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFFE83030), width: 1.4),
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: Color(0xFFE83030), width: 1.1),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         borderSide: const BorderSide(color: Colors.red),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         borderSide: const BorderSide(color: Colors.red, width: 1.4),
       ),
       disabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
       ),
     );

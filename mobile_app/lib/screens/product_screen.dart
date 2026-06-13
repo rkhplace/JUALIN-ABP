@@ -7,8 +7,8 @@ class ProductScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const FrostedScaffold(
-      title: 'Product Screen',
-      body: Center(child: Text("Product Screen Screen")),
+      title: 'Produk',
+      body: Center(child: Text('Halaman produk')),
     );
   }
 }

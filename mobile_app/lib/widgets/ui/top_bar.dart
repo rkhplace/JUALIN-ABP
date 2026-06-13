@@ -12,7 +12,7 @@ class _TopBarState extends State<TopBar> {
   final List<String> _messages = [
     'Most News: Tetap waspada! Jangan lakukan pembayaran di luar platform.',
     'Most News: Produk baru tersedia setiap hari — jangan sampai kehabisan!',
-    'Most News: Seller terverifikasi kini hadir di Jualin untuk pengalaman belanja aman.',
+    'Info terbaru: Penjual terverifikasi kini hadir di Jualin untuk pengalaman belanja aman.',
   ];
   int _currentIndex = 0;
   Timer? _timer;
@@ -47,7 +47,7 @@ class _TopBarState extends State<TopBar> {
           // Slide ke ATAS: masuk dari bawah → tengah saat muncul
           //                keluar dari tengah → atas saat pergi
           final inAnimation = Tween<Offset>(
-            begin: const Offset(0.0, 1.0),  // masuk dari bawah
+            begin: const Offset(0.0, 1.0), // masuk dari bawah
             end: const Offset(0.0, 0.0),
           ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
 

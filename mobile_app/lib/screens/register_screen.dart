@@ -60,11 +60,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
     if (password.length < 8) {
-      setState(() => _errorMessage = 'Password minimal 8 karakter.');
+      setState(() => _errorMessage = 'Kata sandi minimal 8 karakter.');
       return;
     }
     if (password != confirmation) {
-      setState(() => _errorMessage = 'Konfirmasi password tidak cocok.');
+      setState(() => _errorMessage = 'Konfirmasi kata sandi tidak cocok.');
       return;
     }
 
@@ -151,7 +151,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 18),
                     CustomInput(
-                      label: 'Password',
+                      label: 'Kata Sandi',
                       hintText: 'minimal 8 karakter',
                       obscureText: !_showPassword,
                       controller: _passwordController,
@@ -164,8 +164,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 18),
                     CustomInput(
-                      label: 'Konfirmasi Password',
-                      hintText: 'ulangi password',
+                      label: 'Konfirmasi Kata Sandi',
+                      hintText: 'ulangi kata sandi',
                       obscureText: !_showConfirmPassword,
                       controller: _confirmPasswordController,
                       suffixIcon: _buildPasswordToggle(
@@ -222,7 +222,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required VoidCallback onPressed,
   }) {
     return IconButton(
-      tooltip: isVisible ? 'Sembunyikan password' : 'Tampilkan password',
+      tooltip: isVisible ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi',
       icon: Icon(
         isVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
         color: Colors.grey[600],
@@ -236,7 +236,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Role',
+          'Peran',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -265,9 +265,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             fillColor: Colors.white,
           ),
           items: const [
-            DropdownMenuItem(
-                value: 'customer', child: Text('Customer (Buyer)')),
-            DropdownMenuItem(value: 'seller', child: Text('Seller')),
+            DropdownMenuItem(value: 'customer', child: Text('Pembeli')),
+            DropdownMenuItem(value: 'seller', child: Text('Penjual')),
           ],
           onChanged: _isLoading
               ? null

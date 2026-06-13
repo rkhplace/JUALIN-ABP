@@ -27,16 +27,69 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final ChatService _chatService = ChatService();
+  final TextEditingController _searchController = TextEditingController();
   List<ChatRoom> _rooms = [];
   bool _isLoading = true;
   bool _isLoggedIn = false;
   String? _errorMessage;
   int? _currentUserId;
+  String _searchQuery = '';
+  String _roomFilter = 'newest';
+
+  List<ChatRoom> get _filteredRooms {
+    final query = _searchQuery.trim().toLowerCase();
+
+    final rooms = _rooms.where((room) {
+      final matchesFilter =
+          _roomFilter == 'unread' ? _isUnreadRoom(room) : true;
+      if (!matchesFilter) return false;
+      if (query.isEmpty) return true;
+
+      final name = room.otherUser?.username.toLowerCase() ?? '';
+      final preview = room.latestMessage?.message.toLowerCase() ?? '';
+      final product = room.product?.name.toLowerCase() ?? '';
+      final seller = room.product?.sellerName?.toLowerCase() ?? '';
+      return name.contains(query) ||
+          preview.contains(query) ||
+          product.contains(query) ||
+          seller.contains(query);
+    }).toList();
+
+    rooms.sort((a, b) {
+      final aTime = _roomSortTime(a);
+      final bTime = _roomSortTime(b);
+      if (_roomFilter == 'oldest') {
+        return aTime.compareTo(bTime);
+      }
+      return bTime.compareTo(aTime);
+    });
+
+    return rooms;
+  }
+
+  bool _isUnreadRoom(ChatRoom room) {
+    final latest = room.latestMessage;
+    return latest != null &&
+        !latest.isRead &&
+        latest.senderId != _currentUserId;
+  }
+
+  DateTime _roomSortTime(ChatRoom room) {
+    return room.updatedAt ??
+        room.latestMessage?.sentAt ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+  }
 
   @override
   void initState() {
     super.initState();
     _loadRooms();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadRooms() async {
@@ -92,18 +145,105 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return AppChrome(
       showTopBar: false,
-      showNavbar: true,
+      showNavbar: false,
       showSearch: false,
+      showLogo: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text('Pesan',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ),
+          _buildChatHeader(),
           Expanded(child: _buildBody()),
         ],
+      ),
+    );
+  }
+
+  Widget _buildChatHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFE83030), Color(0xFFF64A4A)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFE83030).withValues(alpha: 0.34),
+              blurRadius: 32,
+              spreadRadius: -9,
+              offset: const Offset(0, 18),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -24,
+              top: -30,
+              child: Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.13),
+                    width: 2,
+                  ),
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(15),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                  ),
+                  child: const Icon(
+                    Icons.chat_bubble_outline,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Pesan',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        _rooms.isEmpty
+                            ? 'Belum ada percakapan aktif.'
+                            : '${_rooms.length} percakapan aktif',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -177,12 +317,187 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
 
+    final rooms = _filteredRooms;
+
     return RefreshIndicator(
       onRefresh: _loadRooms,
       child: ListView.separated(
-        itemCount: _rooms.length,
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
+        itemCount: rooms.length + 1,
         separatorBuilder: (_, __) => const SizedBox.shrink(),
-        itemBuilder: (context, index) => _buildRoomTile(_rooms[index]),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Column(
+              children: [
+                _buildChatSearchBar(),
+                _buildChatFilterBar(),
+                if (rooms.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 72),
+                    child: Column(
+                      children: [
+                        Icon(Icons.search_off, size: 48, color: Colors.black26),
+                        SizedBox(height: 10),
+                        Text(
+                          'Percakapan tidak ditemukan',
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Coba gunakan kata kunci lain.',
+                          style: TextStyle(color: Colors.black38, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            );
+          }
+
+          return _buildRoomTile(rooms[index - 1]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildChatFilterBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _buildChatFilterChip(
+              value: 'newest',
+              label: 'Terbaru',
+              icon: Icons.schedule_outlined,
+            ),
+            _buildChatFilterChip(
+              value: 'oldest',
+              label: 'Terlama',
+              icon: Icons.history_outlined,
+            ),
+            _buildChatFilterChip(
+              value: 'unread',
+              label: 'Belum Dibaca',
+              icon: Icons.mark_chat_unread_outlined,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChatFilterChip({
+    required String value,
+    required String label,
+    required IconData icon,
+  }) {
+    final isActive = _roomFilter == value;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: () => setState(() => _roomFilter = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0xFFE83030) : Colors.white,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: isActive
+                  ? const Color(0xFFE83030)
+                  : Colors.black.withValues(alpha: 0.08),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (isActive ? const Color(0xFFE83030) : Colors.black)
+                    .withValues(alpha: isActive ? 0.18 : 0.035),
+                blurRadius: isActive ? 16 : 10,
+                spreadRadius: -8,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: isActive ? Colors.white : const Color(0xFFE83030),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isActive ? Colors.white : Colors.black87,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChatSearchBar() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.045),
+            blurRadius: 24,
+            spreadRadius: -9,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) => setState(() => _searchQuery = value),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Cari percakapan...',
+          hintStyle: const TextStyle(color: Colors.black38, fontSize: 13),
+          prefixIcon: const Icon(Icons.search, color: Color(0xFFE83030)),
+          suffixIcon: _searchQuery.isEmpty
+              ? null
+              : IconButton(
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                  icon: const Icon(Icons.close, size: 18),
+                ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: Color(0xFFE83030), width: 1.2),
+          ),
+        ),
       ),
     );
   }
@@ -190,7 +505,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildRoomTile(ChatRoom room) {
     final other = room.otherUser;
     final latest = room.latestMessage;
-    final name = other?.username ?? 'Ruang Chat #${room.id}';
+    final name = other?.username ?? 'Ruang Pesan #${room.id}';
     final preview = latest == null
         ? 'Mulai percakapan...'
         : latest.type == 'image'
@@ -221,12 +536,13 @@ class _ChatScreenState extends State<ChatScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.black12),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 26,
+              spreadRadius: -10,
+              offset: const Offset(0, 16),
             ),
           ],
         ),
@@ -234,7 +550,7 @@ class _ChatScreenState extends State<ChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              radius: 24,
+              radius: 26,
               backgroundColor: const Color(0xFFE83030).withValues(alpha: 0.12),
               child: Text(
                 name.isNotEmpty ? name[0].toUpperCase() : '?',
@@ -266,7 +582,10 @@ class _ChatScreenState extends State<ChatScreen> {
                       const SizedBox(width: 8),
                       Text(
                         time,
-                        style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                        style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -281,6 +600,8 @@ class _ChatScreenState extends State<ChatScreen> {
                           style: TextStyle(
                             color: unread ? Colors.black87 : Colors.black54,
                             fontSize: 13,
+                            fontWeight:
+                                unread ? FontWeight.w600 : FontWeight.w400,
                           ),
                         ),
                       ),
@@ -609,18 +930,147 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   @override
   Widget build(BuildContext context) {
     return FrostedScaffold(
-      title: widget.roomName,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.refresh),
-          onPressed: () => _loadMessages(),
-        ),
-      ],
+      showAppBar: false,
+      backgroundColor: Colors.white,
       body: Column(
         children: [
+          _buildRoomHeader(),
           Expanded(child: _buildMessageList()),
           _buildInputBar(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRoomHeader() {
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFE83030), Color(0xFFF64A4A)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFE83030).withValues(alpha: 0.36),
+                blurRadius: 34,
+                spreadRadius: -9,
+                offset: const Offset(0, 19),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -26,
+                top: -34,
+                child: Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.13),
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  _buildRoomHeaderButton(
+                    icon: Icons.arrow_back,
+                    onTap: () => Navigator.pop(context),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        widget.roomName.isNotEmpty
+                            ? widget.roomName[0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.roomName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          _isFetchingMessages
+                              ? 'Menyegarkan pesan...'
+                              : 'Percakapan aktif',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  _buildRoomHeaderButton(
+                    icon: Icons.refresh,
+                    onTap: () => _loadMessages(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoomHeaderButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.16),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: SizedBox(
+          width: 42,
+          height: 42,
+          child: Icon(icon, color: Colors.white, size: 22),
+        ),
       ),
     );
   }
@@ -718,13 +1168,26 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               constraints: BoxConstraints(
                   maxWidth: MediaQuery.of(context).size.width * 0.70),
               decoration: BoxDecoration(
-                color: isMe ? const Color(0xFFE83030) : Colors.grey[100],
+                color: isMe ? const Color(0xFFE83030) : Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
                   bottomLeft: Radius.circular(isMe ? 16 : 4),
                   bottomRight: Radius.circular(isMe ? 4 : 16),
                 ),
+                border: isMe
+                    ? null
+                    : Border.all(color: Colors.black.withValues(alpha: 0.05)),
+                boxShadow: isMe
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.11),
+                          blurRadius: 24,
+                          spreadRadius: -10,
+                          offset: const Offset(0, 14),
+                        ),
+                      ],
               ),
               child: Column(
                 crossAxisAlignment:
@@ -800,9 +1263,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 24,
+                    spreadRadius: -8,
+                    offset: const Offset(0, 14),
                   ),
                 ],
               ),
@@ -929,9 +1393,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   border: Border.all(color: const Color(0xFFFFD6D6)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 24,
+                      spreadRadius: -8,
+                      offset: const Offset(0, 14),
                     ),
                   ],
                 ),
@@ -1074,25 +1539,28 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final isBusy = _isSending || _isSendingImage;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            offset: const Offset(0, -2),
-            blurRadius: 6,
+            color: Colors.black.withValues(alpha: 0.1),
+            offset: const Offset(0, -8),
+            blurRadius: 22,
+            spreadRadius: -14,
           )
         ],
       ),
       child: SafeArea(
+        top: false,
+        bottom: false,
         child: Row(
           children: [
             GestureDetector(
               onTap: isBusy ? null : _pickAndSendImage,
               child: Container(
-                width: 42,
-                height: 42,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: _isSendingImage
                       ? const Color(0xFFE83030).withValues(alpha: 0.12)
@@ -1129,7 +1597,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   hintText: 'Tulis pesan...',
                   hintStyle: TextStyle(color: Colors.grey[400]),
                   contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                   filled: true,
                   fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
@@ -1152,8 +1620,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 : GestureDetector(
                     onTap: _sendMessage,
                     child: Container(
-                      width: 42,
-                      height: 42,
+                      width: 40,
+                      height: 40,
                       decoration: const BoxDecoration(
                         color: Color(0xFFE83030),
                         shape: BoxShape.circle,
