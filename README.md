@@ -16,36 +16,54 @@
 
 <table>
   <tr>
-    <td width="50%" valign="top">
+    <td valign="top">
       <h3>Marketplace Experience</h3>
       <p>Jualin menghubungkan customer dan seller dalam satu alur marketplace: cari produk, lihat detail, chat penjual, checkout, pembayaran, dan pantau transaksi.</p>
       <p>
         <img alt="Customer" src="https://img.shields.io/badge/CUSTOMER-Browse%20%7C%20Chat%20%7C%20Checkout-FF2D20?style=for-the-badge">
+      </p>
+      <p>
         <img alt="Seller" src="https://img.shields.io/badge/SELLER-Produk%20%7C%20Pesanan%20%7C%20Wallet-111827?style=for-the-badge">
+      </p>
+      <p>
         <img alt="Admin" src="https://img.shields.io/badge/ADMIN-Backoffice%20%7C%20Reports%20%7C%20Monitoring-374151?style=for-the-badge">
       </p>
     </td>
-    <td width="50%" valign="top">
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td valign="top">
       <h3>Application Modules</h3>
       <p><strong>Web App</strong></p>
       <p>
         <img alt="Next.js Web" src="https://img.shields.io/badge/NEXT.JS-Web%20Marketplace-000000?style=for-the-badge&logo=nextdotjs&logoColor=white">
+      </p>
+      <p>
         <img alt="Backoffice" src="https://img.shields.io/badge/BACKOFFICE-Admin%20Dashboard-DC2626?style=for-the-badge">
       </p>
       <p><strong>Mobile App</strong></p>
       <p>
         <img alt="Flutter Mobile" src="https://img.shields.io/badge/FLUTTER-Mobile%20Marketplace-02569B?style=for-the-badge&logo=flutter&logoColor=white">
+      </p>
+      <p>
         <img alt="Android APK" src="https://img.shields.io/badge/APK-Release%20Build-16A34A?style=for-the-badge&logo=android&logoColor=white">
       </p>
       <p><strong>Backend API</strong></p>
       <p>
         <img alt="Laravel API" src="https://img.shields.io/badge/LARAVEL-REST%20API-FF2D20?style=for-the-badge&logo=laravel&logoColor=white">
+      </p>
+      <p>
         <img alt="JWT" src="https://img.shields.io/badge/JWT-Role%20Based%20Auth-111827?style=for-the-badge&logo=jsonwebtokens&logoColor=white">
       </p>
     </td>
   </tr>
+</table>
+
+<table>
   <tr>
-    <td width="50%" valign="top">
+    <td valign="top">
       <h3>Core Features</h3>
       <table>
         <tr>
@@ -59,7 +77,12 @@
         </tr>
       </table>
     </td>
-    <td width="50%" valign="top">
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td valign="top">
       <h3>Admin and Demo Flow</h3>
       <table>
         <tr>
