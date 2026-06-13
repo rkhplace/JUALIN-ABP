@@ -61,6 +61,8 @@ class EscrowController extends Controller
             ]);
 
             DB::commit();
+            app(SellerVerificationService::class)
+                ->updateSellerVerification($transaction->seller_id);
 
             return ApiResponse::success('Escrow claimed successfully', [
                 'transaction' => $transaction->fresh(),

@@ -10,8 +10,10 @@ class Product {
   final int sellerId;
   final int stock;
   final String imagePath;
+  final List<String> imagePaths;
   final String condition;
   final bool isNegotiable;
+  final bool sellerIsVerified;
 
   Product({
     required this.id,
@@ -23,8 +25,10 @@ class Product {
     this.sellerId = 0,
     required this.stock,
     this.imagePath = '',
+    this.imagePaths = const [],
     this.condition = 'Bekas',
     this.isNegotiable = false,
+    this.sellerIsVerified = false,
   });
 
   /// Maps the ProductResponse shape returned by the Laravel API:
@@ -49,9 +53,17 @@ class Product {
           'Penjual';
       sellerId = sellerId == 0 ? _parseInt(seller['id']) : sellerId;
     }
+    final sellerIsVerified = _parseBool(
+      json['seller_verified'] ??
+          json['is_seller_verified'] ??
+          (json['seller'] is Map
+              ? (json['seller'] as Map)['is_verified']
+              : null),
+    );
 
-    final imagePath =
-        ImageUrlHelper.resolve(json['image'] ?? json['image_path']);
+    final imagePaths =
+        ImageUrlHelper.resolveAll(json['image'] ?? json['image_path']);
+    final imagePath = imagePaths.isNotEmpty ? imagePaths.first : '';
 
     return Product(
       id: _parseInt(json['id']),
@@ -63,8 +75,10 @@ class Product {
       sellerId: sellerId,
       stock: _parseInt(json['stock_quantity'] ?? json['stock']),
       imagePath: imagePath,
+      imagePaths: imagePaths,
       condition: json['condition']?.toString() ?? 'Bekas',
       isNegotiable: _parseBool(json['is_negotiable']),
+      sellerIsVerified: sellerIsVerified,
     );
   }
 
@@ -88,8 +102,9 @@ class Product {
         'price': price,
         'description': description,
         'stock_quantity': stock,
-        'image': imagePath,
+        'image': imagePaths.isNotEmpty ? imagePaths : imagePath,
         'condition': condition,
         'is_negotiable': isNegotiable,
+        'seller_verified': sellerIsVerified,
       };
 }

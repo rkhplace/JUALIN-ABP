@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../widgets/ui/custom_button.dart';
 import '../services/product_service.dart';
 import '../services/chat_service.dart';
 import '../services/auth_service.dart';
@@ -25,9 +24,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final ChatService _chatService = ChatService();
   final AuthService _authService = AuthService();
   final ReportService _reportService = ReportService();
+  final PageController _imagePageController = PageController();
   Product? _product;
   bool _isLoading = true;
   bool _isChatLoading = false;
+  int _activeImageIndex = 0;
   String? _errorMessage;
 
   Future<bool> requireLogin(
@@ -72,6 +73,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       if (mounted) {
         setState(() {
           _product = product;
+          _activeImageIndex = 0;
           _isLoading = false;
         });
       }
@@ -83,6 +85,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         });
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _imagePageController.dispose();
+    super.dispose();
   }
 
   Future<void> _handleChatPenjual() async {
@@ -537,246 +545,385 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   )
                 : _product == null
                     ? const Center(child: Text('Data produk tidak ditemukan.'))
-                    : SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Product Image
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(18),
-                                child: AspectRatio(
-                                  aspectRatio: 1.12,
-                                  child: Container(
-                                    width: double.infinity,
-                                    color: Colors.grey[200],
-                                    child: _product!.imagePath.isNotEmpty
-                                        ? Image.network(
-                                            _product!.imagePath,
-                                            fit: BoxFit.cover,
-                                            loadingBuilder:
-                                                (context, child, progress) {
-                                              if (progress == null) {
-                                                return child;
-                                              }
-                                              return const Center(
-                                                child:
-                                                    CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                ),
-                                              );
-                                            },
-                                            errorBuilder: (_, __, ___) =>
-                                                Center(
-                                              child: Icon(Icons.image,
-                                                  size: 72,
-                                                  color: Colors.grey[400]),
-                                            ),
-                                          )
-                                        : Center(
-                                            child: Icon(Icons.image,
-                                                size: 72,
-                                                color: Colors.grey[400]),
-                                          ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Price
-                                  Text(
-                                    formatCurrency(_product!.price),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFFE83030),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  // Title
-                                  Text(
-                                    _product!.title,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      height: 1.3,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  // Badges
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 6,
-                                    children: [
-                                      _buildBadge(_product!.categoryName,
-                                          Colors.grey[200]!, Colors.black87),
-                                      _buildBadge(
-                                          _product!.condition,
-                                          Colors.orange.withValues(alpha: 0.1),
-                                          Colors.orange[800]!),
-                                      if (_product!.isNegotiable)
-                                        _buildBadge(
-                                            'Bisa Nego',
-                                            Colors.blue.withValues(alpha: 0.1),
-                                            Colors.blue[800]!),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 18),
-                                  const Divider(height: 1),
-                                  const SizedBox(height: 14),
-                                  // Seller Info
-                                  Row(
-                                    children: [
-                                      const CircleAvatar(
-                                        backgroundColor: Color(0xFFF5F5F5),
-                                        radius: 20,
-                                        child: Icon(Icons.person,
-                                            color: Colors.grey),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(_product!.sellerName,
-                                                style: const TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold)),
-                                            const Text('Penjual',
-                                                style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.black54)),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 14),
-                                  const Divider(height: 1),
-                                  const SizedBox(height: 14),
-                                  // Description
-                                  const Text('Deskripsi Produk',
-                                      style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold)),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _product!.description.isEmpty
-                                        ? 'Tidak ada deskripsi.'
-                                        : _product!.description,
-                                    style: const TextStyle(
-                                      color: Colors.black87,
-                                      fontSize: 13,
-                                      height: 1.45,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    'Stok: ${_product!.stock}',
-                                    style: TextStyle(
-                                        color: Colors.grey[600], fontSize: 13),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  OutlinedButton.icon(
-                                    onPressed: _handleReportProduct,
-                                    icon: const Icon(Icons.flag_outlined,
-                                        size: 18),
-                                    label: const Text('Laporkan Produk'),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: const Color(0xFFE83030),
-                                      side: const BorderSide(
-                                          color: Color(0xFFE83030)),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 14, vertical: 10),
-                                      textStyle: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    : _buildProductContent(),
       ),
-      bottomNavigationBar: _product == null
-          ? null
-          : Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    offset: const Offset(0, -4),
-                    blurRadius: 10,
-                  )
-                ],
-              ),
-              child: SafeArea(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        text: 'Chat Penjual',
-                        isSecondary: true,
-                        isLoading: _isChatLoading,
-                        onPressed: _handleChatPenjual,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: CustomButton(
-                        text: _product!.stock <= 0
-                            ? 'Stok Habis'
-                            : 'Beli Sekarang',
-                        onPressed: _product!.stock <= 0
-                            ? null
-                            : () async {
-                                // Check if user is logged in using existing AuthService
-                                final loggedIn = await requireLogin(context);
-
-                                if (!context.mounted) return;
-                                if (!loggedIn) return;
-
-                                Navigator.pushNamed(
-                                  context,
-                                  '/checkout',
-                                  arguments: _product,
-                                );
-                              },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+      bottomNavigationBar: _product == null ? null : _buildBottomActionBar(),
     );
   }
 
-  Widget _buildBadge(String text, Color bgColor, Color textColor) {
+  Widget _buildProductContent() {
+    final product = _product!;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildProductImage(product),
+          const SizedBox(height: 14),
+          Text(
+            product.title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            formatCurrency(product.price),
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFFE83030),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildBadge(
+                product.categoryName,
+                const Color(0xFFFFEFEF),
+                const Color(0xFFE83030),
+                icon: Icons.category_outlined,
+              ),
+              _buildBadge(
+                product.condition,
+                const Color(0xFFFFF5E8),
+                const Color(0xFFE88422),
+                icon: Icons.inventory_2_outlined,
+              ),
+              _buildBadge(
+                'Stok: ${product.stock} tersedia',
+                const Color(0xFFF5F5F5),
+                Colors.black87,
+                icon: Icons.event_available_outlined,
+              ),
+              if (product.isNegotiable)
+                _buildBadge(
+                  'Bisa Nego',
+                  const Color(0xFFEAF4FF),
+                  const Color(0xFF1976D2),
+                  icon: Icons.handshake_outlined,
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildSellerCard(product),
+          const SizedBox(height: 18),
+          const Text(
+            'Deskripsi Produk',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            product.description.isEmpty
+                ? 'Tidak ada deskripsi.'
+                : product.description,
+            style: const TextStyle(
+              color: Color(0xFF555555),
+              fontSize: 12,
+              height: 1.45,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: _handleReportProduct,
+            icon: const Icon(Icons.flag_outlined, size: 16),
+            label: const Text('Laporkan Produk'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFE83030),
+              side: const BorderSide(color: Color(0xFFE83030)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              textStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductImage(Product product) {
+    final images = product.imagePaths.isNotEmpty
+        ? product.imagePaths
+        : [product.imagePath];
+    final visibleImages = images.where((image) => image.isNotEmpty).toList();
+    final hasMultipleImages = visibleImages.length > 1;
+
+    return Column(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: AspectRatio(
+            aspectRatio: 1.12,
+            child: Container(
+              width: double.infinity,
+              color: const Color(0xFFF2F2F2),
+              child: visibleImages.isNotEmpty
+                  ? PageView.builder(
+                      controller: _imagePageController,
+                      itemCount: visibleImages.length,
+                      onPageChanged: (index) {
+                        setState(() => _activeImageIndex = index);
+                      },
+                      itemBuilder: (context, index) => Image.network(
+                        visibleImages[index],
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Icon(
+                            Icons.image_outlined,
+                            size: 56,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      ),
+                    )
+                  : Center(
+                      child: Icon(
+                        Icons.image_outlined,
+                        size: 56,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+            ),
+          ),
+        ),
+        if (hasMultipleImages) ...[
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              visibleImages.length,
+              (index) => _buildImageDot(index == _activeImageIndex),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildImageDot(bool active) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      width: active ? 18 : 5,
+      height: 5,
+      margin: const EdgeInsets.symmetric(horizontal: 2.5),
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFFE83030) : const Color(0xFFE0E0E0),
+        borderRadius: BorderRadius.circular(99),
+      ),
+    );
+  }
+
+  Widget _buildSellerCard(Product product) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            backgroundColor: Color(0xFFFFEFEF),
+            radius: 24,
+            child: Icon(Icons.person, color: Color(0xFFE83030)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        product.sellerName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    if (product.sellerIsVerified) ...[
+                      const SizedBox(width: 5),
+                      const Icon(
+                        Icons.verified,
+                        size: 15,
+                        color: Color(0xFF1D8BFF),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Penjual',
+                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomActionBar() {
+    final product = _product!;
+    final canBuy = product.stock > 0;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            offset: const Offset(0, -4),
+            blurRadius: 14,
+          )
+        ],
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildActionButton(
+                label: 'Chat Penjual',
+                icon: Icons.chat_bubble_outline,
+                outlined: true,
+                loading: _isChatLoading,
+                onPressed: _handleChatPenjual,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildActionButton(
+                label: canBuy ? 'Beli Sekarang' : 'Stok Habis',
+                icon: Icons.shopping_bag_outlined,
+                onPressed: canBuy
+                    ? () async {
+                        final loggedIn = await requireLogin(context);
+
+                        if (!mounted) return;
+                        if (!loggedIn) return;
+
+                        Navigator.pushNamed(
+                          context,
+                          '/checkout',
+                          arguments: product,
+                        );
+                      }
+                    : null,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onPressed,
+    bool outlined = false,
+    bool loading = false,
+  }) {
+    final foreground = outlined ? const Color(0xFFE83030) : Colors.white;
+    final background = outlined ? Colors.white : const Color(0xFFE83030);
+
+    return SizedBox(
+      height: 48,
+      child: ElevatedButton.icon(
+        onPressed: loading ? null : onPressed,
+        icon: loading
+            ? SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(foreground),
+                ),
+              )
+            : Icon(icon, size: 16),
+        label: Text(label),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: background,
+          foregroundColor: foreground,
+          disabledBackgroundColor:
+              outlined ? Colors.white : const Color(0xFFEFA1A1),
+          disabledForegroundColor:
+              outlined ? const Color(0xFFE83030) : Colors.white,
+          elevation: outlined ? 0 : 2,
+          shadowColor: const Color(0xFFE83030).withValues(alpha: 0.28),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: outlined
+                ? const BorderSide(color: Color(0xFFE83030))
+                : BorderSide.none,
+          ),
+          textStyle: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(
+    String text,
+    Color bgColor,
+    Color textColor, {
+    IconData? icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-            fontSize: 12, color: textColor, fontWeight: FontWeight.w600),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: textColor),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              color: textColor,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
     );
   }

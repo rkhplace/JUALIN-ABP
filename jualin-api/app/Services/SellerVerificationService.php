@@ -25,7 +25,7 @@ class SellerVerificationService
         }
 
         $totalSales = Transaction::where('seller_id', $sellerId)
-            ->whereIn('status', ['verified'])
+            ->whereIn('status', ['verified', 'completed'])
             ->count();
 
         $seller->total_sales  = $totalSales;

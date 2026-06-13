@@ -48,6 +48,30 @@ class ProductControllerTest extends TestCase
         $res->assertStatus(404)->assertJson(['message' => 'Product not found']);
     }
 
+    public function testShowReturnsSellerVerificationStatus()
+    {
+        $seller = User::create([
+            'username' => 'seller_verified',
+            'email' => 'seller-verified@example.com',
+            'password' => 'pw',
+            'role' => 'seller',
+            'is_verified' => true,
+        ]);
+
+        $product = Product::create([
+            'seller_id' => $seller->id,
+            'name' => 'Verified Product',
+            'price' => 10000,
+            'stock_quantity' => 1,
+        ]);
+
+        $res = $this->json('GET', "/api/v1/products/{$product->id}");
+
+        $res->assertStatus(200)
+            ->assertJsonPath('data.seller.username', 'seller_verified')
+            ->assertJsonPath('data.seller.is_verified', true);
+    }
+
     public function testIndexMeReturnsOnlyOwnProductsForSeller()
     {
         $seller1 = User::create([
