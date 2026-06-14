@@ -9,7 +9,7 @@ export function ChatList({
   selectedId,
   onSelect,
   searchQuery = "",
-  filter = "all",
+  filter = "latest",
 }) {
   const { user } = useContext(AuthContext);
 
@@ -56,6 +56,14 @@ export function ChatList({
       (typeof lastText === "string" && lastText.includes("/chat-images/")
         ? "image"
         : "text");
+    const rawTimestamp =
+      chat.lastMessage?.timestamp || chat.updatedAt || chat.createdAt;
+    const sortDate = rawTimestamp?.toDate
+      ? rawTimestamp.toDate()
+      : new Date(rawTimestamp || 0);
+    const sortTimestamp = Number.isNaN(sortDate.getTime())
+      ? 0
+      : sortDate.getTime();
 
     return {
       id: chat.id,
@@ -67,23 +75,30 @@ export function ChatList({
       message: lastType === "image" ? "Mengirim foto" : lastText,
       time: timeStr,
       unread: chat.unreadCount?.[user?.id?.toString()] || 0,
+      sortTimestamp,
       avatar: getProfilePictureUrl(otherParticipant?.profile_picture || otherParticipant?.avatar),
       role: otherParticipant?.role,
       originalChat: chat,
     };
   });
 
-  const filteredChats = transformedChats.filter((chat) => {
-    const matchesSearch =
-      chat.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      chat.handle?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      chat.message?.toLowerCase().includes(searchQuery.toLowerCase());
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const filteredChats = transformedChats
+    .filter((chat) => {
+      const matchesSearch =
+        chat.name?.toLowerCase().includes(normalizedSearch) ||
+        chat.handle?.toLowerCase().includes(normalizedSearch) ||
+        chat.message?.toLowerCase().includes(normalizedSearch);
 
-    const matchesFilter =
-      filter === "all" || (filter === "unread" && chat.unread > 0);
+      const matchesFilter = filter !== "unread" || chat.unread > 0;
 
-    return matchesSearch && matchesFilter;
-  });
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) =>
+      filter === "oldest"
+        ? a.sortTimestamp - b.sortTimestamp
+        : b.sortTimestamp - a.sortTimestamp
+    );
 
   if (chats.length === 0) {
     return (

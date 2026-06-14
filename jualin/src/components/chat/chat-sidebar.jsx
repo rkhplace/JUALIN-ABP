@@ -1,11 +1,17 @@
 'use client';
 import { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Clock3, History, MessageSquare, Search } from 'lucide-react';
 import { ChatList } from './ChatList';
 
 export function ChatSidebar({ chats = [], selectedId, onSelect }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = useState('latest');
+
+  const filters = [
+    { value: 'latest', label: 'Terbaru', Icon: Clock3 },
+    { value: 'oldest', label: 'Terlama', Icon: History },
+    { value: 'unread', label: 'Belum Dibaca', Icon: MessageSquare },
+  ];
 
   return (
     <div className="bg-white h-full flex flex-col overflow-hidden relative">
@@ -26,25 +32,26 @@ export function ChatSidebar({ chats = [], selectedId, onSelect }) {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveFilter('all')}
-            className={`px-4 md:px-5 py-2 rounded-full text-xs font-bold transition-all shadow-sm ${activeFilter === 'all'
-              ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-red-200 transform scale-105'
-              : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-          >
-            Semua
-          </button>
-          <button
-            onClick={() => setActiveFilter('unread')}
-            className={`px-4 md:px-5 py-2 rounded-full text-xs font-bold transition-all shadow-sm ${activeFilter === 'unread'
-              ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-red-200 transform scale-105'
-              : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-          >
-            Belum Dibaca
-          </button>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {filters.map(({ value, label, Icon }) => {
+            const isActive = activeFilter === value;
+
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setActiveFilter(value)}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-bold shadow-sm transition-all md:px-4 ${
+                  isActive
+                    ? 'border-red-500 bg-gradient-to-r from-red-500 to-red-600 text-white shadow-red-200'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-red-200 hover:bg-red-50 hover:text-red-600'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 

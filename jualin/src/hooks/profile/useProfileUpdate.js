@@ -24,6 +24,7 @@ export const useProfileUpdate = () => {
     () => ({
       username: user?.username || '',
       email: user?.email || '',
+      phone: user?.phone || '',
       gender: user?.gender || 'male',
       birthday: normalizeDateString(user?.birthday),
       region: user?.region || '',
@@ -106,6 +107,12 @@ export const useProfileUpdate = () => {
     const e = {};
     if (!form.username?.trim()) e.username = 'Username required';
     if (!form.email?.trim() || !/.+@.+\..+/.test(form.email)) e.email = 'Valid email required';
+    if (
+      form.phone?.trim() &&
+      !/^[0-9+\-()\s]{8,20}$/.test(form.phone.trim())
+    ) {
+      e.phone = 'Nomor telepon tidak valid';
+    }
     if (form.bio?.length > 500) e.bio = 'Bio max 500 chars';
     setErrors(e);
     return Object.keys(e).length === 0;

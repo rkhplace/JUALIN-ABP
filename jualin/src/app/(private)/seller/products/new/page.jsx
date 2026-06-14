@@ -19,7 +19,10 @@ export default function NewProductPage() {
         name: formData.name.trim(),
         description: formData.description.trim(),
         price: parseFloat(formData.priceRaw || formData.price),
-        stock_quantity: parseInt(formData.stock_quantity),
+        stock_quantity: parseInt(
+          formData.stockRaw || formData.stock_quantity.replace(/\D/g, ""),
+          10
+        ),
         category: formData.category.trim() || "",
         condition: formData.condition,
         status: formData.status,
