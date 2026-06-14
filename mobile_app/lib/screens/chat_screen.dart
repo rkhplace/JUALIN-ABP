@@ -506,6 +506,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final other = room.otherUser;
     final latest = room.latestMessage;
     final name = other?.username ?? 'Ruang Pesan #${room.id}';
+    final avatarUrl = ImageUrlHelper.resolve(other?.profilePicture);
     final preview = latest == null
         ? 'Mulai percakapan...'
         : latest.type == 'image'
@@ -525,6 +526,7 @@ class _ChatScreenState extends State<ChatScreen> {
             builder: (_) => ChatRoomScreen(
               roomId: room.id,
               roomName: name,
+              roomAvatarUrl: avatarUrl,
               product: room.product,
             ),
           ),
@@ -552,13 +554,17 @@ class _ChatScreenState extends State<ChatScreen> {
             CircleAvatar(
               radius: 26,
               backgroundColor: const Color(0xFFE83030).withValues(alpha: 0.12),
-              child: Text(
-                name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: const TextStyle(
-                  color: Color(0xFFE83030),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              backgroundImage:
+                  avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+              child: avatarUrl.isEmpty
+                  ? Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : '?',
+                      style: const TextStyle(
+                        color: Color(0xFFE83030),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : null,
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -634,12 +640,14 @@ class _ChatScreenState extends State<ChatScreen> {
 class ChatRoomScreen extends StatefulWidget {
   final int roomId;
   final String roomName;
+  final String? roomAvatarUrl;
   final ChatProduct? product;
 
   const ChatRoomScreen({
     super.key,
     required this.roomId,
     required this.roomName,
+    this.roomAvatarUrl,
     this.product,
   });
 
@@ -660,11 +668,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool _isFetchingMessages = false;
   String? _errorMessage;
   int? _currentUserId; // real authenticated user ID for bubble alignment
+  late String _roomAvatarUrl;
   Timer? _messagePoller;
 
   @override
   void initState() {
     super.initState();
+    _roomAvatarUrl = ImageUrlHelper.resolve(widget.roomAvatarUrl);
     _init();
   }
 
@@ -732,6 +742,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         final shouldScroll = showLoader || (_isNearBottom() && hasNewMessages);
         setState(() {
           _messages = messages;
+          _roomAvatarUrl = _resolveRoomAvatarUrl(messages);
           _isLoading = false;
           _errorMessage = null;
         });
@@ -757,6 +768,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (nextMessages.length != _messages.length) return true;
     if (nextMessages.isEmpty && _messages.isEmpty) return false;
     return nextMessages.last.id != _messages.last.id;
+  }
+
+  String _resolveRoomAvatarUrl(List<ChatMessage> messages) {
+    if (_roomAvatarUrl.isNotEmpty) return _roomAvatarUrl;
+
+    for (final message in messages) {
+      if (_currentUserId != null && message.senderId == _currentUserId) {
+        continue;
+      }
+
+      final avatarUrl = ImageUrlHelper.resolve(message.sender?.profilePicture);
+      if (avatarUrl.isNotEmpty) return avatarUrl;
+    }
+
+    return '';
   }
 
   bool _isNearBottom() {
@@ -943,6 +969,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Widget _buildRoomHeader() {
+    final avatarUrl = ImageUrlHelper.resolve(_roomAvatarUrl);
+
     return SafeArea(
       bottom: false,
       child: Padding(
@@ -996,22 +1024,30 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.18),
                       shape: BoxShape.circle,
+                      image: avatarUrl.isNotEmpty
+                          ? DecorationImage(
+                              image: NetworkImage(avatarUrl),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.2),
                       ),
                     ),
-                    child: Center(
-                      child: Text(
-                        widget.roomName.isNotEmpty
-                            ? widget.roomName[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ),
+                    child: avatarUrl.isEmpty
+                        ? Center(
+                            child: Text(
+                              widget.roomName.isNotEmpty
+                                  ? widget.roomName[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 18,
+                              ),
+                            ),
+                          )
+                        : null,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1143,6 +1179,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final time = msg.sentAt != null
         ? '${msg.sentAt!.hour.toString().padLeft(2, '0')}:${msg.sentAt!.minute.toString().padLeft(2, '0')}'
         : '';
+    final senderAvatarUrl = ImageUrlHelper.resolve(msg.sender?.profilePicture);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -1155,10 +1192,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             CircleAvatar(
               radius: 14,
               backgroundColor: Colors.grey[200],
-              child: Text(
-                (msg.sender?.username ?? '?')[0].toUpperCase(),
-                style: const TextStyle(fontSize: 11, color: Colors.black54),
-              ),
+              backgroundImage: senderAvatarUrl.isNotEmpty
+                  ? NetworkImage(senderAvatarUrl)
+                  : null,
+              child: senderAvatarUrl.isEmpty
+                  ? Text(
+                      (msg.sender?.username ?? '?')[0].toUpperCase(),
+                      style:
+                          const TextStyle(fontSize: 11, color: Colors.black54),
+                    )
+                  : null,
             ),
             const SizedBox(width: 6),
           ],
@@ -1221,6 +1264,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   Widget _buildImageBubble(ChatMessage msg, bool isMe) {
     final imageUrl = ImageUrlHelper.resolve(msg.message);
+    final senderAvatarUrl = ImageUrlHelper.resolve(msg.sender?.profilePicture);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -1233,10 +1277,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             CircleAvatar(
               radius: 14,
               backgroundColor: Colors.grey[200],
-              child: Text(
-                (msg.sender?.username ?? '?')[0].toUpperCase(),
-                style: const TextStyle(fontSize: 11, color: Colors.black54),
-              ),
+              backgroundImage: senderAvatarUrl.isNotEmpty
+                  ? NetworkImage(senderAvatarUrl)
+                  : null,
+              child: senderAvatarUrl.isEmpty
+                  ? Text(
+                      (msg.sender?.username ?? '?')[0].toUpperCase(),
+                      style:
+                          const TextStyle(fontSize: 11, color: Colors.black54),
+                    )
+                  : null,
             ),
             const SizedBox(width: 6),
           ],
@@ -1302,6 +1352,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   Widget _buildProductBubble(ChatMessage msg, bool isMe) {
     final product = msg.product!;
     final imageUrl = ImageUrlHelper.resolve(product.image);
+    final senderAvatarUrl = ImageUrlHelper.resolve(msg.sender?.profilePicture);
     final time = msg.sentAt != null
         ? '${msg.sentAt!.hour.toString().padLeft(2, '0')}:${msg.sentAt!.minute.toString().padLeft(2, '0')}'
         : '';
@@ -1317,10 +1368,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             CircleAvatar(
               radius: 14,
               backgroundColor: Colors.grey[200],
-              child: Text(
-                (msg.sender?.username ?? '?')[0].toUpperCase(),
-                style: const TextStyle(fontSize: 11, color: Colors.black54),
-              ),
+              backgroundImage: senderAvatarUrl.isNotEmpty
+                  ? NetworkImage(senderAvatarUrl)
+                  : null,
+              child: senderAvatarUrl.isEmpty
+                  ? Text(
+                      (msg.sender?.username ?? '?')[0].toUpperCase(),
+                      style:
+                          const TextStyle(fontSize: 11, color: Colors.black54),
+                    )
+                  : null,
             ),
             const SizedBox(width: 6),
           ],

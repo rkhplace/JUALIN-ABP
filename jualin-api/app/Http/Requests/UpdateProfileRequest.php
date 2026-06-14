@@ -30,7 +30,7 @@ class UpdateProfileRequest extends FormRequest
                 'sometimes',
                 'string',
                 'min:3',
-                'max:20',
+                'max:50',
                 Rule::unique('users', 'username')->ignore($userId),
             ],
             'email' => [

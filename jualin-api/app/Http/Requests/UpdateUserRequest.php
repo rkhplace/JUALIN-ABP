@@ -24,7 +24,7 @@ class UpdateUserRequest extends FormRequest
         $id = request()->route('id');
 
         return [
-            'username' => "sometimes|string|min:3|max:20|unique:users,username,$id",
+            'username' => "sometimes|string|min:3|max:50|unique:users,username,$id",
             'email'    => "sometimes|email|unique:users,email,$id",
             'profile_picture' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'password' => 'sometimes|string|min:8',

@@ -1,4 +1,5 @@
 import 'chat_room.dart';
+import '../utils/image_url_helper.dart';
 
 /// A single chat message returned by GET /v1/chat/rooms/{roomId}/messages
 class ChatMessage {
@@ -67,7 +68,9 @@ class ChatSender {
     return ChatSender(
       id: json['id'] ?? 0,
       username: json['username']?.toString() ?? 'Pengguna',
-      profilePicture: json['profile_picture']?.toString(),
+      profilePicture: ImageUrlHelper.resolve(
+        json['profile_picture'] ?? json['avatar_url'] ?? json['avatar'],
+      ),
     );
   }
 }

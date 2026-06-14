@@ -8,6 +8,7 @@ class Product {
   final String description;
   final String sellerName;
   final int sellerId;
+  final String sellerProfilePicture;
   final int stock;
   final String imagePath;
   final List<String> imagePaths;
@@ -23,6 +24,7 @@ class Product {
     required this.description,
     required this.sellerName,
     this.sellerId = 0,
+    this.sellerProfilePicture = '',
     required this.stock,
     this.imagePath = '',
     this.imagePaths = const [],
@@ -46,12 +48,16 @@ class Product {
 
     String sellerName = 'Penjual';
     int sellerId = _parseInt(json['seller_id']);
+    String sellerProfilePicture = '';
     if (json['seller'] != null && json['seller'] is Map) {
       final seller = json['seller'] as Map;
       sellerName = seller['username']?.toString() ??
           seller['name']?.toString() ??
           'Penjual';
       sellerId = sellerId == 0 ? _parseInt(seller['id']) : sellerId;
+      sellerProfilePicture = ImageUrlHelper.resolve(
+        seller['profile_picture'] ?? seller['avatar_url'] ?? seller['avatar'],
+      );
     }
     final sellerIsVerified = _parseBool(
       json['seller_verified'] ??
@@ -73,6 +79,7 @@ class Product {
       description: json['description']?.toString() ?? '',
       sellerName: sellerName,
       sellerId: sellerId,
+      sellerProfilePicture: sellerProfilePicture,
       stock: _parseInt(json['stock_quantity'] ?? json['stock']),
       imagePath: imagePath,
       imagePaths: imagePaths,
@@ -103,6 +110,7 @@ class Product {
         'description': description,
         'stock_quantity': stock,
         'image': imagePaths.isNotEmpty ? imagePaths : imagePath,
+        'seller_profile_picture': sellerProfilePicture,
         'condition': condition,
         'is_negotiable': isNegotiable,
         'seller_verified': sellerIsVerified,

@@ -7,7 +7,7 @@ A new Flutter project.
 The app uses the deployed backend by default:
 
 ```bash
-https://jualin-abp-production-cbe5.up.railway.app/api/v1
+https://jualin-abp-production-b531.up.railway.app/api/v1
 ```
 
 To run against another backend without editing source code:

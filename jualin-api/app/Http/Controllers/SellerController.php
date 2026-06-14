@@ -31,11 +31,15 @@ class SellerController extends Controller
         // Re-sync in real time so the response is always fresh.
         $this->verificationService->updateSellerVerification($user->id);
         $user->refresh();
+        $profileCompletion = $this->verificationService->getProfileCompletion($user);
 
         return ApiResponse::success('Verification status retrieved successfully', [
             'total_sales' => (int) $user->total_sales,
             'is_verified' => (bool) $user->is_verified,
             'target'      => SellerVerificationService::VERIFICATION_TARGET,
+            'profile_complete' => $profileCompletion['is_complete'],
+            'missing_profile_fields' => $profileCompletion['missing_fields'],
+            'profile_requirements' => $profileCompletion['required_fields'],
         ]);
     }
 }

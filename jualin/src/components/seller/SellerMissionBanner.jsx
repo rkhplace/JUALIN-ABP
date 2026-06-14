@@ -41,6 +41,8 @@ export default function SellerMissionBanner() {
 
   const totalSales = status.total_sales ?? 0;
   const target = status.target ?? TARGET;
+  const profileComplete = status.profile_complete === true;
+  const missingFields = status.missing_profile_fields ?? [];
   const progressPct = Math.min((totalSales / target) * 100, 100);
 
   return (
@@ -145,6 +147,21 @@ export default function SellerMissionBanner() {
               />
             </div>
           </div>
+        </div>
+
+        <div className="mt-3 rounded-xl bg-white/70 border border-white px-3 py-2 text-xs sm:text-sm text-gray-700">
+          <p className="font-semibold text-gray-900">
+            Syarat tambahan: lengkapi data diri dan foto profil.
+          </p>
+          <p className="mt-1">
+            Status profil:{" "}
+            <span className={profileComplete ? "text-green-700 font-bold" : "text-[#E83030] font-bold"}>
+              {profileComplete ? "Lengkap" : "Belum lengkap"}
+            </span>
+            {!profileComplete && missingFields.length > 0 && (
+              <> · Kurang: {missingFields.map((item) => item.label).join(", ")}</>
+            )}
+          </p>
         </div>
       </div>
     </div>

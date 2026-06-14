@@ -54,11 +54,58 @@ class ApiClient {
         : jsonDecode(response.body);
     if (response.statusCode >= 400) {
       final msg = body is Map
-          ? (body['message'] ?? 'Request failed')
+          ? _errorMessage(body, fallback: 'Request failed')
           : 'Request failed';
       throw ApiException(msg.toString(), response.statusCode);
     }
     return body is Map<String, dynamic> ? body : {'data': body};
+  }
+
+  String _errorMessage(Map<dynamic, dynamic> body,
+      {String fallback = 'Request failed'}) {
+    final errors = body['errors'];
+    if (errors is Map && errors.isNotEmpty) {
+      final messages = <String>[];
+
+      for (final entry in errors.entries) {
+        final label = _fieldLabel(entry.key.toString());
+        final value = entry.value;
+        if (value is List && value.isNotEmpty) {
+          messages.add('$label: ${value.first}');
+        } else if (value != null) {
+          messages.add('$label: $value');
+        }
+      }
+
+      if (messages.isNotEmpty) return messages.join('\n');
+    }
+
+    return (body['message'] ?? fallback).toString();
+  }
+
+  String _fieldLabel(String field) {
+    switch (field) {
+      case 'username':
+        return 'Nama pengguna';
+      case 'email':
+        return 'Email';
+      case 'profile_picture':
+        return 'Foto profil';
+      case 'gender':
+        return 'Gender';
+      case 'birthday':
+        return 'Tanggal lahir';
+      case 'region':
+        return 'Provinsi';
+      case 'city':
+        return 'Kota';
+      case 'phone':
+        return 'Nomor HP';
+      case 'bio':
+        return 'Bio';
+      default:
+        return field;
+    }
   }
 
   // ── Public Methods ───────────────────────────────────────────────────────

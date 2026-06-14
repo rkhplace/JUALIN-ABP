@@ -4,11 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Responses\ApiResponse;
+use App\Services\SellerVerificationService;
 use App\Services\UserService;
 
 class ProfileController extends Controller
 {
-    public function __construct(private readonly UserService $userService)
+    public function __construct(
+        private readonly UserService $userService,
+        private readonly SellerVerificationService $verificationService,
+    )
     {
     }
 
@@ -22,6 +26,11 @@ class ProfileController extends Controller
         }
 
         $updatedUser = $this->userService->update($user->id, $data);
+
+        if ($updatedUser->role === 'seller') {
+            $this->verificationService->updateSellerVerification($updatedUser->id);
+            $updatedUser->refresh();
+        }
 
         return ApiResponse::success(
             'Profile updated',

@@ -83,6 +83,16 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
     super.dispose();
   }
 
+  Future<void> _handleBack() async {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+
+    navigator.pushReplacementNamed('/main');
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && _isWaitingForPayment) {
@@ -941,6 +951,29 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
           ),
           Row(
             children: [
+              Material(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(15),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(15),
+                  onTap: _handleBack,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
               Container(
                 width: 46,
                 height: 46,

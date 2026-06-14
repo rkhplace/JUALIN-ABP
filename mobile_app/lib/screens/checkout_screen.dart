@@ -119,7 +119,16 @@ class _CheckoutScreenState extends State<CheckoutScreen>
         // WALLET FLOW: POST /transactions/pay-wallet
         await _paymentService.payWallet(
             widget.product.sellerId, widget.product.id);
-        if (mounted) _showSuccessModal(isWallet: true);
+        Map<String, dynamic>? latest;
+        try {
+          final history = await _paymentService.getPurchaseHistory();
+          if (history.isNotEmpty && history.first is Map) {
+            latest = Map<String, dynamic>.from(history.first as Map);
+          }
+        } catch (_) {}
+        if (mounted) {
+          _showSuccessModal(isWallet: true, transactionData: latest);
+        }
       } else {
         // GATEWAY FLOW:
         // 1. Create transaction
@@ -186,6 +195,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     String? orderId;
     String? amount;
     String? status;
+    String? authCode;
 
     if (transactionData != null) {
       orderId = transactionData['order_id']?.toString();
@@ -194,6 +204,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
         amount = _formatCurrency(grossAmount);
       }
       status = transactionData['transaction_status']?.toString().toUpperCase();
+      authCode = _extractAuthCode(transactionData);
     } else if (isWallet) {
       amount = _formatCurrency(widget.product.price);
       status = 'VERIFIED';
@@ -202,85 +213,263 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Icon(
-          pending ? Icons.access_time_filled : Icons.check_circle,
-          color: pending ? Colors.orange : Colors.green,
-          size: 64,
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              detailTitle,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              detailSubtitle,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.black54, fontSize: 13),
-            ),
-            if (amount != null || orderId != null || status != null) ...[
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: Column(
-                  children: [
-                    if (orderId != null) ...[
-                      _buildDetailRow('ID Pesanan', orderId),
-                      const SizedBox(height: 8),
-                    ],
-                    if (amount != null) ...[
-                      _buildDetailRow('Total Pembayaran', amount),
-                      const SizedBox(height: 8),
-                    ],
-                    if (status != null) ...[
-                      _buildDetailRow('Status', status,
-                          valueColor:
-                              pending ? Colors.orange[800] : Colors.green[800]),
-                    ],
-                  ],
-                ),
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 22),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(26),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 34,
+                spreadRadius: -10,
+                offset: const Offset(0, 18),
               ),
-            ]
-          ],
-        ),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE83030),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            ],
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 78,
+                  height: 78,
+                  decoration: BoxDecoration(
+                    color: pending
+                        ? const Color(0xFFFFF7E6)
+                        : const Color(0xFFEAF8EE),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    pending ? Icons.access_time_filled : Icons.check_rounded,
+                    color: pending ? const Color(0xFFF59E0B) : Colors.green,
+                    size: 46,
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              onPressed: () {
-                // Pop the dialog
-                Navigator.pop(context);
-                // Return to home
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              },
-              child: const Text('Kembali ke Beranda',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 16),
+                Text(
+                  detailTitle,
+                  style: const TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  detailSubtitle,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF5F5),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: const Color(0xFFE83030).withValues(alpha: 0.18),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color:
+                              const Color(0xFFE83030).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: const Icon(
+                          Icons.qr_code_2_rounded,
+                          color: Color(0xFFE83030),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Kode & QR Penukaran',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Cek di Riwayat Pembelian. Tunjukkan kode atau QR ke penjual saat barang akan ditukar/diambil.',
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 12,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (authCode != null && authCode.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF16A34A), Color(0xFF22C55E)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              const Color(0xFF16A34A).withValues(alpha: 0.24),
+                          blurRadius: 18,
+                          spreadRadius: -8,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          'Kode Penukaran Anda',
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          authCode,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (amount != null || orderId != null || status != null) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F8F8),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.black12),
+                    ),
+                    child: Column(
+                      children: [
+                        if (orderId != null) ...[
+                          _buildDetailRow('ID Pesanan', orderId),
+                          const SizedBox(height: 8),
+                        ],
+                        if (amount != null) ...[
+                          _buildDetailRow('Total Pembayaran', amount),
+                          const SizedBox(height: 8),
+                        ],
+                        if (status != null) ...[
+                          _buildDetailRow(
+                            'Status',
+                            status,
+                            valueColor: pending
+                                ? Colors.orange[800]
+                                : Colors.green[800],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE83030),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        '/purchase_history',
+                        (route) => route.isFirst,
+                      );
+                    },
+                    icon: const Icon(Icons.receipt_long_outlined, size: 19),
+                    label: const Text(
+                      'Lihat Riwayat Pembelian',
+                      style: TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFE83030),
+                      side: const BorderSide(color: Color(0xFFE83030)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    },
+                    child: const Text(
+                      'Kembali ke Beranda',
+                      style: TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
+  }
+
+  String? _extractAuthCode(Map<String, dynamic> data) {
+    final direct = data['auth_code']?.toString();
+    if (direct != null && direct.isNotEmpty) return direct;
+
+    final transaction = data['transaction'];
+    if (transaction is Map) {
+      final nested = transaction['auth_code']?.toString();
+      if (nested != null && nested.isNotEmpty) return nested;
+    }
+
+    return null;
   }
 
   Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
