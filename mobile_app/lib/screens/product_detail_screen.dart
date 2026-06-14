@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../services/report_service.dart';
 import '../models/product.dart';
 import '../models/chat_room.dart';
+import '../utils/image_url_helper.dart';
 import '../widgets/ui/login_required_dialog.dart';
 import '../widgets/ui/frosted_app_bar.dart';
 import '../widgets/ui/logo_loader.dart';
@@ -218,6 +219,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           builder: (_) => ChatRoomScreen(
             roomId: roomId,
             roomName: _product!.sellerName,
+            roomAvatarUrl: _product!.sellerProfilePicture,
             product: chatProduct,
           ),
         ),
@@ -956,12 +958,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildSellerRow(Product product) {
+    final sellerImageUrl = ImageUrlHelper.resolve(product.sellerProfilePicture);
+
     return Row(
       children: [
-        const CircleAvatar(
-          backgroundColor: Color(0xFFFFEFEF),
+        CircleAvatar(
+          backgroundColor: const Color(0xFFFFEFEF),
           radius: 24,
-          child: Icon(Icons.person, color: Color(0xFFE83030)),
+          backgroundImage:
+              sellerImageUrl.isNotEmpty ? NetworkImage(sellerImageUrl) : null,
+          child: sellerImageUrl.isEmpty
+              ? const Icon(Icons.person, color: Color(0xFFE83030))
+              : null,
         ),
         const SizedBox(width: 12),
         Expanded(

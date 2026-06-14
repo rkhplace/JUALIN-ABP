@@ -756,123 +756,428 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.82,
+          ),
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Progress Verifikasi',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
+                const SizedBox(height: 24),
+                const Text(
+                  'Progress Verifikasi',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              FutureBuilder<Map<String, dynamic>>(
-                future: SellerService().getVerificationStatus(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child:
-                          CircularProgressIndicator(color: Color(0xFFE83030)),
-                    );
-                  }
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Text(
-                        'Terjadi kesalahan:\n${snapshot.error}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    );
-                  }
-
-                  final data = snapshot.data ?? {};
-                  final totalSales =
-                      (data['total_sales'] as num?)?.toInt() ?? 0;
-                  final target = (data['target'] as num?)?.toInt() ?? 3;
-                  final progress =
-                      target > 0 ? (totalSales / target).clamp(0.0, 1.0) : 0.0;
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Kamu sudah menyelesaikan $totalSales dari $target penjualan',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 12,
-                          backgroundColor: const Color(0xFFFFE8E8),
-                          color: const Color(0xFFE83030),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerRight,
+                const SizedBox(height: 16),
+                FutureBuilder<Map<String, dynamic>>(
+                  future: SellerService().getVerificationStatus(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child:
+                            CircularProgressIndicator(color: Color(0xFFE83030)),
+                      );
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
                         child: Text(
-                          '$totalSales/$target',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFFE83030),
+                          'Terjadi kesalahan:\n${snapshot.error}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      );
+                    }
+
+                    final data = snapshot.data ?? {};
+                    final totalSales =
+                        (data['total_sales'] as num?)?.toInt() ?? 0;
+                    final target = (data['target'] as num?)?.toInt() ?? 3;
+                    final progress = target > 0
+                        ? (totalSales / target).clamp(0.0, 1.0)
+                        : 0.0;
+                    final profileRequirements =
+                        _profileRequirementStatuses(_user);
+                    final localProfileComplete = profileRequirements.every(
+                      (item) => item['isComplete'] == true,
+                    );
+                    final apiMissingProfileFields =
+                        (data['missing_profile_fields'] as List<dynamic>? ?? [])
+                            .whereType<Map>()
+                            .map((item) => item['label']?.toString() ?? '')
+                            .where((label) => label.isNotEmpty)
+                            .toList();
+                    final missingProfileFields =
+                        apiMissingProfileFields.isNotEmpty
+                            ? apiMissingProfileFields
+                            : profileRequirements
+                                .where((item) => item['isComplete'] != true)
+                                .map((item) => item['label'].toString())
+                                .toList();
+                    final profileComplete = data['profile_complete'] == true ||
+                        (apiMissingProfileFields.isEmpty &&
+                            localProfileComplete);
+                    final salesComplete = totalSales >= target;
+                    final allMissionsComplete =
+                        salesComplete && profileComplete;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (allMissionsComplete) ...[
+                          _buildVerificationSuccessBanner(),
+                          const SizedBox(height: 14),
+                        ],
+                        _buildVerificationCard(
+                          isComplete: salesComplete,
+                          title: 'Selesaikan $target transaksi berhasil',
+                          subtitle: salesComplete
+                              ? 'Target transaksi sudah terpenuhi.'
+                              : 'Masih perlu ${target - totalSales} transaksi berhasil lagi.',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: LinearProgressIndicator(
+                                  value: progress,
+                                  minHeight: 10,
+                                  backgroundColor: const Color(0xFFFFE8E8),
+                                  color: salesComplete
+                                      ? Colors.green
+                                      : const Color(0xFFE83030),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  '$totalSales/$target',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    color: salesComplete
+                                        ? Colors.green
+                                        : const Color(0xFFE83030),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE83030),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        const SizedBox(height: 14),
+                        _buildVerificationCard(
+                          isComplete: profileComplete,
+                          title: 'Lengkapi data diri dan foto profil',
+                          subtitle: profileComplete
+                              ? 'Semua data profil sudah lengkap.'
+                              : missingProfileFields.isEmpty
+                                  ? 'Cek ulang field profil yang wajib diisi.'
+                                  : 'Belum lengkap: ${missingProfileFields.join(', ')}',
+                          child: _buildProfileRequirementChecklist(
+                            profileRequirements,
+                            missingProfileFields,
+                          ),
+                        ),
+                        if (!profileComplete && missingProfileFields.isNotEmpty)
+                          Container(
+                            margin: const EdgeInsets.only(top: 12),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF4E5),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: const Color(0xFFF59E0B)
+                                    .withValues(alpha: 0.25),
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(
+                                  Icons.lightbulb_outline,
+                                  color: Color(0xFFD97706),
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Buka Edit Profil lalu isi: ${missingProfileFields.join(', ')}.',
+                                    style: const TextStyle(
+                                      color: Color(0xFF7C4A03),
+                                      fontSize: 12,
+                                      height: 1.35,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          child: const Text(
-                            'Tutup',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE83030),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Tutup',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ],
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         );
       },
     );
+  }
+
+  Widget _buildVerificationSuccessBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE9FFF0), Color(0xFFF7FFFA)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF86EFAC)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: const BoxDecoration(
+              color: Color(0xFF22C55E),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.verified_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'YEAY! Semua misi selesai',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF14532D),
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'Kamu mendapatkan badge Terverifikasi. Profil toko jadi lebih dipercaya pembeli, transaksi terlihat lebih aman, dan produkmu tampil lebih meyakinkan.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.4,
+                    color: Color(0xFF166534),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerificationCard({
+    required bool isComplete,
+    required String title,
+    required String subtitle,
+    Widget? child,
+  }) {
+    final color = isComplete ? Colors.green : const Color(0xFFE83030);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isComplete ? const Color(0xFFF0FDF4) : const Color(0xFFFFF5F5),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isComplete ? Icons.check_circle : Icons.info_outline,
+                  color: color,
+                  size: isComplete ? 21 : 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      isComplete ? 'Selesai' : 'Belum selesai',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: color,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (child != null) ...[
+            const SizedBox(height: 12),
+            child,
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileRequirementChecklist(
+    List<Map<String, Object>> requirements,
+    List<String> missingLabels,
+  ) {
+    final visibleRequirements = requirements.map((item) {
+      final label = item['label'].toString();
+      final isComplete = item['isComplete'] == true &&
+          !missingLabels.any((missing) => missing == label);
+
+      return MapEntry(label, isComplete);
+    }).toList();
+
+    return Wrap(
+      spacing: 7,
+      runSpacing: 7,
+      children: visibleRequirements.map((entry) {
+        final isComplete = entry.value;
+        final color = isComplete ? Colors.green : const Color(0xFFE83030);
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: color.withValues(alpha: 0.22)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isComplete ? Icons.check_circle : Icons.info_outline,
+                size: 14,
+                color: color,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                entry.key,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isComplete ? Colors.black87 : color,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  List<Map<String, Object>> _profileRequirementStatuses(User? user) {
+    final currentUser = user ?? _user;
+
+    bool filled(String? value) => (value ?? '').trim().isNotEmpty;
+
+    return [
+      {'label': 'Nama', 'isComplete': filled(currentUser?.name)},
+      {'label': 'Email', 'isComplete': filled(currentUser?.email)},
+      {'label': 'Gender', 'isComplete': filled(currentUser?.gender)},
+      {
+        'label': 'Tanggal lahir',
+        'isComplete': filled(currentUser?.birthday),
+      },
+      {'label': 'Provinsi', 'isComplete': filled(currentUser?.region)},
+      {'label': 'Kota', 'isComplete': filled(currentUser?.city)},
+      {'label': 'Nomor HP', 'isComplete': filled(currentUser?.phone)},
+      {'label': 'Bio', 'isComplete': filled(currentUser?.bio)},
+      {
+        'label': 'Foto profil',
+        'isComplete': filled(currentUser?.avatarUrl),
+      },
+    ];
   }
 
   Widget _buildAccountInfo(User user) {
@@ -970,6 +1275,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildInfoRow('Alamat / Provinsi', user.region),
                   _buildInfoRow('Kota', user.city),
                   _buildInfoRow('Tanggal Lahir', user.birthday),
+                  _buildInfoRow('Gender', _genderDisplay(user.gender)),
+                  _buildInfoRow('Foto Profil',
+                      user.avatarUrl.trim().isEmpty ? '' : 'Sudah diisi'),
                   _buildInfoRow(
                       'Peran', _userRole == 'seller' ? 'Penjual' : 'Pembeli'),
                   _buildInfoRow('Status Akun', user.status),
@@ -1016,5 +1324,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  String _genderDisplay(String value) {
+    switch (value.toLowerCase()) {
+      case 'male':
+        return 'Laki-laki';
+      case 'female':
+        return 'Perempuan';
+      case 'other':
+        return 'Lainnya';
+      default:
+        return value;
+    }
   }
 }

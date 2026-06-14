@@ -88,6 +88,13 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       final status = await _sellerService.getVerificationStatus();
       final isVerified = status['is_verified'] == true;
       if (isVerified || !mounted) return;
+      final profileComplete = status['profile_complete'] == true;
+      final missingProfileFields =
+          (status['missing_profile_fields'] as List<dynamic>? ?? [])
+              .whereType<Map>()
+              .map((item) => item['label']?.toString() ?? '')
+              .where((label) => label.isNotEmpty)
+              .join(', ');
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -134,7 +141,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                     ),
                     const SizedBox(height: 12),
                     const Text(
-                      'Ayo tingkatkan kepercayaan pembeli dengan menjadi penjual terverifikasi. Selesaikan target verifikasi agar badge biru tampil di tokomu.',
+                      'Ayo tingkatkan kepercayaan pembeli dengan menjadi penjual terverifikasi. Selesaikan 3 transaksi berhasil, lengkapi semua data diri, dan pasang foto profil agar badge biru tampil di tokomu.',
                       style: TextStyle(
                         color: Colors.black54,
                         fontSize: 13,
@@ -149,6 +156,12 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                         'Pembeli lebih mudah percaya saat melihat toko.'),
                     _benefitRow(
                         'Produk terlihat lebih kredibel saat dibandingkan.'),
+                    const SizedBox(height: 8),
+                    _benefitRow(profileComplete
+                        ? 'Profil kamu sudah lengkap.'
+                        : missingProfileFields.isEmpty
+                            ? 'Profil kamu belum lengkap.'
+                            : 'Lengkapi: $missingProfileFields.'),
                     const SizedBox(height: 18),
                     SizedBox(
                       width: double.infinity,

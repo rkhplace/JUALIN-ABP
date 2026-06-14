@@ -6,6 +6,8 @@ use App\Http\Requests\TransactionStoreRequest;
 use App\Http\Responses\ApiResponse;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use App\Models\User;
+use App\Services\BuyerCredibilityService;
 use App\Services\SellerVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +19,11 @@ use Illuminate\Support\Str;
 
 class TransactionController extends Controller
 {
+    public function __construct(
+        private readonly BuyerCredibilityService $buyerCredibilityService
+    ) {
+    }
+
     public function store(TransactionStoreRequest $request): JsonResponse
     {
         $user = Auth::user();
@@ -268,6 +275,10 @@ class TransactionController extends Controller
         $transactions = $query->latest()
             ->paginate((int) $request->get('per_page', 10));
 
+        $transactions->getCollection()->transform(
+            fn (Transaction $transaction) => $this->appendBuyerCredibility($transaction)
+        );
+
         return ApiResponse::success(
             'Transactions retrieved successfully',
             $transactions,
@@ -294,7 +305,7 @@ class TransactionController extends Controller
 
             return ApiResponse::success(
                 'Transaction retrieved successfully',
-                $transaction,
+                $this->appendBuyerCredibility($transaction),
                 200
             );
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -435,6 +446,18 @@ class TransactionController extends Controller
         return Transaction::query()
             ->where('seller_id', $userId)
             ->whereIn('status', ['paid', 'settlement', 'completed', 'verified']);
+    }
+
+    private function appendBuyerCredibility(Transaction $transaction): Transaction
+    {
+        if ($transaction->relationLoaded('customer') && $transaction->customer instanceof User) {
+            $transaction->customer->setAttribute(
+                'buyer_credibility',
+                $this->buyerCredibilityService->summarize($transaction->customer)
+            );
+        }
+
+        return $transaction;
     }
 
     private function successfulWithdrawalsQuery(int $userId)

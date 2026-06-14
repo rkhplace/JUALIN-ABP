@@ -59,6 +59,8 @@ export default function SellerMissionPopup() {
 
   const totalSales = status?.total_sales ?? 0;
   const target = status?.target ?? TARGET;
+  const profileComplete = status?.profile_complete === true;
+  const missingFields = status?.missing_profile_fields ?? [];
 
   return (
     <div
@@ -77,8 +79,8 @@ export default function SellerMissionPopup() {
                 🎯 Misi Seller — Raih Badge Terverifikasi!
               </h2>
               <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
-                Selesaikan {target} penjualan untuk mendapat badge verified dan
-                tingkatkan kepercayaan pembelimu.
+                Selesaikan {target} penjualan, lengkapi semua data diri, dan
+                pasang foto profil untuk mendapat badge verified.
               </p>
             </div>
 
@@ -117,6 +119,20 @@ export default function SellerMissionPopup() {
               <span className="text-red-600 font-bold">{totalSales}</span>{" "}
               dari {target} penjualan
             </p>
+
+            <div className="mb-6 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-left text-xs sm:text-sm text-gray-700">
+              <p className="font-semibold text-gray-900">
+                Kelengkapan profil:{" "}
+                <span className={profileComplete ? "text-green-700" : "text-red-600"}>
+                  {profileComplete ? "Lengkap" : "Belum lengkap"}
+                </span>
+              </p>
+              {!profileComplete && missingFields.length > 0 && (
+                <p className="mt-1 leading-relaxed">
+                  Masih perlu diisi: {missingFields.map((item) => item.label).join(", ")}.
+                </p>
+              )}
+            </div>
 
             {/* CTA button */}
             <button

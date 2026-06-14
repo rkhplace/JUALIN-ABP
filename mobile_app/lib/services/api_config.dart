@@ -1,6 +1,6 @@
 class ApiConfig {
   static const String defaultBaseUrl =
-      'https://jualin-abp-production-cbe5.up.railway.app/api/v1';
+      'https://jualin-abp-production-b531.up.railway.app/api/v1';
 
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',

@@ -1,3 +1,5 @@
+import '../utils/image_url_helper.dart';
+
 /// A chat room returned by GET /v1/chat/rooms
 class ChatRoom {
   final int id;
@@ -92,7 +94,9 @@ class ChatUser {
     return ChatUser(
       id: json['id'] ?? 0,
       username: json['username']?.toString() ?? 'Pengguna',
-      profilePicture: json['profile_picture']?.toString(),
+      profilePicture: ImageUrlHelper.resolve(
+        json['profile_picture'] ?? json['avatar_url'] ?? json['avatar'],
+      ),
     );
   }
 }

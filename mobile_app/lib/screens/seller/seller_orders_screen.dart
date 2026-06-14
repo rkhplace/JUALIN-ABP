@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../services/seller_service.dart';
 import '../../services/auth_service.dart';
@@ -122,68 +123,262 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.white,
-          title: const Text('Klaim Pembayaran'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                  'Masukkan 6 digit kode autentikasi yang diberikan oleh pembeli.'),
-              const SizedBox(height: 16),
-              TextField(
-                controller: authCodeController,
-                maxLength: 6,
-                keyboardType: TextInputType.text,
-                textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(
-                  labelText: 'Kode Autentikasi',
-                  border: OutlineInputBorder(),
-                  counterText: '',
+        bool showCodeError = false;
+
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            final code = authCodeController.text.trim().toUpperCase();
+            final canClaim = code.length == 6;
+
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.14),
+                      blurRadius: 28,
+                      offset: const Offset(0, 16),
+                    ),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFEAEA),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(
+                              Icons.payments_outlined,
+                              color: Color(0xFFE83030),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Klaim Pembayaran',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF1D1D1F),
+                                  ),
+                                ),
+                                SizedBox(height: 3),
+                                Text(
+                                  'Cek kode dari pembeli',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF8C8C8C),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF7F7),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: const Color(0xFFFFD6D6)),
+                        ),
+                        child: const Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 19,
+                              color: Color(0xFFE83030),
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Minta pembeli membuka Riwayat Pembelian, lalu tunjukkan kode atau QR penukaran untuk barang ini.',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  height: 1.35,
+                                  color: Color(0xFF5B3A3A),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      TextField(
+                        controller: authCodeController,
+                        maxLength: 6,
+                        keyboardType: TextInputType.text,
+                        textAlign: TextAlign.center,
+                        textCapitalization: TextCapitalization.characters,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'[a-zA-Z0-9]'),
+                          ),
+                          UpperCaseTextFormatter(),
+                        ],
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 5,
+                          color: Color(0xFF1D1D1F),
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'Kode Autentikasi',
+                          hintText: 'ABC123',
+                          hintStyle: TextStyle(
+                            color: Colors.grey.shade300,
+                            letterSpacing: 4,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          counterText: '',
+                          errorText: showCodeError && !canClaim
+                              ? 'Kode harus 6 karakter.'
+                              : null,
+                          filled: true,
+                          fillColor: const Color(0xFFFAFAFA),
+                          floatingLabelStyle:
+                              const TextStyle(color: Color(0xFFE83030)),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFE7E7E7)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE83030),
+                              width: 1.4,
+                            ),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFE83030)),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE83030),
+                              width: 1.4,
+                            ),
+                          ),
+                        ),
+                        onChanged: (_) {
+                          if (showCodeError) {
+                            setDialogState(() => showCodeError = false);
+                          } else {
+                            setDialogState(() {});
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          final scanned = await _scanAuthCode(ctx);
+                          if (!ctx.mounted) return;
+                          if (scanned != null && scanned.isNotEmpty) {
+                            Navigator.pop(ctx, scanned.toUpperCase());
+                          }
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFE83030),
+                          side: const BorderSide(color: Color(0xFFFFC8C8)),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                        icon: const Icon(Icons.qr_code_scanner, size: 19),
+                        label: const Text(
+                          'Scan QR dari pembeli',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(ctx, null),
+                              style: TextButton.styleFrom(
+                                foregroundColor: const Color(0xFF777777),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: const Text(
+                                'Batal',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFE83030),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              onPressed: () {
+                                final submittedCode =
+                                    authCodeController.text.trim();
+                                debugPrint(
+                                  '[SellerOrders] Claim dialog submit tapped '
+                                  'for transactionId=$transactionId codeLength=${submittedCode.length}',
+                                );
+                                if (submittedCode.length == 6) {
+                                  Navigator.pop(ctx, submittedCode);
+                                } else {
+                                  debugPrint(
+                                      '[SellerOrders] Claim dialog ignored: code must be 6 chars');
+                                  setDialogState(() => showCodeError = true);
+                                }
+                              },
+                              child: const Text(
+                                'Klaim',
+                                style: TextStyle(fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  final scanned = await _scanAuthCode(ctx);
-                  if (!ctx.mounted) return;
-                  if (scanned != null && scanned.isNotEmpty) {
-                    Navigator.pop(ctx, scanned.toUpperCase());
-                  }
-                },
-                icon: const Icon(Icons.qr_code_scanner),
-                label: const Text('Scan Kode'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, null),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE83030)),
-              onPressed: () {
-                final code = authCodeController.text.trim();
-                debugPrint(
-                  '[SellerOrders] Claim dialog submit tapped '
-                  'for transactionId=$transactionId codeLength=${code.length}',
-                );
-                if (code.length == 6) {
-                  Navigator.pop(ctx, code);
-                } else {
-                  debugPrint(
-                      '[SellerOrders] Claim dialog ignored: code must be 6 chars');
-                }
-              },
-              child: const Text('Klaim', style: TextStyle(color: Colors.white)),
-            ),
-          ],
+            );
+          },
         );
       },
     );
+    authCodeController.dispose();
 
     if (authCode == null || authCode.isEmpty) return;
 
@@ -274,6 +469,115 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     if (value is int) return value;
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  Widget _buildBuyerCredibilityCard(Map<String, dynamic> customer) {
+    final rawCredibility = customer['buyer_credibility'];
+    if (rawCredibility is! Map) return const SizedBox.shrink();
+
+    final credibility = rawCredibility.cast<String, dynamic>();
+    final level = credibility['level']?.toString() ?? 'new';
+    final label = credibility['label']?.toString() ?? 'Pembeli Baru';
+    final signals = (credibility['signals'] as List<dynamic>? ?? [])
+        .map((item) => item.toString())
+        .where((item) => item.trim().isNotEmpty)
+        .take(3)
+        .toList();
+    final color = _buyerCredibilityColor(level);
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 10, bottom: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              _buyerCredibilityIcon(level),
+              color: color,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: color,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  signals.isEmpty
+                      ? 'Belum ada riwayat kredibilitas pembeli.'
+                      : signals.join(' | '),
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: Colors.black54,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (level == 'new') ...[
+                  const SizedBox(height: 3),
+                  const Text(
+                    'Saran: pastikan kode/QR cocok sebelum menyerahkan barang.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.black45,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _buyerCredibilityColor(String level) {
+    switch (level) {
+      case 'trusted':
+        return Colors.green;
+      case 'active':
+        return Colors.blue;
+      case 'needs_attention':
+        return const Color(0xFFD97706);
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _buyerCredibilityIcon(String level) {
+    switch (level) {
+      case 'trusted':
+        return Icons.verified_rounded;
+      case 'active':
+        return Icons.history_rounded;
+      case 'needs_attention':
+        return Icons.info_outline_rounded;
+      default:
+        return Icons.person_search_rounded;
+    }
   }
 
   void _showClaimSuccessDialog(
@@ -549,6 +853,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                   ),
                 ],
               ),
+              _buildBuyerCredibilityCard(customer),
               const SizedBox(height: 6),
               // Amount
               Row(
@@ -1158,6 +1463,19 @@ class _EscrowCodeScannerDialogState extends State<_EscrowCodeScannerDialog> {
         'Kamera tidak didukung di perangkat ini. Gunakan input manual.',
       _ => 'Kamera belum bisa dibuka. Coba lagi atau gunakan input manual.',
     };
+  }
+}
+
+class UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    return newValue.copyWith(
+      text: newValue.text.toUpperCase(),
+      selection: newValue.selection,
+    );
   }
 }
 
