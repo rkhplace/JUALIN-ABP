@@ -19,7 +19,9 @@ import '../utils/image_url_helper.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final String fallbackRoute;
+
+  const ChatScreen({super.key, this.fallbackRoute = '/main'});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -141,6 +143,16 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  void _handleBack() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+
+    navigator.pushReplacementNamed(widget.fallbackRoute);
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppChrome(
@@ -199,18 +211,26 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             Row(
               children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
+                Material(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(15),
+                  child: InkWell(
                     borderRadius: BorderRadius.circular(15),
-                    border:
-                        Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                  ),
-                  child: const Icon(
-                    Icons.chat_bubble_outline,
-                    color: Colors.white,
+                    onTap: _handleBack,
+                    child: Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1552,7 +1572,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final isBusy = _isSending || _isSendingImage;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -1568,6 +1588,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         top: false,
         bottom: false,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             GestureDetector(
               onTap: isBusy ? null : _pickAndSendImage,
@@ -1600,25 +1621,32 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: TextField(
-                controller: _msgController,
-                enabled: !isBusy,
-                minLines: 1,
-                maxLines: 4,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  hintText: 'Tulis pesan...',
-                  hintStyle: TextStyle(color: Colors.grey[400]),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 92),
+                child: TextField(
+                  controller: _msgController,
+                  enabled: !isBusy,
+                  minLines: 1,
+                  maxLines: 3,
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.newline,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(
+                    hintText: 'Tulis pesan...',
+                    hintStyle: TextStyle(color: Colors.grey[400]),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
+                  onSubmitted: (_) => _sendMessage(),
                 ),
-                onSubmitted: (_) => _sendMessage(),
               ),
             ),
             const SizedBox(width: 8),

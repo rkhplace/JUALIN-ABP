@@ -424,6 +424,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final roleColor = _userRole == 'seller'
         ? const Color(0xFFE83030)
         : const Color(0xFF2563EB);
+    final isVerifiedProfile = ['verified', 'approved']
+        .contains(user.verificationStatus.toLowerCase());
 
     return Stack(
       clipBehavior: Clip.none,
@@ -494,19 +496,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
+                  border: isVerifiedProfile
+                      ? Border.all(
+                          color:
+                              const Color(0xFF22C55E).withValues(alpha: 0.75),
+                          width: 2,
+                        )
+                      : null,
                   boxShadow: [
+                    if (isVerifiedProfile) ...[
+                      BoxShadow(
+                        color: const Color(0xFF22C55E).withValues(alpha: 0.42),
+                        blurRadius: 34,
+                        spreadRadius: 4,
+                        offset: const Offset(0, 10),
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFF86EFAC).withValues(alpha: 0.34),
+                        blurRadius: 50,
+                        spreadRadius: 10,
+                        offset: const Offset(0, 18),
+                      ),
+                    ],
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.18),
+                      color: Colors.black.withValues(
+                        alpha: isVerifiedProfile ? 0.12 : 0.18,
+                      ),
                       blurRadius: 26,
                       spreadRadius: -5,
                       offset: const Offset(0, 14),
                     ),
-                    BoxShadow(
-                      color: const Color(0xFFE83030).withValues(alpha: 0.16),
-                      blurRadius: 22,
-                      spreadRadius: -8,
-                      offset: const Offset(0, 10),
-                    ),
+                    if (!isVerifiedProfile)
+                      BoxShadow(
+                        color: const Color(0xFFE83030).withValues(alpha: 0.16),
+                        blurRadius: 22,
+                        spreadRadius: -8,
+                        offset: const Offset(0, 10),
+                      ),
                   ],
                 ),
                 child: CircleAvatar(
