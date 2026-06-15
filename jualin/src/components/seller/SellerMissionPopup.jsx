@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CircleCheck, ShieldCheck } from "lucide-react";
 import { sellerService } from "@/services/seller/sellerService";
 
 const TARGET = 3;
@@ -11,7 +12,7 @@ const VERIFIED_SHOWN_KEY = "verified_popup_shown";
  *
  * Fetches /api/v1/seller/verification-status on mount and shows:
  *  - "Mission" popup  → setiap kali dashboard dibuka selama is_verified masih false
- *  - "Congrats" popup → hanya sekali saat seller baru saja verified (disimpan di localStorage)
+ *  - "Congrats" popup → sekali setiap sesi login seller terverifikasi
  */
 export default function SellerMissionPopup() {
   const [status, setStatus] = useState(null); // { total_sales, is_verified, target }
@@ -27,7 +28,7 @@ export default function SellerMissionPopup() {
         setStatus(data);
 
         if (data?.is_verified) {
-          // Tampil popup selamat hanya sekali seumur hidup
+          // Tampil sekali setelah login, lalu disembunyikan sampai login berikutnya.
           const alreadyShown = localStorage.getItem(VERIFIED_SHOWN_KEY) === "true";
           if (!alreadyShown) {
             setMode("congrats");
@@ -68,7 +69,13 @@ export default function SellerMissionPopup() {
       role="dialog"
       aria-modal="true"
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[340px] sm:max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
+      <div
+        className={`w-full overflow-hidden bg-white shadow-2xl animate-in fade-in zoom-in duration-300 ${
+          mode === "congrats"
+            ? "max-w-[360px] rounded-[28px] sm:max-w-lg"
+            : "max-w-[340px] rounded-2xl sm:max-w-md"
+        }`}
+      >
 
         {/* ── MISSION POPUP ─────────────────────────────── */}
         {mode === "mission" && (
@@ -147,42 +154,62 @@ export default function SellerMissionPopup() {
 
         {/* ── CONGRATS POPUP ────────────────────────────── */}
         {mode === "congrats" && (
-          <div className="p-5 sm:p-8 text-center">
-            {/* Celebration icon */}
-            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5 sm:mb-6 border-4 border-red-100">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                className="w-8 h-8 sm:w-10 sm:h-10 text-red-500"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
-              🎉 Selamat! Kamu Sekarang Seller Terverifikasi!
-            </h2>
-            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed mb-6 sm:mb-8">
-              Badge verified kamu sudah aktif. Pembeli bisa melihat tanda ini
-              di setiap produkmu.
-            </p>
-
-            <button
-              id="congrats-popup-dismiss-btn"
-              onClick={handleDismissCongrats}
-              className="w-full py-2.5 sm:py-3 px-6 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm sm:text-base transition-colors shadow-md hover:shadow-lg"
-            >
-              Lihat Dashboard
-            </button>
-          </div>
+          <VerifiedBenefitsPopup onDismiss={handleDismissCongrats} />
         )}
+
       </div>
+    </div>
+  );
+}
+
+function VerifiedBenefitsPopup({ onDismiss }) {
+  const benefits = [
+    "Badge terverifikasi tampil di profil dan produk.",
+    "Pembeli lebih mudah percaya saat melihat toko.",
+    "Produk terlihat lebih kredibel saat dibandingkan.",
+  ];
+
+  return (
+    <div className="px-6 pb-7 pt-8 text-center sm:px-10 sm:pb-10 sm:pt-10">
+      <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-blue-50">
+        <ShieldCheck
+          className="h-14 w-14 fill-blue-500 text-white"
+          strokeWidth={2.25}
+        />
+      </div>
+
+      <h2 className="mx-auto max-w-sm text-2xl font-bold leading-tight text-gray-900 sm:text-[28px]">
+        Keuntungan Penjual
+        <br />
+        Terverifikasi
+      </h2>
+
+      <p className="mx-auto mt-5 max-w-md text-sm leading-6 text-gray-500 sm:text-base sm:leading-7">
+        Ayo tingkatkan kepercayaan pembeli dengan menjadi penjual
+        terverifikasi. Selesaikan target verifikasi agar badge biru tampil di
+        tokomu.
+      </p>
+
+      <ul className="mt-6 space-y-4 text-left">
+        {benefits.map((benefit) => (
+          <li
+            key={benefit}
+            className="flex items-start gap-3 text-sm leading-6 text-gray-800 sm:text-base"
+          >
+            <CircleCheck className="mt-0.5 h-6 w-6 shrink-0 fill-blue-500 text-white" />
+            <span>{benefit}</span>
+          </li>
+        ))}
+      </ul>
+
+      <button
+        id="congrats-popup-dismiss-btn"
+        type="button"
+        onClick={onDismiss}
+        className="mt-8 w-full rounded-2xl bg-[#EF2F35] px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-red-200 transition-colors hover:bg-[#D9252B] focus:outline-none focus:ring-4 focus:ring-red-100"
+      >
+        Mengerti
+      </button>
     </div>
   );
 }

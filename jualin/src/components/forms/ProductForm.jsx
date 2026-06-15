@@ -14,6 +14,7 @@ export default function ProductForm({
   const fileInputRef = useRef(null);
   // priceRaw menyimpan nilai numerik murni (tanpa titik) untuk dikirim ke API
   const [priceRaw, setPriceRaw] = useState("");
+  const [stockRaw, setStockRaw] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     price: "",       // string tampilan dengan titik, misal "5.000.000"
@@ -43,13 +44,18 @@ export default function ProductForm({
       const rawPrice = initialData.price || "";
       const displayPrice = rawPrice ? formatPriceDisplay(rawPrice) : "";
 
+      const rawStock =
+        initialData.stock_quantity ?? initialData.stock ?? "";
+
       setPriceRaw(String(rawPrice));
+      setStockRaw(String(rawStock));
       setFormData({
         name: initialData.name || "",
         price: displayPrice,
         description: initialData.description || "",
         images: images,
-        stock_quantity: initialData.stock_quantity || initialData.stock || "",
+        stock_quantity:
+          rawStock !== "" ? formatPriceDisplay(rawStock) : "",
         category: initialData.category || "",
         condition: initialData.condition || "new",
         status: initialData.status || "active",
@@ -76,6 +82,15 @@ export default function ProductForm({
     setFormData((prev) => ({
       ...prev,
       price: digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "",
+    }));
+  };
+
+  const handleStockChange = (e) => {
+    const digits = e.target.value.replace(/\D/g, "");
+    setStockRaw(digits);
+    setFormData((prev) => ({
+      ...prev,
+      stock_quantity: digits ? formatPriceDisplay(digits) : "",
     }));
   };
 
@@ -146,15 +161,15 @@ export default function ProductForm({
       return;
     }
     if (
-      formData.stock_quantity === "" ||
-      parseInt(formData.stock_quantity) < 0
+      stockRaw === "" ||
+      parseInt(stockRaw, 10) < 0
     ) {
       setLocalError("Stok produk wajib diisi dan tidak boleh negatif");
       return;
     }
 
-    // Sertakan priceRaw agar halaman pemanggil bisa parseFloat dengan benar
-    onSubmit({ ...formData, priceRaw });
+    // Sertakan nilai mentah agar titik pemisah ribuan tidak ikut diparse.
+    onSubmit({ ...formData, priceRaw, stockRaw });
   };
 
   if (loading) {
@@ -335,14 +350,13 @@ export default function ProductForm({
                 Stok Produk <span className="text-red-500">*</span>
               </label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 id="stock_quantity"
                 name="stock_quantity"
                 value={formData.stock_quantity}
-                onChange={handleInputChange}
-                placeholder="Enter stock quantity"
-                min="0"
-                step="1"
+                onChange={handleStockChange}
+                placeholder="Contoh: 10.000"
                 className="w-full px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
                 required
               />

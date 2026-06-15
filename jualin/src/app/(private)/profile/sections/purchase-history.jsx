@@ -4,7 +4,15 @@ import useMidtransPayment from "@/app/(private)/product/hooks/useMidtransPayment
 import { useState } from "react";
 import { useAuth } from "@/context/AuthProvider";
 import { escrowService } from "@/services";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, SlidersHorizontal, X } from "lucide-react";
+
+const STATUS_FILTERS = [
+  { value: "all", label: "Semua" },
+  { value: "pending", label: "Menunggu Bayar" },
+  { value: "waiting_cod", label: "Menunggu COD" },
+  { value: "completed", label: "Selesai" },
+  { value: "refunded", label: "Dana Dikembalikan" },
+];
 
 /**
  * PurchaseHistorySection
@@ -14,6 +22,9 @@ import { Copy, Check } from "lucide-react";
 export function PurchaseHistorySection({
   purchases,
   totalAmount,
+  filteredCount,
+  statusFilter,
+  onStatusFilterChange,
   pagination,
   formatCurrency,
   isLoading,
@@ -29,6 +40,8 @@ export function PurchaseHistorySection({
   const [refundReason, setRefundReason] = useState("Pembeli membatalkan pesanan");
   const [refundReasonError, setRefundReasonError] = useState("");
   const [copiedId, setCopiedId] = useState(null);
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [draftStatusFilter, setDraftStatusFilter] = useState(statusFilter);
 
   const refundReasons = [
     "Penjual tidak merespons",
@@ -43,6 +56,20 @@ export function PurchaseHistorySection({
     navigator.clipboard.writeText(code);
     setCopiedId(orderId);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const openFilterModal = () => {
+    setDraftStatusFilter(statusFilter);
+    setFilterModalOpen(true);
+  };
+
+  const applyFilter = () => {
+    onStatusFilterChange(draftStatusFilter);
+    setFilterModalOpen(false);
+  };
+
+  const resetFilter = () => {
+    setDraftStatusFilter("all");
   };
 
   const initiateRefund = (transactionId, e) => {
@@ -117,11 +144,13 @@ export function PurchaseHistorySection({
 
       <div className="mb-8">
 
-        <h1 className="text-lg sm:text-2xl font-semibold text-[#1F1F1F] mb-4">
+        <h1 className="text-lg sm:text-2xl font-semibold text-[#1F1F1F] mb-1">
           Riwayat Pembelian
         </h1>
-        <div className="flex items-center justify-between">
-          <div />
+        <p className="mb-5 text-xs text-gray-500 sm:text-sm">
+          {filteredCount} transaksi ditampilkan
+        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex gap-3 sm:gap-4">
             <button
               onClick={onExport}
@@ -142,6 +171,19 @@ export function PurchaseHistorySection({
               {isLoading ? "Refreshing..." : "Refresh"}
             </button>
           </div>
+          <button
+            type="button"
+            onClick={openFilterModal}
+            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-semibold shadow-sm transition sm:text-sm ${
+              statusFilter === "all"
+                ? "border-red-200 bg-white text-[#E53935] hover:bg-red-50"
+                : "border-[#E53935] bg-[#E53935] text-white hover:bg-[#D32F2F]"
+            }`}
+            aria-label="Filter riwayat pembelian"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filter
+          </button>
         </div>
       </div>
 
@@ -458,6 +500,82 @@ export function PurchaseHistorySection({
                 className="flex-1 px-4 py-2 bg-[#E53935] text-white rounded-lg hover:bg-[#D32F2F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {escrowLoading ? "Processing..." : "Yes, Refund"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {filterModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          role="presentation"
+          onClick={() => setFilterModalOpen(false)}
+        >
+          <div
+            className="w-full rounded-t-[28px] bg-white px-6 pb-7 pt-5 shadow-2xl sm:max-w-lg sm:rounded-[28px] sm:p-7"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="purchase-filter-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mx-auto mb-5 h-1.5 w-16 rounded-full bg-gray-200 sm:hidden" />
+            <div className="flex items-center justify-between">
+              <h2
+                id="purchase-filter-title"
+                className="text-xl font-bold text-gray-900"
+              >
+                Filter Riwayat
+              </h2>
+              <button
+                type="button"
+                onClick={() => setFilterModalOpen(false)}
+                className="hidden rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 sm:block"
+                aria-label="Tutup filter"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <p className="mb-4 mt-7 text-sm font-semibold text-gray-800">
+              Status Transaksi
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {STATUS_FILTERS.map((filter) => {
+                const active = draftStatusFilter === filter.value;
+
+                return (
+                  <button
+                    key={filter.value}
+                    type="button"
+                    onClick={() => setDraftStatusFilter(filter.value)}
+                    className={`inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-medium transition ${
+                      active
+                        ? "border-[#EF2F35] bg-[#EF2F35] text-white shadow-md shadow-red-100"
+                        : "border-gray-300 bg-white text-gray-500 hover:border-red-300 hover:text-[#E53935]"
+                    }`}
+                  >
+                    {active && <Check className="h-4 w-4" />}
+                    {filter.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-10 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={resetFilter}
+                className="rounded-xl border border-[#E53935] px-4 py-3 text-sm font-semibold text-[#E53935] transition hover:bg-red-50"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={applyFilter}
+                className="rounded-xl bg-[#EF2F35] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-red-200 transition hover:bg-[#D9252B]"
+              >
+                Terapkan
               </button>
             </div>
           </div>

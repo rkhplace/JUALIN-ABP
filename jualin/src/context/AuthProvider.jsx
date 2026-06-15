@@ -113,6 +113,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (userData, token) => {
+    localStorage.removeItem("verified_popup_shown");
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
@@ -145,6 +146,7 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("user");
       localStorage.removeItem("firebase_token");
+      localStorage.removeItem("verified_popup_shown");
       setUser(null);
       Cookies.remove("role");
       Cookies.remove("token");

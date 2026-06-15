@@ -46,7 +46,10 @@ export default function EditProductPage() {
         name: formData.name.trim(),
         price: parseFloat(formData.priceRaw || formData.price),
         description: formData.description.trim(),
-        stock_quantity: parseInt(formData.stock_quantity),
+        stock_quantity: parseInt(
+          formData.stockRaw || formData.stock_quantity.replace(/\D/g, ""),
+          10
+        ),
         category: formData.category,
         condition: formData.condition,
         status: formData.status,

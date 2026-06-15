@@ -117,7 +117,25 @@ export function ProfileFormSection({
             )}
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          <div>
+            <label className="block text-sm font-medium text-[#9CA3AF] mb-2">
+              Nomor Telepon
+            </label>
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(e) => onFieldChange("phone", e.target.value)}
+              className={`w-full px-4 py-2.5 md:py-3 rounded-lg outline-none transition-all duration-200 bg-white text-black shadow-md hover:shadow-lg focus:shadow-xl ${
+                errors.phone ? "shadow-red-300 focus:shadow-red-400" : ""
+              }`}
+              placeholder="Contoh: 081234567890"
+              maxLength={20}
+            />
+            {errors.phone && (
+              <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+            )}
+          </div>
           <div>
             <label className="block text-sm font-medium text-[#9CA3AF] mb-2">
               Gender

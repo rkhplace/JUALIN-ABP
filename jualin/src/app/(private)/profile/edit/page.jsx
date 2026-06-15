@@ -192,6 +192,9 @@ export default function EditProfilePage() {
               <PurchaseHistorySection
                 purchases={paymentHistory.paginated}
                 totalAmount={paymentHistory.totalAmount}
+                filteredCount={paymentHistory.filteredCount}
+                statusFilter={paymentHistory.statusFilter}
+                onStatusFilterChange={paymentHistory.setStatusFilter}
                 pagination={paymentHistory.pagination}
                 formatCurrency={paymentHistory.formatCurrency}
                 isLoading={paymentHistory.isLoading}

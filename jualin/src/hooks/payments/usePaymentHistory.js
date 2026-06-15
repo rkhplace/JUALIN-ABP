@@ -5,6 +5,7 @@ export default function usePaymentHistory() {
   const [payments, setPayments] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -32,14 +33,34 @@ export default function usePaymentHistory() {
     [payments]
   );
 
+  const filteredPayments = useMemo(() => {
+    if (statusFilter === "all") return payments;
+
+    return payments.filter((payment) => {
+      const status = String(payment?.transaction_status || "").toLowerCase();
+
+      if (statusFilter === "completed") {
+        return ["verified", "completed", "settlement", "capture", "paid"].includes(
+          status
+        );
+      }
+
+      if (statusFilter === "refunded") {
+        return ["refunded", "cancelled"].includes(status);
+      }
+
+      return status === statusFilter;
+    });
+  }, [payments, statusFilter]);
+
   const totalPages = Math.max(
     1,
-    Math.ceil((payments?.length || 0) / itemsPerPage)
+    Math.ceil((filteredPayments?.length || 0) / itemsPerPage)
   );
   const paginated = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return (payments || []).slice(start, start + itemsPerPage);
-  }, [payments, currentPage, itemsPerPage]);
+    return (filteredPayments || []).slice(start, start + itemsPerPage);
+  }, [filteredPayments, currentPage, itemsPerPage]);
 
   const formatCurrency = (amount) =>
     new Intl.NumberFormat("id-ID", {
@@ -54,6 +75,12 @@ export default function usePaymentHistory() {
     error,
     totalAmount,
     paginated,
+    filteredCount: filteredPayments.length,
+    statusFilter,
+    setStatusFilter: (status) => {
+      setStatusFilter(status);
+      setCurrentPage(1);
+    },
     pagination: {
       currentPage,
       totalPages,
