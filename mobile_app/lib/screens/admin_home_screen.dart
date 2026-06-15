@@ -7,6 +7,7 @@ import '../services/admin_service.dart';
 import '../services/auth_service.dart';
 import '../utils/image_url_helper.dart';
 import '../widgets/ui/logo_loader.dart';
+import '../widgets/ui/user_avatar.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -30,6 +31,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   String _productSearchQuery = '';
   String _userSearchQuery = '';
   String _reportSearchQuery = '';
+  String _userRoleFilter = 'all';
+  String _userStatusFilter = 'all';
+  String _productCategoryFilter = 'all';
+  String _productStockFilter = 'all';
+  String _reportStatusFilter = 'all';
+  String _reportTypeFilter = 'all';
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -56,12 +63,19 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       final email = _text(user['email']).toLowerCase();
       final role = _text(user['role']).toLowerCase();
       final status = _isCurrentlyBanned(user) ? 'diblokir' : 'aktif';
-
-      return query.isEmpty ||
+      final roleMatches = _userRoleFilter == 'all' || role == _userRoleFilter;
+      final statusMatches = switch (_userStatusFilter) {
+        'banned' => _isCurrentlyBanned(user),
+        'active' => !_isCurrentlyBanned(user),
+        _ => true,
+      };
+      final searchMatches = query.isEmpty ||
           username.contains(query) ||
           email.contains(query) ||
           role.contains(query) ||
           status.contains(query);
+
+      return searchMatches && roleMatches && statusMatches;
     }).toList();
   }
 
@@ -76,11 +90,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             product['seller_name'] ??
             product['sellerName'],
       ).toLowerCase();
-
-      return query.isEmpty ||
+      final stock = _parseInt(product['stock_quantity'] ?? product['stock']);
+      final categoryMatches = _productCategoryFilter == 'all' ||
+          category == _productCategoryFilter.trim().toLowerCase();
+      final stockMatches = switch (_productStockFilter) {
+        'empty' => stock <= 0,
+        'available' => stock > 0,
+        _ => true,
+      };
+      final searchMatches = query.isEmpty ||
           name.contains(query) ||
           category.contains(query) ||
           seller.contains(query);
+
+      return searchMatches && categoryMatches && stockMatches;
     }).toList();
   }
 
@@ -92,7 +115,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       final status =
           _formatReportStatus(_uiReportStatus(_text(report['status'])))
               .toLowerCase();
-      final type = _text(report['type'], 'Laporan').toLowerCase();
+      final type = _reportDisplayType(report).toLowerCase();
+      final reason = _reportReason(report).toLowerCase();
       final reporter = _text(report['reporter_username'] ?? report['username'])
           .toLowerCase();
       final reported =
@@ -100,16 +124,43 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               .toLowerCase();
       final product = _text(report['reported_product_name']).toLowerCase();
       final description = _text(report['description']).toLowerCase();
-
-      return query.isEmpty ||
+      final rawStatus = _uiReportStatus(_text(report['status'], 'pending'));
+      final statusMatches =
+          _reportStatusFilter == 'all' || rawStatus == _reportStatusFilter;
+      final typeMatches = _reportTypeFilter == 'all' ||
+          type == _reportTypeFilter.trim().toLowerCase();
+      final searchMatches = query.isEmpty ||
           id.contains(query) ||
           status.contains(query) ||
           type.contains(query) ||
+          reason.contains(query) ||
           reporter.contains(query) ||
           reported.contains(query) ||
           product.contains(query) ||
           description.contains(query);
+
+      return searchMatches && statusMatches && typeMatches;
     }).toList();
+  }
+
+  List<String> get _productCategories {
+    final categories = _products
+        .map((product) => _text(product['category']).trim())
+        .where((category) => category.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    return categories;
+  }
+
+  List<String> get _reportTypes {
+    final types = _reports
+        .map((report) => _reportDisplayType(report).trim())
+        .where((type) => type.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    return types;
   }
 
   Future<void> _fetchAdminData() async {
@@ -274,11 +325,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 ),
               ),
               IconButton(
-                tooltip: 'Refresh',
-                onPressed: _fetchAdminData,
-                icon: const Icon(Icons.refresh, color: Colors.white),
-              ),
-              IconButton(
                 tooltip: 'Keluar',
                 onPressed: _logout,
                 icon: const Icon(Icons.logout, color: Colors.white),
@@ -436,6 +482,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     final email = _text(user['email'], '-');
     final role = _text(user['role'], '-');
     final isBanned = _isCurrentlyBanned(user);
+    final avatarUrl = ImageUrlHelper.resolve(
+      user['profile_picture'] ??
+          user['avatar_url'] ??
+          user['avatar'] ??
+          user['photo'],
+    );
 
     return _buildCard(
       child: Column(
@@ -443,7 +495,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         children: [
           Row(
             children: [
-              _buildIconBox(Icons.person_outline),
+              UserAvatar(name: username, imageUrl: avatarUrl, radius: 23),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -513,53 +565,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Widget _buildUserSearch() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: _userSearchController,
-        onChanged: (value) => setState(() => _userSearchQuery = value),
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          hintText: 'Cari nama, email, atau peran',
-          hintStyle: const TextStyle(color: Colors.black38, fontSize: 13),
-          prefixIcon: const Icon(Icons.search, color: Color(0xFFE83030)),
-          suffixIcon: _userSearchQuery.isEmpty
-              ? null
-              : IconButton(
-                  onPressed: () {
-                    _userSearchController.clear();
-                    setState(() => _userSearchQuery = '');
-                  },
-                  icon: const Icon(Icons.close, size: 18),
-                ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: const BorderSide(color: Color(0xFFE83030), width: 1.2),
-          ),
-        ),
-      ),
+    return _buildAdminSearchAndFilterBar(
+      controller: _userSearchController,
+      query: _userSearchQuery,
+      hintText: 'Cari nama, email, atau peran',
+      onChanged: (value) => setState(() => _userSearchQuery = value),
+      onClear: () {
+        _userSearchController.clear();
+        setState(() => _userSearchQuery = '');
+      },
+      onFilter: _showUserFilterSheet,
+      hasActiveFilter: _userRoleFilter != 'all' || _userStatusFilter != 'all',
     );
   }
 
@@ -611,53 +627,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Widget _buildProductSearch() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: _productSearchController,
-        onChanged: (value) => setState(() => _productSearchQuery = value),
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          hintText: 'Cari produk, penjual, atau kategori',
-          hintStyle: const TextStyle(color: Colors.black38, fontSize: 13),
-          prefixIcon: const Icon(Icons.search, color: Color(0xFFE83030)),
-          suffixIcon: _productSearchQuery.isEmpty
-              ? null
-              : IconButton(
-                  onPressed: () {
-                    _productSearchController.clear();
-                    setState(() => _productSearchQuery = '');
-                  },
-                  icon: const Icon(Icons.close, size: 18),
-                ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: const BorderSide(color: Color(0xFFE83030), width: 1.2),
-          ),
-        ),
-      ),
+    return _buildAdminSearchAndFilterBar(
+      controller: _productSearchController,
+      query: _productSearchQuery,
+      hintText: 'Cari produk, penjual, atau kategori',
+      onChanged: (value) => setState(() => _productSearchQuery = value),
+      onClear: () {
+        _productSearchController.clear();
+        setState(() => _productSearchQuery = '');
+      },
+      onFilter: _showProductFilterSheet,
+      hasActiveFilter:
+          _productCategoryFilter != 'all' || _productStockFilter != 'all',
     );
   }
 
@@ -686,7 +667,32 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Widget _buildReportSearch() {
+    return _buildAdminSearchAndFilterBar(
+      controller: _reportSearchController,
+      query: _reportSearchQuery,
+      hintText: 'Cari laporan, pelapor, status, atau produk',
+      onChanged: (value) => setState(() => _reportSearchQuery = value),
+      onClear: () {
+        _reportSearchController.clear();
+        setState(() => _reportSearchQuery = '');
+      },
+      onFilter: _showReportFilterSheet,
+      hasActiveFilter:
+          _reportStatusFilter != 'all' || _reportTypeFilter != 'all',
+    );
+  }
+
+  Widget _buildAdminSearchAndFilterBar({
+    required TextEditingController controller,
+    required String query,
+    required String hintText,
+    required ValueChanged<String> onChanged,
+    required VoidCallback onClear,
+    required VoidCallback onFilter,
+    required bool hasActiveFilter,
+  }) {
     return Container(
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -698,41 +704,456 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ),
         ],
       ),
-      child: TextField(
-        controller: _reportSearchController,
-        onChanged: (value) => setState(() => _reportSearchQuery = value),
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          hintText: 'Cari laporan, pelapor, status, atau produk',
-          hintStyle: const TextStyle(color: Colors.black38, fontSize: 13),
-          prefixIcon: const Icon(Icons.search, color: Color(0xFFE83030)),
-          suffixIcon: _reportSearchQuery.isEmpty
-              ? null
-              : IconButton(
-                  onPressed: () {
-                    _reportSearchController.clear();
-                    setState(() => _reportSearchQuery = '');
-                  },
-                  icon: const Icon(Icons.close, size: 18),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: hintText,
+                hintStyle: const TextStyle(color: Colors.black38, fontSize: 13),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFFE83030)),
+                suffixIcon: query.isEmpty
+                    ? null
+                    : IconButton(
+                        onPressed: onClear,
+                        icon: const Icon(Icons.close, size: 18),
+                      ),
+                filled: true,
+                fillColor: const Color(0xFFF7F7F7),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
                 ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide.none,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide:
+                      const BorderSide(color: Color(0xFFE83030), width: 1.2),
+                ),
+              ),
+            ),
           ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide.none,
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: onFilter,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: hasActiveFilter
+                    ? const Color(0xFFE83030)
+                    : const Color(0xFFFFEFEF),
+                foregroundColor:
+                    hasActiveFilter ? Colors.white : const Color(0xFFE83030),
+                elevation: 0,
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Icon(Icons.tune),
+            ),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: const BorderSide(color: Color(0xFFE83030), width: 1.2),
-          ),
+        ],
+      ),
+    );
+  }
+
+  void _showUserFilterSheet() {
+    var tempRole = _userRoleFilter;
+    var tempStatus = _userStatusFilter;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSheetHandle(),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Filter Pengguna',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 14),
+                    const Text('Peran',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _adminFilterChip(
+                          label: 'Semua',
+                          active: tempRole == 'all',
+                          onTap: () => setSheetState(() => tempRole = 'all'),
+                        ),
+                        _adminFilterChip(
+                          label: 'Pembeli',
+                          active: tempRole == 'customer',
+                          onTap: () =>
+                              setSheetState(() => tempRole = 'customer'),
+                        ),
+                        _adminFilterChip(
+                          label: 'Penjual',
+                          active: tempRole == 'seller',
+                          onTap: () => setSheetState(() => tempRole = 'seller'),
+                        ),
+                        _adminFilterChip(
+                          label: 'Admin',
+                          active: tempRole == 'admin',
+                          onTap: () => setSheetState(() => tempRole = 'admin'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Status',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _adminFilterChip(
+                          label: 'Semua',
+                          active: tempStatus == 'all',
+                          onTap: () => setSheetState(() => tempStatus = 'all'),
+                        ),
+                        _adminFilterChip(
+                          label: 'Aktif',
+                          active: tempStatus == 'active',
+                          onTap: () =>
+                              setSheetState(() => tempStatus = 'active'),
+                        ),
+                        _adminFilterChip(
+                          label: 'Diblokir',
+                          active: tempStatus == 'banned',
+                          onTap: () =>
+                              setSheetState(() => tempStatus = 'banned'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    _buildFilterActions(
+                      onReset: () {
+                        setState(() {
+                          _userRoleFilter = 'all';
+                          _userStatusFilter = 'all';
+                        });
+                        Navigator.pop(context);
+                      },
+                      onApply: () {
+                        setState(() {
+                          _userRoleFilter = tempRole;
+                          _userStatusFilter = tempStatus;
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showProductFilterSheet() {
+    var tempCategory = _productCategoryFilter;
+    var tempStock = _productStockFilter;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSheetHandle(),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Filter Produk',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 14),
+                      const Text('Kategori',
+                          style: TextStyle(fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _adminFilterChip(
+                            label: 'Semua',
+                            active: tempCategory == 'all',
+                            onTap: () =>
+                                setSheetState(() => tempCategory = 'all'),
+                          ),
+                          ..._productCategories.map(
+                            (category) => _adminFilterChip(
+                              label: category,
+                              active: tempCategory.toLowerCase() ==
+                                  category.toLowerCase(),
+                              onTap: () => setSheetState(
+                                () => tempCategory = category.toLowerCase(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Stok',
+                          style: TextStyle(fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _adminFilterChip(
+                            label: 'Semua',
+                            active: tempStock == 'all',
+                            onTap: () => setSheetState(() => tempStock = 'all'),
+                          ),
+                          _adminFilterChip(
+                            label: 'Stok Habis',
+                            active: tempStock == 'empty',
+                            onTap: () =>
+                                setSheetState(() => tempStock = 'empty'),
+                          ),
+                          _adminFilterChip(
+                            label: 'Stok Tersedia',
+                            active: tempStock == 'available',
+                            onTap: () =>
+                                setSheetState(() => tempStock = 'available'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      _buildFilterActions(
+                        onReset: () {
+                          setState(() {
+                            _productCategoryFilter = 'all';
+                            _productStockFilter = 'all';
+                          });
+                          Navigator.pop(context);
+                        },
+                        onApply: () {
+                          setState(() {
+                            _productCategoryFilter = tempCategory;
+                            _productStockFilter = tempStock;
+                          });
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showReportFilterSheet() {
+    var tempStatus = _reportStatusFilter;
+    var tempType = _reportTypeFilter;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSheetHandle(),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Filter Laporan',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 14),
+                      const Text('Status',
+                          style: TextStyle(fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _adminFilterChip(
+                            label: 'Semua',
+                            active: tempStatus == 'all',
+                            onTap: () =>
+                                setSheetState(() => tempStatus = 'all'),
+                          ),
+                          ...const [
+                            'pending',
+                            'processing',
+                            'accepted',
+                            'rejected',
+                          ].map(
+                            (status) => _adminFilterChip(
+                              label: _formatReportStatus(status),
+                              active: tempStatus == status,
+                              onTap: () =>
+                                  setSheetState(() => tempStatus = status),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Tipe',
+                          style: TextStyle(fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _adminFilterChip(
+                            label: 'Semua',
+                            active: tempType == 'all',
+                            onTap: () => setSheetState(() => tempType = 'all'),
+                          ),
+                          ..._reportTypes.map(
+                            (type) => _adminFilterChip(
+                              label: type,
+                              active:
+                                  tempType.toLowerCase() == type.toLowerCase(),
+                              onTap: () => setSheetState(
+                                () => tempType = type.toLowerCase(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      _buildFilterActions(
+                        onReset: () {
+                          setState(() {
+                            _reportStatusFilter = 'all';
+                            _reportTypeFilter = 'all';
+                          });
+                          Navigator.pop(context);
+                        },
+                        onApply: () {
+                          setState(() {
+                            _reportStatusFilter = tempStatus;
+                            _reportTypeFilter = tempType;
+                          });
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSheetHandle() {
+    return Center(
+      child: Container(
+        width: 42,
+        height: 4,
+        decoration: BoxDecoration(
+          color: Colors.black12,
+          borderRadius: BorderRadius.circular(99),
         ),
       ),
+    );
+  }
+
+  Widget _buildFilterActions({
+    required VoidCallback onReset,
+    required VoidCallback onApply,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: onReset,
+            child: const Text('Reset'),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: onApply,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE83030),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Terapkan'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _adminFilterChip({
+    required String label,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: active,
+      onSelected: (_) => onTap(),
+      selectedColor: const Color(0xFFE83030),
+      backgroundColor: const Color(0xFFF5F5F5),
+      labelStyle: TextStyle(
+        color: active ? Colors.white : Colors.black54,
+        fontWeight: active ? FontWeight.bold : FontWeight.w500,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
     );
   }
 
@@ -910,9 +1331,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       report['reported_username'] ?? report['target_username'],
       'Tidak tersedia',
     );
-    final product = _text(report['reported_product_name'], '');
+    final product = _reportProductName(report);
     final description = _text(report['description'], '-');
-    final type = _text(report['type'], 'Laporan');
+    final displayType = _reportDisplayType(report);
+    final reason = _reportReason(report);
+    final isProductReport = _isProductReport(report);
     final reportedUserId = _parseInt(report['reported_user_id']);
     final isReportedBanned = _parseBool(report['reported_user_is_banned']);
 
@@ -922,11 +1345,30 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         children: [
           Row(
             children: [
-              _buildIconBox(Icons.report_outlined),
+              _buildIconBox(_reportIcon(report)),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(type,
-                    style: const TextStyle(fontWeight: FontWeight.w800)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      id == 0 ? displayType : '$displayType #LP-$id',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    if (reason.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Alasan: $reason',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.black45,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               _buildStatusChip(_formatReportStatus(status), Colors.orange),
             ],
@@ -934,11 +1376,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           const SizedBox(height: 10),
           Text('Pelapor: $reporter',
               style: const TextStyle(color: Colors.black54, fontSize: 12)),
-          Text('Terlapor: $reported',
-              style: const TextStyle(color: Color(0xFFE83030), fontSize: 12)),
-          if (product.isNotEmpty)
+          if (isProductReport) ...[
+            Text('Terlapor: $reported',
+                style: const TextStyle(color: Color(0xFFE83030), fontSize: 12)),
             Text('Produk: $product',
                 style: const TextStyle(color: Colors.black54, fontSize: 12)),
+          ],
           const SizedBox(height: 8),
           Text(description, style: const TextStyle(fontSize: 13)),
           const SizedBox(height: 12),
@@ -949,21 +1392,116 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 id == 0 ? null : (value) => _updateReportStatus(id, value),
           ),
           if (reportedUserId > 0) ...[
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: isReportedBanned
+            const SizedBox(height: 12),
+            _buildReportedAccountActions(
+              username: reported,
+              isBanned: isReportedBanned,
+              onToggleBan: isReportedBanned
                   ? () => _unbanUser(reportedUserId)
                   : () => _showBanDurationDialog(reportedUserId, reported),
-              icon: Icon(isReportedBanned ? Icons.lock_open : Icons.block),
-              label: Text(
-                isReportedBanned ? 'Buka Blokir Akun' : 'Blokir Akun',
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFFE83030),
-                side: const BorderSide(color: Color(0xFFE83030)),
-              ),
+              onDelete: () => _confirmDeleteUser(reportedUserId, reported),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportedAccountActions({
+    required String username,
+    required bool isBanned,
+    required VoidCallback onToggleBan,
+    required VoidCallback onDelete,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBFB),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFFFD8D8)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEFEF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.admin_panel_settings_outlined,
+                  color: Color(0xFFE83030),
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Aksi Akun Terlapor',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      username,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.black45,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onToggleBan,
+                  icon: Icon(isBanned ? Icons.lock_open : Icons.block),
+                  label: Text(isBanned ? 'Buka Blokir' : 'Blokir'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFE83030),
+                    side: const BorderSide(color: Color(0xFFE83030)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Hapus Akun'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE83030),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -1108,12 +1646,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   Widget _buildReviewPreviewCard(Map<String, dynamic> report) {
     final id = _parseInt(report['id']);
-    final product = _text(
-      report['reported_product_name'] ?? report['product']?['name'],
-      'Laporan Produk',
-    );
+    final product = _reportProductName(report);
     final description = _text(report['description'], '-');
     final status = _uiReportStatus(_text(report['status'], 'pending'));
+    final displayType = _reportDisplayType(report);
+    final reason = _reportReason(report);
 
     return InkWell(
       borderRadius: BorderRadius.circular(16),
@@ -1121,25 +1658,34 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       child: _buildCard(
         child: Row(
           children: [
-            _buildIconBox(Icons.flag_outlined),
+            _buildIconBox(_reportIcon(report)),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    id == 0 ? 'Laporan Produk' : 'Laporan Produk #LP-$id',
+                    id == 0 ? displayType : '$displayType #LP-$id',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 3),
-                  Text(
-                    product,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12),
-                  ),
+                  if (product.isNotEmpty)
+                    Text(
+                      product,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  if (reason.isNotEmpty)
+                    Text(
+                      'Alasan: $reason',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          const TextStyle(color: Colors.black54, fontSize: 11),
+                    ),
                   Text(
                     description,
                     maxLines: 1,
@@ -1663,7 +2209,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       itemBuilder: (context, index) {
                         final report = pendingReports[index];
                         final id = _parseInt(report['id']);
-                        final type = _text(report['type'], 'Laporan');
+                        final displayType = _reportDisplayType(report);
+                        final product = _reportProductName(report);
+                        final reason = _reportReason(report);
                         final description = _text(report['description'], '-');
 
                         return Material(
@@ -1687,7 +2235,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  _buildSmallIconBox(Icons.flag_outlined),
+                                  _buildSmallIconBox(_reportIcon(report)),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
@@ -1695,13 +2243,35 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          id == 0 ? type : '$type #LP-$id',
+                                          id == 0
+                                              ? displayType
+                                              : '$displayType #LP-$id',
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: const TextStyle(
                                             fontWeight: FontWeight.w800,
                                           ),
                                         ),
+                                        if (product.isNotEmpty)
+                                          Text(
+                                            product,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: Colors.black54,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        if (reason.isNotEmpty)
+                                          Text(
+                                            'Alasan: $reason',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: Colors.black54,
+                                              fontSize: 11,
+                                            ),
+                                          ),
                                         Text(
                                           description,
                                           maxLines: 2,
@@ -1744,8 +2314,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       report['reported_username'] ?? report['target_username'],
       'Tidak tersedia',
     );
-    final product = _text(report['reported_product_name'], '');
-    final type = _text(report['type'], 'Laporan');
+    final product = _reportProductName(report);
+    final displayType = _reportDisplayType(report);
+    final reason = _reportReason(report);
+    final isProductReport = _isProductReport(report);
     final description = _text(report['description'], '-');
 
     return Navigator.of(context).push(
@@ -1770,11 +2342,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   children: [
                     Row(
                       children: [
-                        _buildIconBox(Icons.report_outlined),
+                        _buildIconBox(_reportIcon(report)),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            id == 0 ? type : '$type #LP-$id',
+                            id == 0 ? displayType : '$displayType #LP-$id',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
@@ -1789,9 +2361,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     ),
                     const SizedBox(height: 18),
                     _buildReportDetailRow('Pelapor', reporter),
-                    _buildReportDetailRow('Terlapor', reported),
+                    if (isProductReport)
+                      _buildReportDetailRow('Terlapor', reported),
                     if (product.isNotEmpty)
                       _buildReportDetailRow('Produk', product),
+                    if (reason.isNotEmpty)
+                      _buildReportDetailRow('Alasan', reason),
                     _buildReportDetailRow(
                       'Tanggal',
                       _formatDate(report['created_at']),
@@ -1851,52 +2426,195 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
     final duration = await showDialog<int>(
       context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.35),
       builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.white,
-          title: Text('Blokir $username'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Pilih durasi blokir akun.'),
-              const SizedBox(height: 14),
-              _buildChoiceField(
-                value:
-                    selectedDuration == null ? null : '$selectedDuration hari',
-                hint: 'Pilih durasi blokir',
-                onTap: () async {
-                  final picked = await _showAdminOptionSheet(
-                    title: 'Durasi Blokir',
-                    selected: selectedDuration,
-                    options: durationOptions,
-                    labelBuilder: (value) => '$value hari',
-                  );
-                  if (picked == null || !context.mounted) return;
-                  setDialogState(() => selectedDuration = picked);
-                },
+        builder: (context, setDialogState) => BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(26),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.18),
+                    blurRadius: 34,
+                    spreadRadius: -12,
+                    offset: const Offset(0, 18),
+                  ),
+                ],
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            TextButton(
-              onPressed: selectedDuration == null
-                  ? null
-                  : () => Navigator.pop(
-                        context,
-                        int.parse(selectedDuration!),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 54,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFEFEF),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: const Icon(
+                          Icons.block,
+                          color: Color(0xFFE83030),
+                          size: 26,
+                        ),
                       ),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFE83030),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Blokir $username',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontSize: 19,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Pilih durasi pembatasan akun.',
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Durasi Blokir',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: durationOptions
+                        .map(
+                          (duration) => ChoiceChip(
+                            label: Text('$duration hari'),
+                            selected: selectedDuration == duration,
+                            onSelected: (_) => setDialogState(
+                              () => selectedDuration = duration,
+                            ),
+                            selectedColor: const Color(0xFFE83030),
+                            backgroundColor: const Color(0xFFF5F5F5),
+                            labelStyle: TextStyle(
+                              color: selectedDuration == duration
+                                  ? Colors.white
+                                  : Colors.black54,
+                              fontWeight: selectedDuration == duration
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 18),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFFBEB),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFFFE3A3)),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 18,
+                          color: Color(0xFFF59E0B),
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Akun tidak dapat beraktivitas selama durasi blokir aktif.',
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontSize: 12,
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFE83030),
+                            side: const BorderSide(color: Color(0xFFFFC7C7)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Text(
+                            'Batal',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: selectedDuration == null
+                              ? null
+                              : () => Navigator.pop(
+                                    context,
+                                    int.parse(selectedDuration!),
+                                  ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE83030),
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: const Color(0xFFFFDADA),
+                            disabledForegroundColor: Colors.white70,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Text(
+                            'Blokir',
+                            style: TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              child: const Text('Blokir'),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1921,35 +2639,232 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   Future<void> _confirmDeleteUser(int userId, String username) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        title: const Text('Hapus Akun'),
-        content: Text(
-          'Apakah Anda yakin ingin menghapus akun "$username"? '
-          'Tindakan ini tidak dapat dibatalkan.',
+      barrierColor: Colors.black.withValues(alpha: 0.38),
+      builder: (dialogContext) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: _buildDangerDialogCard(
+            icon: Icons.delete_forever_outlined,
+            title: 'Hapus Akun',
+            message:
+                'Apakah Anda yakin ingin menghapus akun "$username"? Tindakan ini tidak dapat dibatalkan.',
+            primaryLabel: 'Hapus',
+            onCancel: () => Navigator.pop(dialogContext, false),
+            onPrimary: () => Navigator.pop(dialogContext, true),
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFFE83030),
-            ),
-            child: const Text('Hapus'),
-          ),
-        ],
       ),
     );
 
     if (confirmed != true) return;
 
-    await _runAdminAction(
-      action: () => _adminService.deleteUser(userId),
-      successMessage: 'Akun berhasil dihapus.',
+    try {
+      await _adminService.deleteUser(userId);
+      if (!mounted) return;
+      await _fetchAdminData();
+      if (!mounted) return;
+      await _showAdminSuccessDialog(
+        title: 'Akun Berhasil Dihapus',
+        message: 'Akun "$username" sudah dihapus dari Jualin.',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Widget _buildDangerDialogCard({
+    required IconData icon,
+    required String title,
+    required String message,
+    required String primaryLabel,
+    required VoidCallback onCancel,
+    required VoidCallback onPrimary,
+  }) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 34,
+            spreadRadius: -12,
+            offset: const Offset(0, 18),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 62,
+            height: 62,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFEFEF),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(icon, color: const Color(0xFFE83030), size: 32),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.black54,
+              fontSize: 13,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onCancel,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFE83030),
+                    side: const BorderSide(color: Color(0xFFFFC7C7)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Batal',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: onPrimary,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE83030),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    primaryLabel,
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showAdminSuccessDialog({
+    required String title,
+    required String message,
+  }) {
+    return showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      builder: (dialogContext) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(26),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 34,
+                  spreadRadius: -12,
+                  offset: const Offset(0, 18),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF7EE),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Color(0xFF41B34D),
+                    size: 34,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE83030),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Mengerti',
+                      style: TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1970,6 +2885,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
     final reason = await showDialog<String>(
       context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.38),
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           final needsCustom = selectedReason == 'Lainnya';
@@ -1977,62 +2893,186 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           final canDelete = selectedReason != null &&
               (!needsCustom || customReason.isNotEmpty);
 
-          return AlertDialog(
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.white,
-            title: const Text('Hapus Produk'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Pilih alasan penghapusan untuk "$productName".'),
-                const SizedBox(height: 14),
-                _buildChoiceField(
-                  value: selectedReason,
-                  hint: 'Pilih alasan penghapusan',
-                  onTap: () async {
-                    final picked = await _showAdminOptionSheet(
-                      title: 'Alasan Penghapusan',
-                      selected: selectedReason,
-                      options: reasons,
-                      labelBuilder: (value) => value,
-                    );
-                    if (picked == null || !context.mounted) return;
-                    setDialogState(() => selectedReason = picked);
-                  },
-                ),
-                if (needsCustom) ...[
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: customReasonController,
-                    minLines: 2,
-                    maxLines: 4,
-                    onChanged: (_) => setDialogState(() {}),
-                    decoration: const InputDecoration(
-                      labelText: 'Alasan lainnya',
-                      hintText: 'Tulis alasan penghapusan',
-                      border: OutlineInputBorder(),
+          return BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+            child: Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 22),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(26),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 34,
+                      spreadRadius: -12,
+                      offset: const Offset(0, 18),
                     ),
-                  ),
-                ],
-              ],
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Batal')),
-              TextButton(
-                onPressed: canDelete
-                    ? () => Navigator.pop(
-                          context,
-                          needsCustom ? customReason : selectedReason,
-                        )
-                    : null,
-                style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFFE83030)),
-                child: const Text('Hapus'),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFEFEF),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: const Icon(
+                            Icons.inventory_2_outlined,
+                            color: Color(0xFFE83030),
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Hapus Produk',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                productName,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 12,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Alasan Penghapusan',
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildChoiceField(
+                      value: selectedReason,
+                      hint: 'Pilih alasan penghapusan',
+                      onTap: () async {
+                        final picked = await _showAdminOptionSheet(
+                          title: 'Alasan Penghapusan',
+                          selected: selectedReason,
+                          options: reasons,
+                          labelBuilder: (value) => value,
+                        );
+                        if (picked == null || !context.mounted) return;
+                        setDialogState(() => selectedReason = picked);
+                      },
+                    ),
+                    if (needsCustom) ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: customReasonController,
+                        minLines: 2,
+                        maxLines: 4,
+                        onChanged: (_) => setDialogState(() {}),
+                        decoration: InputDecoration(
+                          labelText: 'Alasan lainnya',
+                          hintText: 'Tulis alasan penghapusan',
+                          filled: true,
+                          fillColor: const Color(0xFFF8F8F8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFBEB),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFFFE3A3)),
+                      ),
+                      child: const Text(
+                        'Produk yang dihapus tidak akan tampil lagi di katalog.',
+                        style: TextStyle(
+                          color: Colors.black54,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFE83030),
+                              side: const BorderSide(color: Color(0xFFFFC7C7)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              'Batal',
+                              style: TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: canDelete
+                                ? () => Navigator.pop(
+                                      context,
+                                      needsCustom
+                                          ? customReason
+                                          : selectedReason,
+                                    )
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE83030),
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: const Color(0xFFFFDADA),
+                              disabledForegroundColor: Colors.white70,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              'Hapus',
+                              style: TextStyle(fontWeight: FontWeight.w900),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ],
+            ),
           );
         },
       ),
@@ -2227,6 +3267,35 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   dynamic _nested(dynamic parent, String key) {
     if (parent is Map) return parent[key];
     return null;
+  }
+
+  bool _isProductReport(Map<String, dynamic> report) {
+    final productId = _parseInt(report['product_id']);
+    return productId > 0 || _reportProductName(report).isNotEmpty;
+  }
+
+  String _reportProductName(Map<String, dynamic> report) {
+    return _text(
+      report['reported_product_name'] ??
+          _nested(report['product'], 'name') ??
+          _nested(report['reported_product'], 'name'),
+    );
+  }
+
+  String _reportReason(Map<String, dynamic> report) {
+    final reason = _text(report['type']);
+    if (reason.toLowerCase() == 'laporan umum') return '';
+    return reason;
+  }
+
+  String _reportDisplayType(Map<String, dynamic> report) {
+    return _isProductReport(report) ? 'Laporan Produk' : 'Laporan Umum';
+  }
+
+  IconData _reportIcon(Map<String, dynamic> report) {
+    return _isProductReport(report)
+        ? Icons.inventory_2_outlined
+        : Icons.report_outlined;
   }
 
   String _extractImageUrl(dynamic raw) {

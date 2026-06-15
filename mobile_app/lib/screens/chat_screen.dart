@@ -8,6 +8,7 @@ import '../widgets/ui/app_chrome.dart';
 import '../widgets/ui/login_required_dialog.dart';
 import '../widgets/ui/frosted_app_bar.dart';
 import '../widgets/ui/logo_loader.dart';
+import '../widgets/ui/user_avatar.dart';
 import '../services/chat_service.dart';
 import '../models/chat_room.dart';
 import '../models/chat_message.dart';
@@ -19,7 +20,9 @@ import '../utils/image_url_helper.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final String fallbackRoute;
+
+  const ChatScreen({super.key, this.fallbackRoute = '/main'});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -141,6 +144,16 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  void _handleBack() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+
+    navigator.pushReplacementNamed(widget.fallbackRoute);
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppChrome(
@@ -199,18 +212,26 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             Row(
               children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
+                Material(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(15),
+                  child: InkWell(
                     borderRadius: BorderRadius.circular(15),
-                    border:
-                        Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                  ),
-                  child: const Icon(
-                    Icons.chat_bubble_outline,
-                    color: Colors.white,
+                    onTap: _handleBack,
+                    child: Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -551,21 +572,7 @@ class _ChatScreenState extends State<ChatScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 26,
-              backgroundColor: const Color(0xFFE83030).withValues(alpha: 0.12),
-              backgroundImage:
-                  avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-              child: avatarUrl.isEmpty
-                  ? Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : '?',
-                      style: const TextStyle(
-                        color: Color(0xFFE83030),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  : null,
-            ),
+            UserAvatar(name: name, imageUrl: avatarUrl, radius: 26),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -1018,36 +1025,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     onTap: () => Navigator.pop(context),
                   ),
                   const SizedBox(width: 12),
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      shape: BoxShape.circle,
-                      image: avatarUrl.isNotEmpty
-                          ? DecorationImage(
-                              image: NetworkImage(avatarUrl),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: avatarUrl.isEmpty
-                        ? Center(
-                            child: Text(
-                              widget.roomName.isNotEmpty
-                                  ? widget.roomName[0].toUpperCase()
-                                  : '?',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 18,
-                              ),
-                            ),
-                          )
-                        : null,
+                  UserAvatar(
+                    name: widget.roomName,
+                    imageUrl: avatarUrl,
+                    radius: 23,
+                    showBorder: false,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1189,19 +1171,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
-            CircleAvatar(
+            UserAvatar(
+              name: msg.sender?.username ?? '?',
+              imageUrl: senderAvatarUrl,
               radius: 14,
-              backgroundColor: Colors.grey[200],
-              backgroundImage: senderAvatarUrl.isNotEmpty
-                  ? NetworkImage(senderAvatarUrl)
-                  : null,
-              child: senderAvatarUrl.isEmpty
-                  ? Text(
-                      (msg.sender?.username ?? '?')[0].toUpperCase(),
-                      style:
-                          const TextStyle(fontSize: 11, color: Colors.black54),
-                    )
-                  : null,
+              showBorder: false,
             ),
             const SizedBox(width: 6),
           ],
@@ -1274,19 +1248,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
-            CircleAvatar(
+            UserAvatar(
+              name: msg.sender?.username ?? '?',
+              imageUrl: senderAvatarUrl,
               radius: 14,
-              backgroundColor: Colors.grey[200],
-              backgroundImage: senderAvatarUrl.isNotEmpty
-                  ? NetworkImage(senderAvatarUrl)
-                  : null,
-              child: senderAvatarUrl.isEmpty
-                  ? Text(
-                      (msg.sender?.username ?? '?')[0].toUpperCase(),
-                      style:
-                          const TextStyle(fontSize: 11, color: Colors.black54),
-                    )
-                  : null,
+              showBorder: false,
             ),
             const SizedBox(width: 6),
           ],
@@ -1365,19 +1331,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
-            CircleAvatar(
+            UserAvatar(
+              name: msg.sender?.username ?? '?',
+              imageUrl: senderAvatarUrl,
               radius: 14,
-              backgroundColor: Colors.grey[200],
-              backgroundImage: senderAvatarUrl.isNotEmpty
-                  ? NetworkImage(senderAvatarUrl)
-                  : null,
-              child: senderAvatarUrl.isEmpty
-                  ? Text(
-                      (msg.sender?.username ?? '?')[0].toUpperCase(),
-                      style:
-                          const TextStyle(fontSize: 11, color: Colors.black54),
-                    )
-                  : null,
+              showBorder: false,
             ),
             const SizedBox(width: 6),
           ],
@@ -1552,7 +1510,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final isBusy = _isSending || _isSendingImage;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -1568,6 +1526,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         top: false,
         bottom: false,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             GestureDetector(
               onTap: isBusy ? null : _pickAndSendImage,
@@ -1600,25 +1559,32 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: TextField(
-                controller: _msgController,
-                enabled: !isBusy,
-                minLines: 1,
-                maxLines: 4,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  hintText: 'Tulis pesan...',
-                  hintStyle: TextStyle(color: Colors.grey[400]),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 92),
+                child: TextField(
+                  controller: _msgController,
+                  enabled: !isBusy,
+                  minLines: 1,
+                  maxLines: 3,
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.newline,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(
+                    hintText: 'Tulis pesan...',
+                    hintStyle: TextStyle(color: Colors.grey[400]),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
+                  onSubmitted: (_) => _sendMessage(),
                 ),
-                onSubmitted: (_) => _sendMessage(),
               ),
             ),
             const SizedBox(width: 8),

@@ -32,8 +32,7 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
           category == _categoryFilter.trim().toLowerCase();
       final stockMatches = switch (_stockFilter) {
         'empty' => product.stock <= 0,
-        'low' => product.stock > 0 && product.stock <= 5,
-        'available' => product.stock > 5,
+        'available' => product.stock > 0,
         _ => true,
       };
       return searchMatches && categoryMatches && stockMatches;
@@ -84,6 +83,16 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
         });
       }
     }
+  }
+
+  void _handleBack() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+
+    navigator.pushReplacementNamed('/seller_main');
   }
 
   Future<void> _confirmDelete(int productId, String productName) async {
@@ -216,6 +225,29 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
           ),
           Row(
             children: [
+              Material(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(15),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(15),
+                  onTap: _handleBack,
+                  child: Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
               Container(
                 width: 46,
                 height: 46,
@@ -450,11 +482,6 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                           label: 'Stok Habis',
                           active: tempStock == 'empty',
                           onTap: () => setSheetState(() => tempStock = 'empty'),
-                        ),
-                        _filterChip(
-                          label: 'Stok Rendah',
-                          active: tempStock == 'low',
-                          onTap: () => setSheetState(() => tempStock = 'low'),
                         ),
                         _filterChip(
                           label: 'Stok Tersedia',

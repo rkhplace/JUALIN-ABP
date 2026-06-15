@@ -45,6 +45,10 @@ export const profileService = {
     }
     return response ?? {};
   },
+
+  async deleteAccount() {
+    return fetcher.delete('/api/v1/me');
+  },
 };
 
 export default profileService;

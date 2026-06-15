@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 import '../services/seller_service.dart';
 import '../widgets/ui/logo_loader.dart';
+import '../widgets/ui/user_avatar.dart';
 import '../screens/report_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -209,6 +210,215 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<bool?> _showDeleteAccountConfirmation() {
+    return showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.38),
+      builder: (dialogContext) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(26),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 34,
+                  spreadRadius: -12,
+                  offset: const Offset(0, 18),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 62,
+                  height: 62,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEFEF),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.delete_forever_outlined,
+                    color: Color(0xFFE83030),
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Hapus Akun?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Akun Anda akan dihapus permanen dan sesi login akan keluar. Tindakan ini tidak dapat dibatalkan.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFE83030),
+                          side: const BorderSide(color: Color(0xFFFFC7C7)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        child: const Text(
+                          'Batal',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE83030),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(dialogContext).pop(true),
+                        child: const Text(
+                          'Hapus',
+                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showAccountDeletedDialog() {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      builder: (dialogContext) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(26),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF7EE),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Color(0xFF41B34D),
+                    size: 34,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Akun Berhasil Dihapus',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Terima kasih sudah menggunakan Jualin. Anda akan diarahkan ke halaman login.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE83030),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Mengerti',
+                      style: TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleDeleteAccount() async {
+    final confirmed = await _showDeleteAccountConfirmation();
+    if (confirmed != true) return;
+
+    try {
+      await _authService.deleteAccount();
+      if (!mounted) return;
+      await _showAccountDeletedDialog();
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -297,6 +507,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       }
                                     }
                                   },
+                                ),
+                                const SizedBox(height: 12),
+                                _buildProfileMenuItem(
+                                  icon: Icons.delete_forever_outlined,
+                                  title: 'Hapus Akun',
+                                  subtitle: 'Hapus akun Jualin secara permanen',
+                                  isDanger: true,
+                                  showChevron: false,
+                                  onTap: _handleDeleteAccount,
                                 ),
                               ],
                             ),
@@ -424,6 +643,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final roleColor = _userRole == 'seller'
         ? const Color(0xFFE83030)
         : const Color(0xFF2563EB);
+    final isVerifiedProfile = ['verified', 'approved']
+        .contains(user.verificationStatus.toLowerCase());
 
     return Stack(
       clipBehavior: Clip.none,
@@ -494,34 +715,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
+                  border: isVerifiedProfile
+                      ? Border.all(
+                          color:
+                              const Color(0xFF22C55E).withValues(alpha: 0.75),
+                          width: 2,
+                        )
+                      : null,
                   boxShadow: [
+                    if (isVerifiedProfile) ...[
+                      BoxShadow(
+                        color: const Color(0xFF22C55E).withValues(alpha: 0.42),
+                        blurRadius: 34,
+                        spreadRadius: 4,
+                        offset: const Offset(0, 10),
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFF86EFAC).withValues(alpha: 0.34),
+                        blurRadius: 50,
+                        spreadRadius: 10,
+                        offset: const Offset(0, 18),
+                      ),
+                    ],
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.18),
+                      color: Colors.black.withValues(
+                        alpha: isVerifiedProfile ? 0.12 : 0.18,
+                      ),
                       blurRadius: 26,
                       spreadRadius: -5,
                       offset: const Offset(0, 14),
                     ),
-                    BoxShadow(
-                      color: const Color(0xFFE83030).withValues(alpha: 0.16),
-                      blurRadius: 22,
-                      spreadRadius: -8,
-                      offset: const Offset(0, 10),
-                    ),
+                    if (!isVerifiedProfile)
+                      BoxShadow(
+                        color: const Color(0xFFE83030).withValues(alpha: 0.16),
+                        blurRadius: 22,
+                        spreadRadius: -8,
+                        offset: const Offset(0, 10),
+                      ),
                   ],
                 ),
-                child: CircleAvatar(
+                child: UserAvatar(
+                  name: user.name,
+                  imageUrl: user.avatarUrl,
                   radius: 52,
-                  backgroundColor: const Color(0xFFF1F1F1),
-                  backgroundImage: user.avatarUrl.isNotEmpty
-                      ? NetworkImage(user.avatarUrl)
-                      : null,
-                  child: user.avatarUrl.isEmpty
-                      ? const Icon(
-                          Icons.person,
-                          size: 50,
-                          color: Colors.grey,
-                        )
-                      : null,
+                  showBorder: false,
                 ),
               ),
               const SizedBox(height: 10),

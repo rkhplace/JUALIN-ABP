@@ -34,6 +34,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:api')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
+        Route::delete('/me', [\App\Http\Controllers\ProfileController::class, 'destroy']);
         Route::get('/users/search', [UserController::class, 'search']);
         Route::post('/reports', [ReportController::class, 'store']);
         Route::patch('/profile/update', [\App\Http\Controllers\ProfileController::class, 'update']);

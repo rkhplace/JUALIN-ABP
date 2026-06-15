@@ -11,7 +11,8 @@ import {
 } from "lucide-react";
 import { ChatContext } from "@/context/ChatProvider";
 import { useAuth } from "@/context/AuthProvider";
-import { getProfilePictureUrl, getProductImageUrl } from "@/utils/imageHelper";
+import { getProductImageUrl } from "@/utils/imageHelper";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { escrowService } from "@/services";
 
 const STATUS_FILTERS = [
@@ -116,7 +117,7 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
         time: order.created_at
           ? new Date(order.created_at).toLocaleString("id-ID")
           : "Recently",
-        avatar: getProfilePictureUrl(order.customer?.profile_picture),
+        avatar: order.customer?.profile_picture || order.customer?.avatar,
       }))
       : [];
 
@@ -392,10 +393,10 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
                   </td>
                   <td className="py-3 px-2">
                     <div className="flex items-center gap-3">
-                      <img
+                      <UserAvatar
+                        name={activity.buyerName}
                         src={activity.avatar}
-                        alt={activity.buyerName}
-                        className="w-10 h-10 rounded-full object-cover"
+                        sizeClass="w-10 h-10"
                       />
                       <span className="text-gray-900">
                         {activity.buyerName}
@@ -486,10 +487,10 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
                           {activity.category} - {activity.time.split(",")[0]}
                         </p>
                       </div>
-                      <img
+                      <UserAvatar
+                        name={activity.buyerName}
                         src={activity.avatar}
-                        alt={activity.buyerName}
-                        className="h-8 w-8 shrink-0 rounded-full object-cover"
+                        sizeClass="h-8 w-8 shrink-0"
                       />
                     </div>
 

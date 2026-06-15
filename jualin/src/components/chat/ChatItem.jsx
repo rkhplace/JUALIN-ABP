@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/Badge';
-import { getProfilePictureUrl } from '@/utils/imageHelper';
+import UserAvatar from '@/components/ui/UserAvatar';
 import { fetchChatPartnerProfile } from '@/services/chat/chatService';
 
 export function ChatItem({ chat, isSelected, onClick }) {
@@ -19,9 +19,7 @@ export function ChatItem({ chat, isSelected, onClick }) {
     return () => { isMounted = false; };
   }, [chat.otherUserId]);
 
-  const displayAvatar = getProfilePictureUrl(
-    fetchedUser?.profile_picture || chat.avatar
-  );
+  const displayAvatar = fetchedUser?.profile_picture || chat.avatar;
 
   return (
     <div
@@ -34,15 +32,11 @@ export function ChatItem({ chat, isSelected, onClick }) {
       <div className="flex items-start gap-3 md:gap-4 relative z-10">
         {/* Avatar */}
         <div className="relative shrink-0">
-          <div className={`h-10 w-10 md:h-12 md:w-12 rounded-full overflow-hidden shadow-sm flex items-center justify-center ${!displayAvatar ? 'bg-gradient-to-br from-gray-100 to-gray-200' : 'bg-gray-100'}`}>
-            {displayAvatar ? (
-              <img src={displayAvatar} alt={chat.name} className="h-full w-full object-cover" />
-            ) : (
-              <span className="text-gray-500 font-bold text-base md:text-lg">
-                {(chat.name && chat.name.length > 0 ? chat.name[0] : 'S').toUpperCase()}
-              </span>
-            )}
-          </div>
+          <UserAvatar
+            name={chat.name}
+            src={displayAvatar}
+            sizeClass="h-10 w-10 md:h-12 md:w-12"
+          />
         </div>
 
         {/* Content */}
