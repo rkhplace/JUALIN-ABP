@@ -93,12 +93,12 @@ export function ChatWindow({ chat, messages = [], onSend, onSendImages }) {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-100">
+    <div className="h-full min-w-0 flex flex-col overflow-hidden bg-gray-100">
       {/* Header */}
       <ChatHeader chat={chatHeaderData} />
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto bg-gray-100 py-4 md:py-6 px-2 md:px-4 flex flex-col">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-gray-100 py-4 md:py-6 px-2 md:px-4 flex flex-col">
         {transformedMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center p-6">

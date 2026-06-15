@@ -37,4 +37,17 @@ class ProfileController extends Controller
             $updatedUser->fresh()
         );
     }
+
+    public function destroy(\Illuminate\Http\Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->role === 'admin') {
+            return ApiResponse::error('Admin accounts cannot be deleted from profile', null, 422);
+        }
+
+        $this->userService->delete($user->id);
+
+        return ApiResponse::success('Account deleted');
+    }
 }

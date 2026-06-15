@@ -12,7 +12,7 @@ import {
 import Logo from "./Logo.jsx";
 import { AuthContext } from "../../context/AuthProvider.jsx";
 import SearchBar from "./SearchBar.jsx";
-import { getProfilePictureUrl } from "@/utils/imageHelper";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { sellerService } from "@/services/seller/sellerService";
 
 const Navbar = () => {
@@ -161,10 +161,11 @@ const Navbar = () => {
                 }`}
                 className="flex items-center gap-2"
               >
-                <img
-                  src={getProfilePictureUrl(user?.profile_picture)}
-                  alt="avatar"
-                  className="w-8 h-8 rounded-full transition-transform duration-200 hover:scale-105"
+                <UserAvatar
+                  name={user.name || user.username || "User"}
+                  src={user?.profile_picture || user?.avatar}
+                  sizeClass="w-8 h-8"
+                  className="transition-transform duration-200 hover:scale-105"
                 />
                 <span className="font-semibold text-gray-800 flex items-center gap-1">
                   Hi, {user.name || user.username || "User"}
@@ -302,10 +303,10 @@ const Navbar = () => {
                 }`}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors duration-200"
               >
-                <img
-                  src={getProfilePictureUrl(user?.profile_picture)}
-                  alt="avatar"
-                  className="w-8 h-8 rounded-full"
+                <UserAvatar
+                  name={user.name || user.username || "User"}
+                  src={user?.profile_picture || user?.avatar}
+                  sizeClass="w-8 h-8"
                 />
                 <span className="font-semibold text-gray-800 flex items-center gap-1">
                   Hi, {user.name || user.username || "User"}

@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from 'react';
-import { getProfilePictureUrl } from '@/utils/imageHelper';
 import VerifiedBadge from '@/components/ui/VerifiedBadge';
 import { sellerService } from '@/services/seller/sellerService';
+import UserAvatar from '@/components/ui/UserAvatar';
 
 export function ProfileHeaderSection({ user }) {
   const [isVerified, setIsVerified] = useState(false);
@@ -35,23 +35,17 @@ export function ProfileHeaderSection({ user }) {
     return parts.length > 0 ? parts.join(', ') : "Not set";
   };
 
-  const profileImageUrl = getProfilePictureUrl(user?.profile_picture);
-
   return (
     <div className="bg-white rounded-lg border p-6">
       {/* Profile Picture */}
-      {user?.profile_picture && (
-        <div className="mb-6 flex justify-center">
-          <img
-            src={profileImageUrl}
-            alt={user.username || 'Profile'}
-            className="w-32 h-32 rounded-full object-cover border-2 border-gray-200"
-            onError={(e) => {
-              e.target.src = '/ProfilePhoto.png';
-            }}
-          />
-        </div>
-      )}
+      <div className="mb-6 flex justify-center">
+        <UserAvatar
+          name={user?.username || user?.name || 'User'}
+          src={user?.profile_picture || user?.avatar}
+          sizeClass="w-32 h-32"
+          className="text-4xl"
+        />
+      </div>
 
       <div className="space-y-4">
         <div>

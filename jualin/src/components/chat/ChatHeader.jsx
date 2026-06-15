@@ -1,6 +1,6 @@
 'use client';
 import { CheckCircle2 } from 'lucide-react';
-import { getProfilePictureUrl } from '@/utils/imageHelper';
+import UserAvatar from '@/components/ui/UserAvatar';
 
 export function ChatHeader({ chat }) {
   if (!chat) {
@@ -19,19 +19,11 @@ export function ChatHeader({ chat }) {
       <div className="flex items-center gap-3 md:gap-4">
         {/* Large Avatar without Ring */}
         <div className="relative shrink-0">
-          <div className="h-10 w-10 md:h-12 md:w-12 rounded-full border-2 border-white overflow-hidden shadow-sm flex items-center justify-center bg-gray-100">
-            {getProfilePictureUrl(chat.avatar || chat.profile_picture) ? (
-              <img 
-                src={getProfilePictureUrl(chat.avatar || chat.profile_picture)} 
-                alt={displayName} 
-                className="h-full w-full object-cover" 
-              />
-            ) : (
-              <span className="text-gray-500 font-bold text-base md:text-lg">
-                {(displayName && displayName.length > 0 ? displayName[0] : 'S').toUpperCase()}
-              </span>
-            )}
-          </div>
+          <UserAvatar
+            name={displayName}
+            src={chat.avatar || chat.profile_picture}
+            sizeClass="h-10 w-10 md:h-12 md:w-12"
+          />
         </div>
 
         {/* User Info */}

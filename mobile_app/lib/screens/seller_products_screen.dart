@@ -32,8 +32,7 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
           category == _categoryFilter.trim().toLowerCase();
       final stockMatches = switch (_stockFilter) {
         'empty' => product.stock <= 0,
-        'low' => product.stock > 0 && product.stock <= 5,
-        'available' => product.stock > 5,
+        'available' => product.stock > 0,
         _ => true,
       };
       return searchMatches && categoryMatches && stockMatches;
@@ -483,11 +482,6 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                           label: 'Stok Habis',
                           active: tempStock == 'empty',
                           onTap: () => setSheetState(() => tempStock = 'empty'),
-                        ),
-                        _filterChip(
-                          label: 'Stok Rendah',
-                          active: tempStock == 'low',
-                          onTap: () => setSheetState(() => tempStock = 'low'),
                         ),
                         _filterChip(
                           label: 'Stok Tersedia',

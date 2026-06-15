@@ -7,6 +7,17 @@ import Button from "../ui/Button";
 import { authService } from "@/services/auth/authService";
 import { useAuth } from "@/context/AuthProvider";
 
+const normalizeLoginError = (error) => {
+  const message =
+    error?.message || "Login gagal. Silakan periksa kembali data Anda.";
+
+  if (/invalid credentials/i.test(message)) {
+    return "Email tidak ditemukan. Periksa kembali email yang Anda masukkan.";
+  }
+
+  return message;
+};
+
 const LoginForm = ({ onSuccess, onError }) => {
   const router = useRouter();
   const { login, refetchUser } = useAuth();
@@ -75,9 +86,7 @@ const LoginForm = ({ onSuccess, onError }) => {
         router.push("/dashboard");
       }
     } catch (error) {
-      onError?.(
-        error.message || "Login failed - please check your credentials"
-      );
+      onError?.(normalizeLoginError(error));
     } finally {
       setIsLoading(false);
     }

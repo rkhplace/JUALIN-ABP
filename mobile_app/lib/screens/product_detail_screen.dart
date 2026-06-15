@@ -11,6 +11,7 @@ import '../utils/image_url_helper.dart';
 import '../widgets/ui/login_required_dialog.dart';
 import '../widgets/ui/frosted_app_bar.dart';
 import '../widgets/ui/logo_loader.dart';
+import '../widgets/ui/user_avatar.dart';
 import 'chat_screen.dart';
 import '../../utils/formatters.dart';
 
@@ -962,14 +963,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     return Row(
       children: [
-        CircleAvatar(
-          backgroundColor: const Color(0xFFFFEFEF),
+        UserAvatar(
+          name: product.sellerName,
+          imageUrl: sellerImageUrl,
           radius: 24,
-          backgroundImage:
-              sellerImageUrl.isNotEmpty ? NetworkImage(sellerImageUrl) : null,
-          child: sellerImageUrl.isEmpty
-              ? const Icon(Icons.person, color: Color(0xFFE83030))
-              : null,
         ),
         const SizedBox(width: 12),
         Expanded(

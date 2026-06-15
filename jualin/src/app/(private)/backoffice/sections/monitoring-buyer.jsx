@@ -3,9 +3,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { Search, X, MoreHorizontal } from "lucide-react";
 import { transactionService } from "@/services/backoffice/transactionService";
-import { getProfilePictureUrl, getProductImageUrl } from "@/utils/imageHelper";
+import { getProductImageUrl } from "@/utils/imageHelper";
 import Pagination from "@/components/ui/Pagination";
 import DropdownMenu from "@/components/ui/DropdownMenu";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 export default function BuyerMonitoring() {
   const [allTransactions, setAllTransactions] = useState([]);
@@ -93,7 +94,7 @@ export default function BuyerMonitoring() {
         ? new Date(order.created_at).toLocaleString("id-ID")
         : "N/A",
       buyer: order.customer?.username || order.customer?.name || "Unknown",
-      buyerImage: getProfilePictureUrl(order.customer?.profile_picture),
+      buyerImage: order.customer?.profile_picture || order.customer?.avatar,
       status: order.status,
       buyerId: order.customer_id,
       originalData: order,
@@ -311,13 +312,10 @@ export default function BuyerMonitoring() {
                     </td>
                     <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <div className="flex items-center gap-3">
-                        <img
+                        <UserAvatar
+                          name={buyer.buyer}
                           src={buyer.buyerImage}
-                          alt={buyer.buyer}
-                          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shadow-sm bg-gray-100"
-                          onError={(e) => {
-                            e.target.src = "/ProfilePhoto.png";
-                          }}
+                          sizeClass="w-8 h-8 sm:w-9 sm:h-9"
                         />
                         <span className="text-sm text-gray-700 font-medium">
                           {buyer.buyer}

@@ -13,6 +13,7 @@ import { formatCurrency } from "@/utils/formatters/currency";
 import PaymentMethodModal from "@/components/payment/PaymentMethodModal";
 import { transactionService } from "@/services";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 export default function ProductDetailSection({ product, seller }) {
   const router = useRouter();
@@ -391,13 +392,11 @@ export default function ProductDetailSection({ product, seller }) {
 
           {/* Seller Info */}
           <div className="flex items-center gap-3 mb-4 md:mb-6 p-3 md:p-4 bg-gray-50 rounded-xl border border-gray-100">
-            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-              {seller?.profile_picture ? (
-                <img src={getProfilePictureUrl(seller.profile_picture)} alt={seller.username} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-gray-500 font-bold text-lg">{(seller?.username || 'S')[0].toUpperCase()}</span>
-              )}
-            </div>
+            <UserAvatar
+              name={seller?.username || "Seller"}
+              src={seller?.profile_picture || seller?.avatar}
+              sizeClass="w-10 h-10"
+            />
             <div>
               <p className="font-semibold text-gray-900 flex items-center gap-1">
                 {seller?.username || "Seller"}

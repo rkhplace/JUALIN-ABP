@@ -41,11 +41,19 @@ class AuthService
     public function login(array $credentials)
     {
         $loginCredentials = Arr::only($credentials, ['email', 'password']);
+        $user = $this->userRepository->findByEmail($loginCredentials['email'] ?? '');
+
+        if (!$user) {
+            return [
+                'success' => false,
+                'message' => 'Email tidak ditemukan.'
+            ];
+        }
 
         if (!$token = Auth::guard('api')->attempt($loginCredentials)) {
             return [
                 'success' => false,
-                'message' => 'Invalid credentials'
+                'message' => 'Password salah.'
             ];
         }
 

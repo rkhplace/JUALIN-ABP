@@ -40,7 +40,7 @@ class AuthService {
       await PushNotificationService.instance.registerDeviceToken();
       return null;
     } on ApiException catch (e) {
-      if (e.statusCode == 401) return 'Email atau password salah.';
+      if (e.statusCode == 401) return _friendlyLoginError(e.message);
       if (e.statusCode == 422) return e.message;
       return 'Login gagal (${e.statusCode}): ${e.message}';
     } catch (_) {
@@ -145,6 +145,21 @@ class AuthService {
       await _client.post(ApiConfig.logout);
     } catch (_) {
       // Keep logout local-first, matching the web app behavior.
+    } finally {
+      await clearLocalSession();
+    }
+  }
+
+  String _friendlyLoginError(String message) {
+    if (message.toLowerCase().contains('invalid credentials')) {
+      return 'Email tidak ditemukan. Periksa kembali email yang Anda masukkan.';
+    }
+    return message;
+  }
+
+  Future<void> deleteAccount() async {
+    try {
+      await _client.delete('/me');
     } finally {
       await clearLocalSession();
     }

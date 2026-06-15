@@ -10,7 +10,7 @@ export function ChatBubble({ message }) {
   if (isImage) {
     return (
       <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-3 md:mb-4 px-3 md:px-6`}>
-        <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[78%] md:max-w-[360px]`}>
+        <div className={`flex min-w-0 flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[78%] md:max-w-[360px]`}>
           <span className="text-xs text-gray-400 mb-1.5 px-1">
             {message.time}
           </span>
@@ -44,8 +44,8 @@ export function ChatBubble({ message }) {
   }
 
   return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-3 md:mb-4 px-3 md:px-6`}>
-      <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[78%] md:max-w-[70%]`}>
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-3 md:mb-4 px-3 md:px-6 min-w-0`}>
+      <div className={`flex min-w-0 flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[78%] md:max-w-[70%]`}>
         {/* Timestamp above bubble */}
         <span className="text-xs text-gray-400 mb-1.5 px-1">
           {message.time}
@@ -53,12 +53,12 @@ export function ChatBubble({ message }) {
 
         {/* Message Bubble */}
         <div
-          className={`px-4 py-2.5 md:px-5 md:py-3 rounded-3xl text-sm leading-relaxed ${isMe
+          className={`min-w-0 max-w-full px-4 py-2.5 md:px-5 md:py-3 rounded-3xl text-sm leading-relaxed ${isMe
               ? 'bg-red-500 text-white rounded-br-md shadow-md'
               : 'bg-gray-100 text-gray-900 rounded-bl-md shadow-sm'
             }`}
         >
-          <p className="break-words whitespace-pre-wrap">{message.content}</p>
+          <p className="whitespace-pre-wrap break-all [overflow-wrap:anywhere]">{message.content}</p>
         </div>
       </div>
     </div>

@@ -31,8 +31,8 @@ export function ProductBubble({ message, userRole }) {
   return (
     <>
       {/* Product Bubble in Message List */}
-      <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-4 px-6`}>
-        <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]`}>
+      <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-4 px-3 md:px-6 min-w-0`}>
+        <div className={`flex min-w-0 flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[82%] md:max-w-[75%]`}>
           {/* Timestamp */}
           <span className="text-xs text-gray-400 mb-1.5 px-1">
             {message.time}
@@ -49,7 +49,7 @@ export function ProductBubble({ message, userRole }) {
                 : 'bg-white border-gray-200 rounded-bl-md shadow-sm hover:border-red-300'
               }
             `}
-            style={{ minWidth: '240px', maxWidth: '300px' }}
+            style={{ width: 'min(300px, 100%)', minWidth: 'min(240px, 100%)' }}
           >
             {/* Product Image */}
             <div className="relative w-full h-36 overflow-hidden bg-gray-100">

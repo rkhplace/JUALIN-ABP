@@ -5,7 +5,7 @@ import { Search } from "lucide-react";
 import { toast } from "sonner";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
 import { userService } from "@/services/user/userService";
-import { getProfilePictureUrl } from "@/utils/imageHelper";
+import UserAvatar from "@/components/ui/UserAvatar";
 import Pagination from "@/components/ui/Pagination";
 
 export default function UserManagement() {
@@ -281,12 +281,10 @@ export default function UserManagement() {
                   >
                     <td className="px-4 py-3 sm:px-6 sm:py-4">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={getProfilePictureUrl(
-                            user.profile_picture || user.avatar
-                          )}
-                          alt={user.name || "User"}
-                          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shadow-sm"
+                        <UserAvatar
+                          name={user.name || user.username || "User"}
+                          src={user.profile_picture || user.avatar}
+                          sizeClass="w-8 h-8 sm:w-9 sm:h-9"
                         />
                         <span className="text-sm font-medium text-gray-900 whitespace-nowrap">
                           {user.name || user.username}
