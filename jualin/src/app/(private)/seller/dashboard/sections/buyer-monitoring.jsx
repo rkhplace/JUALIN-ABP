@@ -2,14 +2,32 @@
 import React, { useState, useMemo, useContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Check,
   Search,
   ChevronLeft,
   ChevronRight,
+  SlidersHorizontal,
+  X,
 } from "lucide-react";
 import { ChatContext } from "@/context/ChatProvider";
 import { useAuth } from "@/context/AuthProvider";
 import { getProfilePictureUrl, getProductImageUrl } from "@/utils/imageHelper";
 import { escrowService } from "@/services";
+
+const STATUS_FILTERS = [
+  { value: "all", label: "Semua" },
+  { value: "pending", label: "Diproses" },
+  { value: "waiting_cod", label: "Menunggu COD" },
+  { value: "completed", label: "Selesai" },
+  { value: "cancelled", label: "Batal/Pengembalian" },
+];
+
+const PERIOD_FILTERS = [
+  { value: "7days", label: "7 Hari Terakhir", days: 7 },
+  { value: "30days", label: "30 Hari Terakhir", days: 30 },
+  { value: "90days", label: "90 Hari Terakhir", days: 90 },
+  { value: "all", label: "Semua Waktu", days: null },
+];
 
 const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
   const router = useRouter();
@@ -19,6 +37,11 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(8);
   const [orderList, setOrderList] = useState(orders);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [periodFilter, setPeriodFilter] = useState("7days");
+  const [draftStatusFilter, setDraftStatusFilter] = useState("all");
+  const [draftPeriodFilter, setDraftPeriodFilter] = useState("7days");
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
 
   // Escrow Claim State
   const [claimModalOpen, setClaimModalOpen] = useState(false);
@@ -89,6 +112,7 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
         category: order.items?.[0]?.product?.category || "General",
         amount: order.total_amount || 0,
         status: order.status || "pending",
+        createdAt: order.created_at,
         time: order.created_at
           ? new Date(order.created_at).toLocaleString("id-ID")
           : "Recently",
@@ -131,9 +155,33 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
         text: "Processing",
         class: "bg-blue-100 text-blue-700 border border-blue-200",
       },
+      processed: {
+        text: "Processing",
+        class: "bg-blue-100 text-blue-700 border border-blue-200",
+      },
       completed: {
         text: "Transaction completed",
         class: "bg-gray-100 text-gray-700 border border-gray-200",
+      },
+      settlement: {
+        text: "Transaction completed",
+        class: "bg-gray-100 text-gray-700 border border-gray-200",
+      },
+      capture: {
+        text: "Transaction completed",
+        class: "bg-gray-100 text-gray-700 border border-gray-200",
+      },
+      paid: {
+        text: "Transaction completed",
+        class: "bg-gray-100 text-gray-700 border border-gray-200",
+      },
+      cancelled: {
+        text: "Cancelled",
+        class: "bg-red-100 text-red-700 border border-red-200",
+      },
+      canceled: {
+        text: "Cancelled",
+        class: "bg-red-100 text-red-700 border border-red-200",
       },
       refunded: {
         text: "Refunded to wallet",
@@ -143,21 +191,89 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
     return badges[status] || badges.completed;
   };
 
-  const filtered = useMemo(() => {
+  const filteredActivities = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    const base = q
-      ? buyerActivities.filter((b) =>
-        [b.buyerName, b.productName, b.status].some((t) =>
-          String(t).toLowerCase().includes(q)
-        )
-      )
-      : buyerActivities;
-    const start = (currentPage - 1) * perPage;
-    return base.slice(start, start + perPage);
-  }, [buyerActivities, searchQuery, currentPage, perPage]);
+    const selectedPeriod = PERIOD_FILTERS.find(
+      (filter) => filter.value === periodFilter
+    );
+    const cutoffDate = selectedPeriod?.days
+      ? new Date(Date.now() - selectedPeriod.days * 24 * 60 * 60 * 1000)
+      : null;
 
-  const totalCount = buyerActivities.length;
+    return buyerActivities.filter((activity) => {
+      const status = String(activity.status || "").toLowerCase();
+      const matchesSearch =
+        !q ||
+        [activity.buyerName, activity.productName, activity.status].some(
+          (text) => String(text).toLowerCase().includes(q)
+        );
+      const matchesStatus =
+        statusFilter === "pending"
+          ? ["pending", "processing", "processed"].includes(status)
+          : statusFilter === "waiting_cod"
+            ? status === "waiting_cod"
+            : statusFilter === "completed"
+              ? [
+                "verified",
+                "completed",
+                "settlement",
+                "capture",
+                "paid",
+              ].includes(status)
+              : statusFilter === "cancelled"
+                ? ["cancelled", "canceled", "refunded"].includes(status)
+                : true;
+      const createdAt = activity.createdAt
+        ? new Date(activity.createdAt)
+        : null;
+      const matchesPeriod =
+        !cutoffDate ||
+        (createdAt &&
+          !Number.isNaN(createdAt.getTime()) &&
+          createdAt >= cutoffDate);
+
+      return matchesSearch && matchesStatus && matchesPeriod;
+    });
+  }, [buyerActivities, periodFilter, searchQuery, statusFilter]);
+
+  const filtered = useMemo(() => {
+    const start = (currentPage - 1) * perPage;
+    return filteredActivities.slice(start, start + perPage);
+  }, [currentPage, filteredActivities, perPage]);
+
+  const totalCount = filteredActivities.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const openFilterModal = () => {
+    setDraftStatusFilter(statusFilter);
+    setDraftPeriodFilter(periodFilter);
+    setFilterModalOpen(true);
+  };
+
+  const applyFilter = () => {
+    setStatusFilter(draftStatusFilter);
+    setPeriodFilter(draftPeriodFilter);
+    setCurrentPage(1);
+    setFilterModalOpen(false);
+  };
+
+  const resetFilter = () => {
+    setDraftStatusFilter("all");
+    setDraftPeriodFilter("7days");
+    setStatusFilter("all");
+    setPeriodFilter("7days");
+    setCurrentPage(1);
+    setFilterModalOpen(false);
+  };
+
+  const hasActiveFilter =
+    statusFilter !== "all" || periodFilter !== "7days";
 
   return (
     <div className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-200 p-4 sm:p-6">
@@ -166,30 +282,35 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
       </h2>
 
       {/* Search & Filter */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="relative flex-1">
+      <div className="mb-6 flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+        <label className="flex min-w-0 flex-1 items-center gap-3 rounded-xl bg-gray-50 px-4 py-3">
+          <Search className="h-5 w-5 flex-none text-gray-400" />
           <input
+            type="search"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(event) => {
+              setSearchQuery(event.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Cari Pembeli..."
-            className="w-full px-4 py-2 pr-10 border rounded-full border-gray-300 focus:ring-2 focus:ring-brand-red focus:border-brand-red outline-none"
+            className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
             disabled={isLoading}
           />
-          <button className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-brand-red text-white flex items-center justify-center">
-            <Search className="h-4 w-4" />
-          </button>
-        </div>
-        <div>
-          <select
-            defaultValue="7days"
-            className="w-full sm:w-40 rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            disabled={isLoading}
-          >
-            <option value="7days">Last 7 Days</option>
-            <option value="30days">Last 30 Days</option>
-            <option value="90days">Last 90 Days</option>
-          </select>
-        </div>
+        </label>
+        <button
+          type="button"
+          onClick={openFilterModal}
+          disabled={isLoading}
+          className={`inline-flex h-12 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50 ${
+            hasActiveFilter
+              ? "border-brand-red bg-brand-red text-white hover:bg-red-600"
+              : "border-red-200 bg-white text-brand-red hover:bg-red-50"
+          }`}
+          aria-label="Filter monitoring buyer"
+        >
+          <SlidersHorizontal className="h-5 w-5" />
+          <span className="hidden sm:inline">Filter</span>
+        </button>
       </div>
 
       {/* Table */}
@@ -462,6 +583,102 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
           </div>
         </div>
       )}
+
+      {filterModalOpen && (
+        <div
+          className="fixed inset-0 z-[90] flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setFilterModalOpen(false);
+            }
+          }}
+        >
+          <div className="w-full rounded-t-3xl bg-white p-5 shadow-2xl sm:max-w-xl sm:rounded-3xl sm:p-6">
+            <div className="mx-auto mb-5 h-1 w-12 rounded-full bg-gray-200 sm:hidden" />
+            <div className="mb-5 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">
+                Filter Pesanan
+              </h3>
+              <button
+                type="button"
+                onClick={() => setFilterModalOpen(false)}
+                className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                aria-label="Tutup filter"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div>
+              <p className="mb-3 font-semibold text-gray-900">Status Pesanan</p>
+              <div className="flex flex-wrap gap-3">
+                {STATUS_FILTERS.map((filter) => {
+                  const isActive = draftStatusFilter === filter.value;
+
+                  return (
+                    <button
+                      key={filter.value}
+                      type="button"
+                      onClick={() => setDraftStatusFilter(filter.value)}
+                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition ${
+                        isActive
+                          ? "border-brand-red bg-brand-red text-white shadow-sm"
+                          : "border-gray-300 bg-white text-gray-600 hover:border-red-300 hover:bg-red-50"
+                      }`}
+                    >
+                      {isActive && <Check className="h-4 w-4" />}
+                      {filter.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <p className="mb-3 font-semibold text-gray-900">Periode</p>
+              <div className="flex flex-wrap gap-3">
+                {PERIOD_FILTERS.map((filter) => {
+                  const isActive = draftPeriodFilter === filter.value;
+
+                  return (
+                    <button
+                      key={filter.value}
+                      type="button"
+                      onClick={() => setDraftPeriodFilter(filter.value)}
+                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition ${
+                        isActive
+                          ? "border-brand-red bg-brand-red text-white shadow-sm"
+                          : "border-gray-300 bg-white text-gray-600 hover:border-red-300 hover:bg-red-50"
+                      }`}
+                    >
+                      {isActive && <Check className="h-4 w-4" />}
+                      {filter.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-8 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={resetFilter}
+                className="rounded-xl border border-brand-red px-4 py-3 font-semibold text-brand-red transition hover:bg-red-50"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={applyFilter}
+                className="rounded-xl bg-brand-red px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-red-600"
+              >
+                Terapkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {claimModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative">

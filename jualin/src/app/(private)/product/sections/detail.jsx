@@ -1,6 +1,7 @@
 "use client";
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { BadgeCheck } from "lucide-react";
 import Toast from "../../../../components/ui/Toast";
 import Spinner from "../../../../components/ui/Spinner";
 import useMidtransPayment from "../hooks/useMidtransPayment";
@@ -29,6 +30,26 @@ export default function ProductDetailSection({ product, seller }) {
   const [isReportSubmitting, setIsReportSubmitting] = useState(false);
   const [reportErrors, setReportErrors] = useState({});
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [isVerifiedSellerModalOpen, setIsVerifiedSellerModalOpen] =
+    useState(false);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      user?.role !== "customer" ||
+      !user?.id ||
+      !seller?.id ||
+      seller?.is_verified !== true
+    ) {
+      return;
+    }
+
+    const storageKey = `verified_seller_notice:${user.id}:${seller.id}`;
+    if (localStorage.getItem(storageKey) === "true") return;
+
+    localStorage.setItem(storageKey, "true");
+    setIsVerifiedSellerModalOpen(true);
+  }, [seller?.id, seller?.is_verified, user?.id, user?.role]);
 
   const reportReasons = [
     "Produk Terlarang",
@@ -230,6 +251,41 @@ export default function ProductDetailSection({ product, seller }) {
 
   return (
     <>
+      {isVerifiedSellerModalOpen && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+          role="presentation"
+        >
+          <div
+            className="w-full max-w-md rounded-[28px] bg-white px-6 py-8 text-center shadow-2xl sm:px-9"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="verified-seller-title"
+          >
+            <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-blue-50">
+              <BadgeCheck className="h-14 w-14 fill-blue-500 text-white" />
+            </div>
+            <h2
+              id="verified-seller-title"
+              className="text-2xl font-bold text-gray-900"
+            >
+              Penjual Terverifikasi
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-gray-500 sm:text-base">
+              {seller?.username || "Penjual"} sudah melewati proses verifikasi
+              Jualin. Badge ini membantu kamu membedakan penjual yang sudah
+              tervalidasi dengan yang belum.
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsVerifiedSellerModalOpen(false)}
+              className="mt-7 w-full rounded-2xl bg-[#EF2F35] px-5 py-3.5 text-base font-semibold text-white shadow-lg shadow-red-200 transition hover:bg-[#D9252B] focus:outline-none focus:ring-4 focus:ring-red-100"
+            >
+              Mengerti
+            </button>
+          </div>
+        </div>
+      )}
       {toast && (
         <Toast
           message={toast.message}

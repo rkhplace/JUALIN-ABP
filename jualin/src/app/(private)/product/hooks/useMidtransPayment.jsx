@@ -72,7 +72,7 @@ export default function useMidtransPayment() {
           first_name: user.username || "User",
           last_name: user.username || "User",
           email: user.email || "user@example.com",
-          phone: "081234567890",
+          phone: user.phone || "",
         }
       );
 
@@ -101,7 +101,7 @@ export default function useMidtransPayment() {
           first_name: user.username || "User",
           last_name: user.username || "User",
           email: user.email || "user@example.com",
-          phone: "081234567890",
+          phone: user.phone || "",
         }
       );
 
