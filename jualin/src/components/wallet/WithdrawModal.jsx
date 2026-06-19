@@ -16,6 +16,11 @@ export default function WithdrawModal({ isOpen, onClose, onConfirm, walletBalanc
     const isFormValid =
         isAmountValid && !isInsufficient && bankName.trim() && accountNumber.trim() && accountName.trim();
 
+    const handleAmountChange = (e) => {
+        const digits = e.target.value.replace(/\D/g, "");
+        setAmount(digits.replace(/^0+(?=\d)/, ""));
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (isFormValid) {
@@ -96,11 +101,11 @@ export default function WithdrawModal({ isOpen, onClose, onConfirm, walletBalanc
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">Rp</span>
                                 <input
-                                    type="number"
-                                    value={amount}
-                                    onChange={(e) => setAmount(e.target.value)}
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={amount ? Number(amount).toLocaleString("id-ID") : ""}
+                                    onChange={handleAmountChange}
                                     placeholder="0"
-                                    min="1"
                                     className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isInsufficient
                                             ? "border-red-500 focus:ring-red-500 focus:border-red-500"
                                             : "border-gray-300 focus:ring-red-500 focus:border-red-500"
