@@ -7,6 +7,7 @@ import 'package:mobile_app/screens/purchase_history_screen.dart';
 import 'package:mobile_app/services/auth_service.dart';
 import 'package:mobile_app/widgets/ui/login_required_dialog.dart';
 import 'package:mobile_app/services/chat_service.dart';
+import 'package:mobile_app/widgets/ui/feature_tour.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -20,6 +21,51 @@ class _MainScreenState extends State<MainScreen> {
   final ChatService _chatService = ChatService();
   int _currentIndex = 0;
   int _chatUnreadCount = 0;
+  bool _checkedOnboarding = false;
+  final GlobalKey _homeTourKey = GlobalKey();
+  final GlobalKey _historyTourKey = GlobalKey();
+  final GlobalKey _chatTourKey = GlobalKey();
+  final GlobalKey _profileTourKey = GlobalKey();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_checkedOnboarding) return;
+    _checkedOnboarding = true;
+    final arguments = ModalRoute.of(context)?.settings.arguments;
+    final showOnboarding =
+        arguments is Map && arguments['showOnboarding'] == true;
+    if (showOnboarding) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showOnboarding());
+    }
+  }
+
+  Future<void> _showOnboarding() async {
+    if (!mounted) return;
+    await FeatureTour.show(
+      context,
+      steps: [
+        FeatureTourStep(
+          targetKey: _homeTourKey,
+          title: 'Mulai dari Beranda',
+          description: 'Cari produk dan lihat promo terbaru dari sini.',
+          icon: Icons.home_rounded,
+        ),
+        FeatureTourStep(
+          targetKey: _chatTourKey,
+          title: 'Hubungi penjual',
+          description: 'Tanyakan detail produk langsung melalui Pesan.',
+          icon: Icons.chat_bubble_rounded,
+        ),
+        FeatureTourStep(
+          targetKey: _profileTourKey,
+          title: 'Atur akun',
+          description: 'Lengkapi profil dan alamat untuk memudahkan checkout.',
+          icon: Icons.person_rounded,
+        ),
+      ],
+    );
+  }
 
   /// Opens the product list from Home search/category entry points.
   void _navigateToProducts({String? category, String? search}) {
@@ -148,18 +194,22 @@ class _MainScreenState extends State<MainScreen> {
               height: 1.45,
             ),
             items: [
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home),
+              BottomNavigationBarItem(
+                icon: SizedBox(
+                    key: _homeTourKey, child: const Icon(Icons.home_outlined)),
+                activeIcon: const Icon(Icons.home),
                 label: 'Beranda',
               ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.receipt_long_outlined),
-                activeIcon: Icon(Icons.receipt_long),
+              BottomNavigationBarItem(
+                icon: SizedBox(
+                    key: _historyTourKey,
+                    child: const Icon(Icons.receipt_long_outlined)),
+                activeIcon: const Icon(Icons.receipt_long),
                 label: 'Riwayat',
               ),
               BottomNavigationBarItem(
                 icon: Stack(
+                  key: _chatTourKey,
                   clipBehavior: Clip.none,
                   children: [
                     const Icon(Icons.chat_bubble_outline),
@@ -213,9 +263,11 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 label: 'Pesan',
               ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                activeIcon: Icon(Icons.person),
+              BottomNavigationBarItem(
+                icon: SizedBox(
+                    key: _profileTourKey,
+                    child: const Icon(Icons.person_outline)),
+                activeIcon: const Icon(Icons.person),
                 label: 'Profil',
               ),
             ],
