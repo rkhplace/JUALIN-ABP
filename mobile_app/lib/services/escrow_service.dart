@@ -44,4 +44,25 @@ class EscrowService {
       throw Exception('Terjadi kesalahan saat klaim pembayaran.');
     }
   }
+
+  Future<Map<String, dynamic>> revealAuthCode(
+    int transactionId, {
+    required String verificationMethod,
+    String? password,
+  }) async {
+    final endpoint = ApiConfig.revealTransactionCode(transactionId);
+    try {
+      final response = await _client.post(
+        endpoint,
+        body: {
+          'verification_method': verificationMethod,
+          if (password != null) 'password': password,
+        },
+      );
+      final data = response['data'];
+      return data is Map<String, dynamic> ? data : response;
+    } on ApiException catch (e) {
+      throw Exception(e.message);
+    }
+  }
 }

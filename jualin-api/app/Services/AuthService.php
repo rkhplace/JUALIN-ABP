@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class AuthService
 {
@@ -41,23 +43,74 @@ class AuthService
     public function login(array $credentials)
     {
         $loginCredentials = Arr::only($credentials, ['email', 'password']);
-        $user = $this->userRepository->findByEmail($loginCredentials['email'] ?? '');
+        $email = Str::lower(trim((string) ($loginCredentials['email'] ?? '')));
+        $user = $this->userRepository->findByEmail($email);
 
         if (!$user) {
             return [
                 'success' => false,
-                'message' => 'Email tidak ditemukan.'
+                'message' => 'Email atau kata sandi tidak sesuai.',
+                'status' => 401,
             ];
         }
 
-        if (!$token = Auth::guard('api')->attempt($loginCredentials)) {
+        if ($user->login_locked_until && Carbon::now()->lt($user->login_locked_until)) {
+            return $this->lockedResult($user);
+        }
+
+        if ($user->login_locked_until) {
+            $user->forceFill([
+                'failed_login_attempts' => 0,
+                'login_locked_until' => null,
+            ])->save();
+        }
+
+        if (!Hash::check((string) ($loginCredentials['password'] ?? ''), $user->password)) {
+            return DB::transaction(function () use ($user) {
+                $lockedUser = $user->newQuery()->lockForUpdate()->findOrFail($user->id);
+
+                if ($lockedUser->login_locked_until && Carbon::now()->lt($lockedUser->login_locked_until)) {
+                    return $this->lockedResult($lockedUser);
+                }
+
+                $attempts = min(3, $lockedUser->failed_login_attempts + 1);
+                $lockedUntil = $attempts >= 3 ? Carbon::now()->addMinutes(15) : null;
+                $lockedUser->forceFill([
+                    'failed_login_attempts' => $attempts,
+                    'login_locked_until' => $lockedUntil,
+                ])->save();
+
+                if ($lockedUntil) {
+                    return array_merge($this->lockedResult($lockedUser), ['send_lock_email' => true]);
+                }
+
+                return [
+                    'success' => false,
+                    'message' => 'Email atau kata sandi tidak sesuai. Tersisa ' . (3 - $attempts) . ' percobaan.',
+                    'status' => 401,
+                    'reason' => 'invalid_credentials',
+                    'remaining_attempts' => 3 - $attempts,
+                ];
+            });
+        }
+
+        $loginCredentials['email'] = $email;
+        $token = Auth::guard('api')->attempt($loginCredentials);
+
+        if (!$token) {
             return [
                 'success' => false,
-                'message' => 'Password salah.'
+                'message' => 'Email atau kata sandi tidak sesuai.',
+                'status' => 401,
             ];
         }
 
         $user = Auth::guard('api')->user();
+
+        $user->forceFill([
+            'failed_login_attempts' => 0,
+            'login_locked_until' => null,
+        ])->save();
 
         if ($user->is_banned && $user->banned_until && Carbon::now()->lt($user->banned_until)) {
             Auth::guard('api')->logout();
@@ -87,6 +140,22 @@ class AuthService
             'user' => $user,
             'access_token' => $token,
             'refresh_token' => $refreshToken,
+        ];
+    }
+
+    private function lockedResult($user): array
+    {
+        $retryAfter = max(1, Carbon::now()->diffInSeconds($user->login_locked_until, false));
+
+        return [
+            'success' => false,
+            'message' => 'Terlalu banyak percobaan login. Coba lagi setelah waktu tunggu berakhir atau reset kata sandi Anda.',
+            'status' => 429,
+            'reason' => 'login_locked',
+            'remaining_attempts' => 0,
+            'retry_after' => $retryAfter,
+            'locked_until' => $user->login_locked_until->toIso8601String(),
+            'user' => $user,
         ];
     }
 

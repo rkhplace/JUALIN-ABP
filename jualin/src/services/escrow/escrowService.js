@@ -14,6 +14,14 @@ export const escrowService = {
         });
         return resp;
     },
+
+    async revealAuthCode(transactionId, password) {
+        const resp = await fetcher.post(
+            `/api/v1/transactions/${transactionId}/reveal-auth-code`,
+            { verification_method: "password", password }
+        );
+        return resp?.data || resp;
+    },
 };
 
 export default escrowService;

@@ -4,7 +4,7 @@ import useMidtransPayment from "@/app/(private)/product/hooks/useMidtransPayment
 import { useState } from "react";
 import { useAuth } from "@/context/AuthProvider";
 import { escrowService } from "@/services";
-import { Copy, Check, SlidersHorizontal, X } from "lucide-react";
+import { Copy, Check, Eye, LockKeyhole, ShieldCheck, SlidersHorizontal, X } from "lucide-react";
 
 const STATUS_FILTERS = [
   { value: "all", label: "Semua" },
@@ -42,6 +42,10 @@ export function PurchaseHistorySection({
   const [copiedId, setCopiedId] = useState(null);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [draftStatusFilter, setDraftStatusFilter] = useState(statusFilter);
+  const [revealModal, setRevealModal] = useState(null);
+  const [revealPassword, setRevealPassword] = useState("");
+  const [revealError, setRevealError] = useState("");
+  const [revealedCodes, setRevealedCodes] = useState({});
 
   const refundReasons = [
     "Penjual tidak merespons",
@@ -56,6 +60,45 @@ export function PurchaseHistorySection({
     navigator.clipboard.writeText(code);
     setCopiedId(orderId);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const openRevealModal = (purchase, event) => {
+    event.stopPropagation();
+    setRevealModal(purchase);
+    setRevealPassword("");
+    setRevealError("");
+  };
+
+  const closeRevealModal = () => {
+    setRevealModal(null);
+    setRevealPassword("");
+    setRevealError("");
+  };
+
+  const confirmReveal = async () => {
+    if (!revealPassword || !revealModal?.transaction_id) return;
+    setEscrowLoading(true);
+    setRevealError("");
+    try {
+      const data = await escrowService.revealAuthCode(
+        revealModal.transaction_id,
+        revealPassword
+      );
+      const orderId = revealModal.order_id;
+      setRevealedCodes((current) => ({ ...current, [orderId]: data.auth_code }));
+      closeRevealModal();
+      window.setTimeout(() => {
+        setRevealedCodes((current) => {
+          const next = { ...current };
+          delete next[orderId];
+          return next;
+        });
+      }, 120000);
+    } catch (error) {
+      setRevealError(error?.message || "Password tidak sesuai.");
+    } finally {
+      setEscrowLoading(false);
+    }
   };
 
   const openFilterModal = () => {
@@ -199,6 +242,37 @@ export function PurchaseHistorySection({
         </div>
       )}
 
+      {revealModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4 backdrop-blur-sm" onClick={closeRevealModal}>
+          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-red-50 text-[#E53935]">
+              <LockKeyhole className="h-6 w-6" />
+            </div>
+            <h3 className="text-center text-xl font-bold text-gray-900">Verifikasi Keamanan</h3>
+            <p className="mt-2 text-center text-sm leading-6 text-gray-500">
+              Masukkan password akun Jualin untuk membuka kode transaksi.
+            </p>
+            <label className="mt-5 block text-sm font-semibold text-gray-700">Password</label>
+            <input
+              type="password"
+              value={revealPassword}
+              onChange={(event) => setRevealPassword(event.target.value)}
+              onKeyDown={(event) => event.key === "Enter" && confirmReveal()}
+              autoFocus
+              className="mt-2 w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-[#E53935] focus:ring-2 focus:ring-red-100"
+              placeholder="Masukkan password"
+            />
+            {revealError && <p className="mt-2 text-xs font-medium text-red-600">{revealError}</p>}
+            <div className="mt-6 flex gap-3">
+              <button type="button" onClick={closeRevealModal} className="flex-1 rounded-2xl border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Batal</button>
+              <button type="button" onClick={confirmReveal} disabled={!revealPassword || escrowLoading} className="flex-1 rounded-2xl bg-[#E53935] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-red-200 hover:bg-[#D32F2F] disabled:opacity-50">
+                {escrowLoading ? "Memeriksa..." : "Verifikasi"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Total card */}
       <div className="bg-white border border-gray-300 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-md">
         <p className="text-sm font-medium text-gray-500 mb-1">Total Amount</p>
@@ -315,14 +389,18 @@ export function PurchaseHistorySection({
                     {isWaitingCOD && (
                       <div className="mt-4 p-3 sm:p-4 bg-orange-50 border border-orange-200 rounded-lg">
                         <p className="text-xs sm:text-sm font-medium text-orange-800 mb-2">
-                          Show this authentication code to the seller after confirming the product matches your expectations.
+                          Kode transaksi dilindungi. Buka hanya setelah produk diterima dan diperiksa.
                         </p>
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <span className="text-base sm:text-xl font-bold tracking-widest text-[#1F1F1F]">{p?.transaction?.auth_code || "N/A"}</span>
-                            {p?.transaction?.auth_code && (
+                            {revealedCodes[p.order_id] ? (
+                              <span className="text-base sm:text-xl font-bold tracking-widest text-[#1F1F1F]">{revealedCodes[p.order_id]}</span>
+                            ) : (
+                              <span className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600"><ShieldCheck className="h-5 w-5 text-[#E53935]" /> Tersembunyi untuk keamanan</span>
+                            )}
+                            {revealedCodes[p.order_id] ? (
                               <button
-                                onClick={(e) => handleCopy(p.transaction.auth_code, p.order_id, e)}
+                                onClick={(e) => handleCopy(revealedCodes[p.order_id], p.order_id, e)}
                                 className="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 text-xs sm:text-sm flex items-center gap-1.5 transition-all duration-200"
                               >
                                 {copiedId === p.order_id ? (
@@ -336,6 +414,10 @@ export function PurchaseHistorySection({
                                     <span>Salin</span>
                                   </>
                                 )}
+                              </button>
+                            ) : (
+                              <button onClick={(event) => openRevealModal(p, event)} className="inline-flex items-center gap-1.5 rounded-xl bg-[#E53935] px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#D32F2F]">
+                                <Eye className="h-4 w-4" /> Buka Kode
                               </button>
                             )}
                           </div>

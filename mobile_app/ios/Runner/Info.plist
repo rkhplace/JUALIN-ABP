@@ -6,6 +6,8 @@
 		<string>Jualin membutuhkan akses kamera untuk mengambil foto profil atau foto produk.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Jualin membutuhkan akses galeri untuk memilih foto profil atau foto produk.</string>
+		<key>NSFaceIDUsageDescription</key>
+		<string>Jualin menggunakan Face ID untuk melindungi kode dan QR transaksi Anda.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>CFBundleDevelopmentRegion</key>

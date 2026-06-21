@@ -675,6 +675,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool _isFetchingMessages = false;
   String? _errorMessage;
   int? _currentUserId; // real authenticated user ID for bubble alignment
+  String _currentUserRole = 'customer';
   late String _roomAvatarUrl;
   Timer? _messagePoller;
 
@@ -698,6 +699,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     // This is written by AuthService.login() — so it should already be there.
     final prefs = await SharedPreferences.getInstance();
     final storedId = prefs.getInt('user_id');
+    _currentUserRole =
+        prefs.getString('user_role')?.toLowerCase() ?? 'customer';
 
     if (storedId != null) {
       debugPrint(
@@ -1146,6 +1149,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Widget _buildBubble(ChatMessage msg, bool isMe) {
+    if (msg.isPaymentSystem) {
+      return _buildPaymentSystemCard(msg);
+    }
     if (msg.isProductPreview) {
       return _buildProductBubble(msg, isMe);
     }
@@ -1233,6 +1239,158 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPaymentSystemCard(ChatMessage msg) {
+    final data = msg.systemData ?? const <String, dynamic>{};
+    final isSeller = _currentUserRole == 'seller';
+    final productName = data['name']?.toString() ?? 'Pesanan Jualin';
+    final imageUrl = ImageUrlHelper.resolve(data['image']);
+    final roleMessage =
+        data[isSeller ? 'seller_message' : 'customer_message']?.toString() ??
+            msg.message;
+    final otherItems =
+        int.tryParse(data['other_items_count']?.toString() ?? '') ?? 0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFECFDF5), Colors.white],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFA7F3D0)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF059669).withValues(alpha: 0.10),
+              blurRadius: 24,
+              spreadRadius: -8,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Color(0xFF059669),
+                  child: Icon(Icons.verified_user_outlined,
+                      color: Colors.white, size: 21),
+                ),
+                SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('PEMBAYARAN BERHASIL',
+                          style: TextStyle(
+                              color: Color(0xFF047857),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.8)),
+                      SizedBox(height: 2),
+                      Text('Terverifikasi oleh Jualin',
+                          style: TextStyle(
+                              color: Color(0xFF374151),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFD1FAE5))),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(11),
+                    child: imageUrl.isNotEmpty
+                        ? Image.network(imageUrl,
+                            width: 58,
+                            height: 58,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                _paymentProductPlaceholder())
+                        : _paymentProductPlaceholder(),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(productName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF111827))),
+                        if (otherItems > 0)
+                          Text('+$otherItems barang lainnya',
+                              style: const TextStyle(
+                                  fontSize: 11, color: Color(0xFF6B7280))),
+                        const SizedBox(height: 4),
+                        Text(formatCurrency(data['amount']),
+                            style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFFE83030),
+                                fontWeight: FontWeight.w900)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 13),
+            Text(roleMessage,
+                style: const TextStyle(
+                    color: Color(0xFF374151),
+                    fontSize: 13,
+                    height: 1.45,
+                    fontWeight: FontWeight.w500)),
+            const SizedBox(height: 11),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.warning_amber_rounded,
+                    size: 17, color: Color(0xFFD97706)),
+                const SizedBox(width: 7),
+                Expanded(
+                    child: Text(data['warning']?.toString() ?? '',
+                        style: const TextStyle(
+                            color: Color(0xFF92400E),
+                            fontSize: 11,
+                            height: 1.4,
+                            fontWeight: FontWeight.w600))),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _paymentProductPlaceholder() {
+    return Container(
+      width: 58,
+      height: 58,
+      color: const Color(0xFFF3F4F6),
+      child: const Icon(Icons.inventory_2_outlined, color: Color(0xFF9CA3AF)),
     );
   }
 

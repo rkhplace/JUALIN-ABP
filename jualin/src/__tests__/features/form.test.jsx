@@ -137,7 +137,9 @@ describe('Form Handling Feature (LoginForm)', () => {
             expect(authService.login).toHaveBeenCalled();
             // Assuming the component calls onError prop if provided, or shows a toast/alert
             // Based on code: onError?.(error.message)
-            expect(mockOnError).toHaveBeenCalledWith('Invalid credentials');
+            expect(mockOnError).toHaveBeenCalledWith(
+                'Email tidak ditemukan. Periksa kembali email yang Anda masukkan.'
+            );
         });
     });
 });

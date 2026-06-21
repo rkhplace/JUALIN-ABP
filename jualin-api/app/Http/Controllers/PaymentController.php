@@ -179,7 +179,7 @@ class PaymentController extends Controller
                     'first_item_category' => $product ? $product->category : null,
                     'seller_name' => $seller ? ($seller->shop_name ?? $seller->username) : 'Unknown Seller',
                     'transaction' => [
-                        'auth_code' => $transaction->auth_code,
+                        'has_auth_code' => !empty($transaction->auth_code),
                         'refund_reason' => $transaction->refund_reason,
                         'refunded_at' => $transaction->refunded_at,
                     ],

@@ -55,6 +55,7 @@ export function ChatProvider({ children }) {
     const { unsubscribe, refresh } = getChatMessages(currentChat.id, (messagesData) => {
       setMessages(messagesData);
     });
+    const poller = window.setInterval(refresh, 3000);
 
     // Simpan ref ke refresh() agar bisa dipanggil dari sendMessage
     refreshMessagesRef.current = refresh;
@@ -66,6 +67,7 @@ export function ChatProvider({ children }) {
     }
 
     return () => {
+      window.clearInterval(poller);
       unsubscribe();
       refreshMessagesRef.current = null;
     };

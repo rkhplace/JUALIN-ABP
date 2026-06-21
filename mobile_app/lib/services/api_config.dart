@@ -37,6 +37,8 @@ class ApiConfig {
       '$escrow/$transactionId/refund';
   static String escrowClaim(int transactionId) =>
       '$escrow/$transactionId/claim';
+  static String revealTransactionCode(int transactionId) =>
+      '/transactions/$transactionId/reveal-auth-code';
 
   // ── Chat ────────────────────────────────────────
   static const String chatRooms = '/chat/rooms';

@@ -261,7 +261,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Akun Anda akan dihapus permanen dan sesi login akan keluar. Tindakan ini tidak dapat dibatalkan.',
+                  'Profil, riwayat transaksi, chat, produk, dan data terkait akan dijadwalkan untuk dihapus permanen. Anda memiliki 14 hari untuk membatalkannya.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.black54,
@@ -318,6 +318,102 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<Map<String, String>?> _showDeletionVerificationDialog() async {
+    final passwordController = TextEditingController();
+    final phraseController = TextEditingController();
+    var obscurePassword = true;
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final canSubmit = passwordController.text.isNotEmpty &&
+              phraseController.text == 'HAPUS AKUN';
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+            icon: const CircleAvatar(
+              backgroundColor: Color(0xFFFFECEC),
+              child: Icon(Icons.security_rounded, color: Color(0xFFE83030)),
+            ),
+            title: const Text('Verifikasi Penghapusan',
+                textAlign: TextAlign.center),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Masukkan password akun Jualin.',
+                      style:
+                          TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: obscurePassword,
+                    autofocus: true,
+                    onChanged: (_) => setDialogState(() {}),
+                    decoration: InputDecoration(
+                      hintText: 'Password',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        onPressed: () => setDialogState(
+                            () => obscurePassword = !obscurePassword),
+                        icon: Icon(obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined),
+                      ),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Ketik HAPUS AKUN untuk melanjutkan.',
+                      style:
+                          TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: phraseController,
+                    onChanged: (_) => setDialogState(() {}),
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: InputDecoration(
+                      hintText: 'HAPUS AKUN',
+                      prefixIcon: const Icon(Icons.edit_outlined),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Batal')),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFE83030)),
+                onPressed: canSubmit
+                    ? () => Navigator.pop(dialogContext, {
+                          'password': passwordController.text,
+                          'confirmation_phrase': phraseController.text,
+                        })
+                    : null,
+                child: const Text('Jadwalkan Penghapusan'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    passwordController.dispose();
+    phraseController.dispose();
+    return result;
+  }
+
   Future<void> _showAccountDeletedDialog() {
     return showDialog<void>(
       context: context,
@@ -352,7 +448,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Akun Berhasil Dihapus',
+                  'Penghapusan Dijadwalkan',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 20,
@@ -361,7 +457,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Terima kasih sudah menggunakan Jualin. Anda akan diarahkan ke halaman login.',
+                  'Akun akan dihapus permanen dalam 14 hari. Login kembali sebelum tenggat untuk membatalkannya.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.black54,
@@ -400,9 +496,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _handleDeleteAccount() async {
     final confirmed = await _showDeleteAccountConfirmation();
     if (confirmed != true) return;
+    final verification = await _showDeletionVerificationDialog();
+    if (verification == null) return;
 
     try {
-      await _authService.deleteAccount();
+      await _authService.deleteAccount(
+        verification['password']!,
+        verification['confirmation_phrase']!,
+      );
       if (!mounted) return;
       await _showAccountDeletedDialog();
       if (mounted) {
@@ -415,6 +516,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           content: Text(e.toString().replaceFirst('Exception: ', '')),
           backgroundColor: Colors.red,
         ),
+      );
+    }
+  }
+
+  Future<void> _handleCancelAccountDeletion() async {
+    try {
+      await _authService.cancelAccountDeletion();
+      await _fetchProfile();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Penghapusan akun berhasil dibatalkan.'),
+            backgroundColor: Colors.green),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: Colors.red),
       );
     }
   }
@@ -511,11 +632,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 const SizedBox(height: 12),
                                 _buildProfileMenuItem(
                                   icon: Icons.delete_forever_outlined,
-                                  title: 'Hapus Akun',
-                                  subtitle: 'Hapus akun Jualin secara permanen',
+                                  title:
+                                      (_user?.scheduledDeletionAt.isNotEmpty ??
+                                              false)
+                                          ? 'Batalkan Penghapusan'
+                                          : 'Hapus Akun',
+                                  subtitle: (_user?.scheduledDeletionAt
+                                              .isNotEmpty ??
+                                          false)
+                                      ? 'Akun dijadwalkan untuk dihapus'
+                                      : 'Hapus permanen setelah masa pemulihan 14 hari',
                                   isDanger: true,
                                   showChevron: false,
-                                  onTap: _handleDeleteAccount,
+                                  onTap:
+                                      (_user?.scheduledDeletionAt.isNotEmpty ??
+                                              false)
+                                          ? _handleCancelAccountDeletion
+                                          : _handleDeleteAccount,
                                 ),
                               ],
                             ),

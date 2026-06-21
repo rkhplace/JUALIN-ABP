@@ -9,6 +9,7 @@ class ChatMessage {
   final String message;
   final String type;
   final ChatProduct? product;
+  final Map<String, dynamic>? systemData;
   final DateTime? sentAt;
   final bool isRead;
   final ChatSender? sender;
@@ -20,6 +21,7 @@ class ChatMessage {
     required this.message,
     this.type = 'text',
     this.product,
+    this.systemData,
     this.sentAt,
     required this.isRead,
     this.sender,
@@ -33,6 +35,9 @@ class ChatMessage {
       message: json['message']?.toString() ?? '',
       type: json['type']?.toString() ?? 'text',
       product: _parseProduct(json['product_data'] ?? json['product']),
+      systemData: json['product_data'] is Map
+          ? Map<String, dynamic>.from(json['product_data'] as Map)
+          : null,
       sentAt: json['sent_at'] != null
           ? DateTime.tryParse(json['sent_at'].toString())
           : null,
@@ -45,6 +50,7 @@ class ChatMessage {
 
   bool get isProductPreview => type == 'product' && product != null;
   bool get isImage => type == 'image' && message.isNotEmpty;
+  bool get isPaymentSystem => type == 'payment_system';
 
   static ChatProduct? _parseProduct(dynamic value) {
     if (value is Map<String, dynamic>) {

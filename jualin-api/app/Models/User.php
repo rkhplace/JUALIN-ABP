@@ -38,6 +38,10 @@ class User extends Authenticatable implements JWTSubject
         'banned_until',
         'total_sales',
         'is_verified',
+        'failed_login_attempts',
+        'login_locked_until',
+        'deletion_requested_at',
+        'scheduled_deletion_at',
     ];
 
     /**
@@ -65,6 +69,10 @@ class User extends Authenticatable implements JWTSubject
             'banned_until' => 'datetime',
             'total_sales' => 'integer',
             'is_verified' => 'boolean',
+            'failed_login_attempts' => 'integer',
+            'login_locked_until' => 'datetime',
+            'deletion_requested_at' => 'datetime',
+            'scheduled_deletion_at' => 'datetime',
         ];
     }
 

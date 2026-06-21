@@ -165,7 +165,9 @@ class MidtransService
         $updates = ['status' => $newStatus];
 
         // Intercept paid status for Escrow System
-        if ($newStatus === 'paid' && !in_array($oldStatus, ['waiting_cod', 'verified'])) {
+        if ($newStatus === 'paid' && in_array($oldStatus, ['waiting_cod', 'verified'])) {
+            $updates['status'] = $oldStatus;
+        } elseif ($newStatus === 'paid') {
             $updates['status'] = 'waiting_cod';
             $updates['auth_code'] = strtoupper(\Illuminate\Support\Str::random(6)); // 6 alphanumeric characters
 
@@ -183,6 +185,10 @@ class MidtransService
 
         $transaction->update($updates);
         $newStatus = $updates['status'];
+
+        if ($newStatus === 'waiting_cod' && $oldStatus !== 'waiting_cod') {
+            app(TransactionChatService::class)->publishPaymentVerified($transaction->fresh(), $payment->order_id);
+        }
 
         $failedStatuses = ['failed', 'expired', 'cancelled', 'refunded'];
         if (in_array($newStatus, $failedStatuses) && !in_array($oldStatus, $failedStatuses)) {

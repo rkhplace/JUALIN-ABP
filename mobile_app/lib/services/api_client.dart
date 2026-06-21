@@ -9,8 +9,9 @@ import 'api_config.dart';
 class ApiException implements Exception {
   final String message;
   final int statusCode;
+  final Map<String, dynamic> data;
 
-  ApiException(this.message, this.statusCode);
+  ApiException(this.message, this.statusCode, [this.data = const {}]);
 
   @override
   String toString() => 'ApiException($statusCode): $message';
@@ -56,7 +57,11 @@ class ApiClient {
       final msg = body is Map
           ? _errorMessage(body, fallback: 'Request failed')
           : 'Request failed';
-      throw ApiException(msg.toString(), response.statusCode);
+      throw ApiException(
+        msg.toString(),
+        response.statusCode,
+        body is Map ? Map<String, dynamic>.from(body) : const {},
+      );
     }
     return body is Map<String, dynamic> ? body : {'data': body};
   }

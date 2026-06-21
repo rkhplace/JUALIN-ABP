@@ -13,11 +13,16 @@ export default function ProfilePage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [deletePassword, setDeletePassword] = useState("")
+  const [deletePhrase, setDeletePhrase] = useState("")
+  const [deleteError, setDeleteError] = useState("")
+  const [scheduledAt, setScheduledAt] = useState(null)
 
   const handleDeleteAccount = async () => {
     setDeleting(true)
     try {
-      await profileService.deleteAccount()
+      const response = await profileService.requestAccountDeletion(deletePassword, deletePhrase)
+      setScheduledAt(response?.data?.scheduled_deletion_at || null)
       localStorage.removeItem("token")
       localStorage.removeItem("refresh_token")
       localStorage.removeItem("user")
@@ -30,9 +35,23 @@ export default function ProfilePage() {
       setUser(null)
       setShowConfirm(false)
       setShowSuccess(true)
+    } catch (error) {
+      setDeleteError(error?.message || "Gagal menjadwalkan penghapusan akun.")
     } finally {
       setDeleting(false)
     }
+  }
+
+  const openDeleteConfirmation = () => {
+    setDeletePassword("")
+    setDeletePhrase("")
+    setDeleteError("")
+    setShowConfirm(true)
+  }
+
+  const cancelScheduledDeletion = async () => {
+    const response = await profileService.cancelAccountDeletion()
+    setUser(response?.data || response)
   }
 
   return (
@@ -57,14 +76,16 @@ export default function ProfilePage() {
               <div>
                 <h2 className="font-bold text-gray-900">Hapus Akun</h2>
                 <p className="mt-1 text-sm text-gray-600">
-                  Hapus akun Jualin secara permanen dari sistem.
+                  {user?.scheduled_deletion_at
+                    ? `Akun dijadwalkan dihapus pada ${new Date(user.scheduled_deletion_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}.`
+                    : "Jadwalkan penghapusan permanen dengan masa pemulihan 14 hari."}
                 </p>
               </div>
               <button
-                onClick={() => setShowConfirm(true)}
-                className="rounded-md bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700"
+                onClick={user?.scheduled_deletion_at ? cancelScheduledDeletion : openDeleteConfirmation}
+                className={`rounded-md px-4 py-2 font-semibold ${user?.scheduled_deletion_at ? "border border-red-200 bg-white text-red-600 hover:bg-red-50" : "bg-red-600 text-white hover:bg-red-700"}`}
               >
-                Hapus Akun
+                {user?.scheduled_deletion_at ? "Batalkan Penghapusan" : "Hapus Akun"}
               </button>
             </div>
           </div>
@@ -81,9 +102,35 @@ export default function ProfilePage() {
               Hapus Akun?
             </h2>
             <p className="mt-2 text-center text-sm leading-relaxed text-gray-500">
-              Akun Anda akan dihapus permanen dan sesi login akan keluar.
-              Tindakan ini tidak dapat dibatalkan.
+              Akun dijadwalkan untuk dihapus permanen dalam 14 hari. Anda masih dapat login dan membatalkannya selama masa pemulihan.
             </p>
+            <div className="mt-5 rounded-2xl border border-red-100 bg-red-50 p-4 text-left">
+              <p className="text-sm font-bold text-red-800">Dampak penghapusan:</p>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-5 text-red-700">
+                <li>Profil dan akses akun akan dihapus permanen.</li>
+                <li>Riwayat transaksi, chat, produk, dan data terkait dapat ikut terhapus.</li>
+                <li>Sesi pada perangkat ini akan langsung dikeluarkan.</li>
+              </ul>
+            </div>
+            <label className="mt-5 block text-sm font-bold text-gray-700">Password akun</label>
+            <input
+              type="password"
+              value={deletePassword}
+              onChange={(event) => setDeletePassword(event.target.value)}
+              className="mt-2 w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              placeholder="Masukkan password"
+              autoComplete="current-password"
+            />
+            <label className="mt-4 block text-sm font-bold text-gray-700">Ketik HAPUS AKUN untuk melanjutkan</label>
+            <input
+              type="text"
+              value={deletePhrase}
+              onChange={(event) => setDeletePhrase(event.target.value)}
+              className="mt-2 w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              placeholder="HAPUS AKUN"
+              autoComplete="off"
+            />
+            {deleteError && <p className="mt-3 text-sm font-semibold text-red-600">{deleteError}</p>}
             <div className="mt-6 grid grid-cols-2 gap-3">
               <button
                 onClick={() => setShowConfirm(false)}
@@ -95,9 +142,9 @@ export default function ProfilePage() {
               <button
                 onClick={handleDeleteAccount}
                 className="rounded-2xl bg-red-600 px-4 py-3 font-bold text-white disabled:opacity-60"
-                disabled={deleting}
+                disabled={deleting || !deletePassword || deletePhrase !== "HAPUS AKUN"}
               >
-                {deleting ? "Menghapus..." : "Hapus"}
+                {deleting ? "Menjadwalkan..." : "Jadwalkan Penghapusan"}
               </button>
             </div>
           </div>
@@ -111,10 +158,10 @@ export default function ProfilePage() {
               ✓
             </div>
             <h2 className="text-xl font-black text-gray-900">
-              Akun Berhasil Dihapus
+              Penghapusan Dijadwalkan
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-gray-500">
-              Terima kasih sudah menggunakan Jualin. Anda akan diarahkan ke halaman login.
+              Akun akan dihapus permanen pada {scheduledAt ? new Date(scheduledAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "14 hari lagi"}. Login kembali sebelum tanggal tersebut untuk membatalkannya.
             </p>
             <button
               onClick={() => router.replace("/auth/login")}

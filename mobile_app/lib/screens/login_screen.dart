@@ -78,6 +78,20 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    final loginLock = _authService.lastLoginLock;
+    if (loginLock != null) {
+      setState(() => _isLoading = false);
+      Navigator.pushReplacementNamed(
+        context,
+        '/forgot_password',
+        arguments: {
+          ...loginLock,
+          'email': email.toLowerCase(),
+        },
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = false;
       _errorMessage = error;
