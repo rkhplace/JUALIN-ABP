@@ -13,7 +13,7 @@ export function PaymentSystemCard({ message, userRole }) {
   const otherItems = Number(data.other_items_count || 0);
 
   return (
-    <article className="mx-auto mb-5 w-[calc(100%-1.5rem)] max-w-xl overflow-hidden rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white shadow-[0_18px_45px_-24px_rgba(5,150,105,0.55)]">
+    <article className="mx-auto mb-5 w-full max-w-xl shrink-0 overflow-hidden rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white shadow-[0_18px_45px_-24px_rgba(5,150,105,0.55)]">
       <div className="p-4 sm:p-5">
         <header className="flex items-center gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-200">
