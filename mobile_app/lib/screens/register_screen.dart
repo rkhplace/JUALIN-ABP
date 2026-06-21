@@ -87,7 +87,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final nextRoute = _authService.routeForRole(role);
       if (!mounted) return;
 
-      Navigator.pushNamedAndRemoveUntil(context, nextRoute, (route) => false);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        nextRoute,
+        (route) => false,
+        arguments: const {'showOnboarding': true},
+      );
       return;
     }
 

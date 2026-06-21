@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:local_auth/local_auth.dart';
 import '../services/payment_service.dart';
 import '../services/escrow_service.dart';
 import '../widgets/ui/frosted_app_bar.dart';
@@ -19,6 +20,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
     with WidgetsBindingObserver {
   final PaymentService _paymentService = PaymentService();
   final EscrowService _escrowService = EscrowService();
+  final LocalAuthentication _localAuth = LocalAuthentication();
   final TextEditingController _searchController = TextEditingController();
 
   List<dynamic> _purchases = [];
@@ -52,14 +54,12 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
       if (!statusMatches) return false;
       if (query.isEmpty) return true;
 
-      final transactionInfo = p['transaction'] as Map<String, dynamic>? ?? {};
       final searchable = [
         p['order_id'],
         p['first_item_name'],
         p['seller_name'],
         p['transaction_time'],
         p['gross_amount'],
-        transactionInfo['auth_code'],
         _statusLabel(status),
         status,
       ].whereType<Object>().join(' ').toLowerCase();
@@ -405,7 +405,146 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
     }
   }
 
-  void _showQrCode(String? authCode, String? orderId, dynamic amount) {
+  Future<void> _revealProtectedCode(Map<String, dynamic> purchase) async {
+    final transactionId =
+        int.tryParse(purchase['transaction_id']?.toString() ?? '');
+    if (transactionId == null) return;
+
+    var verificationMethod = 'password';
+    String? password;
+
+    try {
+      final supportsBiometrics = await _localAuth.isDeviceSupported() &&
+          await _localAuth.canCheckBiometrics;
+      if (supportsBiometrics) {
+        final authenticated = await _localAuth.authenticate(
+          localizedReason:
+              'Verifikasi identitas untuk menampilkan kode dan QR transaksi',
+          options: const AuthenticationOptions(
+            biometricOnly: true,
+            stickyAuth: true,
+          ),
+        );
+        if (authenticated) verificationMethod = 'biometric';
+      }
+    } catch (_) {
+      verificationMethod = 'password';
+    }
+
+    if (verificationMethod == 'password') {
+      if (!mounted) return;
+      password = await _showPasswordVerificationDialog();
+      if (password == null || password.isEmpty) return;
+    }
+
+    if (mounted) setState(() => _isProcessingAction = true);
+    try {
+      final revealed = await _escrowService.revealAuthCode(
+        transactionId,
+        verificationMethod: verificationMethod,
+        password: password,
+      );
+      if (!mounted) return;
+      _showQrCode(
+        revealed['auth_code']?.toString(),
+        purchase['order_id']?.toString(),
+        purchase['gross_amount'],
+        DateTime.tryParse(revealed['expires_at']?.toString() ?? '')?.toLocal(),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isProcessingAction = false);
+    }
+  }
+
+  Future<String?> _showPasswordVerificationDialog() async {
+    final controller = TextEditingController();
+    var obscure = true;
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          icon: const CircleAvatar(
+            backgroundColor: Color(0xFFFFECEC),
+            child: Icon(Icons.lock_outline_rounded, color: Color(0xFFE83030)),
+          ),
+          title: const Text('Verifikasi Keamanan', textAlign: TextAlign.center),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Masukkan password akun Jualin untuk membuka kode dan QR transaksi.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                obscureText: obscure,
+                autofocus: true,
+                onSubmitted: (value) {
+                  if (value.isNotEmpty) Navigator.pop(dialogContext, value);
+                },
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: const Icon(Icons.key_rounded),
+                  suffixIcon: IconButton(
+                    onPressed: () => setDialogState(() => obscure = !obscure),
+                    icon: Icon(obscure
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined),
+                  ),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide:
+                        const BorderSide(color: Color(0xFFE83030), width: 1.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Batal')),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFE83030)),
+              onPressed: () {
+                if (controller.text.isNotEmpty) {
+                  Navigator.pop(dialogContext, controller.text);
+                }
+              },
+              child: const Text('Verifikasi'),
+            ),
+          ],
+        ),
+      ),
+    );
+    controller.dispose();
+    return result;
+  }
+
+  void _showQrCode(
+    String? authCode,
+    String? orderId,
+    dynamic amount,
+    DateTime? expiresAt,
+  ) {
     if (authCode == null || authCode.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Kode tidak tersedia')),
@@ -425,7 +564,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
           amount: parsedAmount,
           sellerId: 'buyer',
           authCode: authCode,
-          expiresAt: null,
+          expiresAt: expiresAt,
         ),
       ),
     );
@@ -810,19 +949,28 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Text(
-                          'Tunjukkan kode ini kepada penjual jika barang sudah diterima dengan baik.',
+                          'Kode dan QR dilindungi. Buka hanya saat barang sudah diterima dan diperiksa.',
                           style: TextStyle(fontSize: 12, color: Colors.black87),
                         ),
                         const SizedBox(height: 12),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              transactionInfo['auth_code'] ?? '-----',
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 4,
+                            const Expanded(
+                              child: Row(
+                                children: [
+                                  Icon(Icons.shield_outlined,
+                                      color: Color(0xFFE83030)),
+                                  SizedBox(width: 9),
+                                  Flexible(
+                                    child: Text(
+                                      'Tersembunyi untuk keamanan',
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             Column(
@@ -835,12 +983,10 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
                                     elevation: 0,
                                     visualDensity: VisualDensity.compact,
                                   ),
-                                  onPressed: () => _showQrCode(
-                                    transactionInfo['auth_code']?.toString(),
-                                    p['order_id']?.toString(),
-                                    p['gross_amount'],
-                                  ),
-                                  child: const Text('QR Code',
+                                  onPressed: _isProcessingAction
+                                      ? null
+                                      : () => _revealProtectedCode(p),
+                                  child: const Text('Buka Kode & QR',
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold)),
                                 ),

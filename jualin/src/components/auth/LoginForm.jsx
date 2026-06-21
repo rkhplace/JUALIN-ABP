@@ -18,6 +18,18 @@ const normalizeLoginError = (error) => {
   return message;
 };
 
+const getLoginLock = (error) => {
+  const details = error?.details?.errors || error?.errors || {};
+  if (error?.statusCode !== 429 || details?.reason !== "login_locked") {
+    return null;
+  }
+
+  return {
+    lockedUntil: details.locked_until,
+    emailSent: details.reset_email_sent === true,
+  };
+};
+
 const LoginForm = ({ onSuccess, onError }) => {
   const router = useRouter();
   const { login, refetchUser } = useAuth();
@@ -86,6 +98,17 @@ const LoginForm = ({ onSuccess, onError }) => {
         router.push("/dashboard");
       }
     } catch (error) {
+      const lock = getLoginLock(error);
+      if (lock) {
+        const params = new URLSearchParams({
+          reason: "locked",
+          email: formData.email.trim().toLowerCase(),
+          locked_until: lock.lockedUntil || "",
+          email_sent: lock.emailSent ? "1" : "0",
+        });
+        router.push(`/auth/forgot-password?${params.toString()}`);
+        return;
+      }
       onError?.(normalizeLoginError(error));
     } finally {
       setIsLoading(false);

@@ -12,6 +12,8 @@ use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\Payment;
+use App\Models\ChatMessage;
+use App\Models\ChatRoom;
 
 class MidtransServiceTest extends TestCase
 {
@@ -101,7 +103,6 @@ class MidtransServiceTest extends TestCase
             'gross_amount' => $trx->total_amount,
             'transaction_status' => 'pending',
         ]);
-
         $statusCode = '200';
         $gross = (string)$trx->total_amount;
         $signature = hash('sha512', $orderId . $statusCode . $gross . config('midtrans.server_key'));
@@ -119,7 +120,28 @@ class MidtransServiceTest extends TestCase
         ]);
 
         $this->assertSame('settlement', $updated->transaction_status);
-        $this->assertSame('paid', $updated->transaction->fresh()->status);
+        $this->assertSame('waiting_cod', $updated->transaction->fresh()->status);
+        $this->assertDatabaseHas('chat_messages', [
+            'type' => 'payment_system',
+            'system_event_key' => 'payment_verified:' . $trx->id,
+        ]);
+        $message = ChatMessage::where('system_event_key', 'payment_verified:' . $trx->id)->firstOrFail();
+        $room = ChatRoom::findOrFail($message->chat_room_id);
+        $this->assertTrue($room->members()->whereKey($trx->customer_id)->exists());
+        $this->assertTrue($room->members()->whereKey($trx->seller_id)->exists());
+
+        $service->handleNotification([
+            'order_id' => $orderId,
+            'status_code' => $statusCode,
+            'gross_amount' => $gross,
+            'signature_key' => $signature,
+            'transaction_status' => 'settlement',
+            'payment_type' => 'gopay',
+            'transaction_time' => '2025-01-01 10:00:00',
+            'transaction_id' => 'midtrans-123',
+        ]);
+
+        $this->assertSame(1, ChatMessage::where('system_event_key', 'payment_verified:' . $trx->id)->count());
     }
 
     public function testHandleNotificationExpireRestoresStock()

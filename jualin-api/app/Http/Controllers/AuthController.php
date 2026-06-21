@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Auth\Events\PasswordReset;
 use Kreait\Firebase\Factory;
+use App\Notifications\LoginLockedNotification;
+use Illuminate\Support\Carbon;
 
 class AuthController extends Controller
 {
@@ -48,7 +50,24 @@ class AuthController extends Controller
         $result = $this->authService->login($request->validated());
 
         if (!$result['success']) {
-            return ApiResponse::error($result['message'] ?? 'Email tidak ditemukan. Periksa kembali email yang Anda masukkan.', null, $result['status'] ?? 401);
+            $resetEmailSent = false;
+            if (!empty($result['send_lock_email']) && !empty($result['user'])) {
+                $resetEmailSent = $this->sendLoginLockedEmail($result['user'], $request);
+            }
+
+            $details = array_filter([
+                'reason' => $result['reason'] ?? null,
+                'remaining_attempts' => $result['remaining_attempts'] ?? null,
+                'retry_after' => $result['retry_after'] ?? null,
+                'locked_until' => $result['locked_until'] ?? null,
+                'reset_email_sent' => $resetEmailSent,
+            ], static fn ($value) => $value !== null);
+
+            return ApiResponse::error(
+                $result['message'] ?? 'Email atau kata sandi tidak sesuai.',
+                $details,
+                $result['status'] ?? 401
+            );
         }
 
         // Generate Firebase Custom Token
@@ -197,7 +216,9 @@ class AuthController extends Controller
             $validated,
             function ($user, $password) {
                 $user->forceFill([
-                    'password' => Hash::make($password)
+                    'password' => Hash::make($password),
+                    'failed_login_attempts' => 0,
+                    'login_locked_until' => null,
                 ])->save();
 
                 event(new PasswordReset($user));
@@ -213,6 +234,33 @@ class AuthController extends Controller
         return $status === Password::PASSWORD_RESET
             ? response()->json(['message' => __($status)])
             : response()->json(['message' => self::RESET_PASSWORD_FAILED_RESPONSE], 400);
+    }
+
+    private function sendLoginLockedEmail(User $user, Request $request): bool
+    {
+        try {
+            $broker = Password::broker(config('auth.defaults.passwords', 'users'));
+            $token = $broker->createToken($user);
+            $resetUrl = rtrim(config('app.frontend_url') ?: config('app.url'), '/')
+                . '/auth/reset-password?' . http_build_query([
+                    'token' => $token,
+                    'email' => $user->email,
+                ]);
+
+            $attemptedAt = Carbon::now('Asia/Jakarta')->format('d M Y, H:i');
+            $user->notify(new LoginLockedNotification(
+                $resetUrl,
+                $attemptedAt,
+                $request->ip() ?: 'Tidak diketahui'
+            ));
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Unable to send login lock warning email', [
+                'user_id' => $user->id,
+                'exception' => $e->getMessage(),
+            ]);
+            return false;
+        }
     }
 
     private function normalizeEmail(?string $email): string

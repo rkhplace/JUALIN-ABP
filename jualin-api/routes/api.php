@@ -34,7 +34,8 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:api')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
-        Route::delete('/me', [\App\Http\Controllers\ProfileController::class, 'destroy']);
+        Route::post('/me/deletion-request', [\App\Http\Controllers\ProfileController::class, 'requestDeletion']);
+        Route::delete('/me/deletion-request', [\App\Http\Controllers\ProfileController::class, 'cancelDeletion']);
         Route::get('/users/search', [UserController::class, 'search']);
         Route::post('/reports', [ReportController::class, 'store']);
         Route::patch('/profile/update', [\App\Http\Controllers\ProfileController::class, 'update']);
@@ -68,6 +69,8 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::post('/transactions', [TransactionController::class, 'store']);
         Route::post('/transactions/pay-wallet', [TransactionController::class, 'payWallet']);
         Route::get('/payments/history', [PaymentController::class, 'getPaymentsByUser']);
+        Route::post('/transactions/{transactionId}/reveal-auth-code', [TransactionController::class, 'revealAuthCode'])
+            ->middleware('throttle:10,1');
     });
 
     Route::patch('/users/{id}/update', [UserController::class, 'update']);

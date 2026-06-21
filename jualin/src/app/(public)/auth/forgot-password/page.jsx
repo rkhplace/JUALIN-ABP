@@ -1,92 +1,120 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Clock3, MailCheck, ShieldCheck } from "lucide-react";
 import Logo from "@/components/ui/Logo";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Toast from "@/components/ui/Toast";
 import { passwordService } from "@/services";
 
-export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
+const formatCountdown = (seconds) => {
+  const safeSeconds = Math.max(0, seconds);
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainder = safeSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
+};
+
+function ForgotPasswordContent() {
+  const searchParams = useSearchParams();
+  const isLocked = searchParams.get("reason") === "locked";
+  const lockedUntil = searchParams.get("locked_until");
+  const emailWasSent = searchParams.get("email_sent") === "1";
+  const initialEmail = searchParams.get("email") || "";
+  const [email, setEmail] = useState(initialEmail);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const lockEnd = useMemo(() => {
+    const timestamp = lockedUntil ? new Date(lockedUntil).getTime() : NaN;
+    return Number.isFinite(timestamp) ? timestamp : null;
+  }, [lockedUntil]);
+
+  useEffect(() => {
+    if (!lockEnd) return;
+    const update = () => setRemainingSeconds(Math.max(0, Math.ceil((lockEnd - Date.now()) / 1000)));
+    update();
+    const timer = window.setInterval(update, 1000);
+    return () => window.clearInterval(timer);
+  }, [lockEnd]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setToast(null);
     setLoading(true);
     try {
       await passwordService.sendResetLink(email);
-      setToast({
-        message: "Link reset password telah dikirim. Silakan cek email Anda.",
-        type: "success",
-      });
-      setEmail("");
-    } catch (err) {
-      setToast({
-        message: err.message || "Gagal mengirim link reset password.",
-        type: "error",
-      });
+      setToast({ message: "Link reset password telah dikirim. Silakan cek email Anda.", type: "success" });
+    } catch (error) {
+      setToast({ message: error.message || "Gagal mengirim link reset password.", type: "error" });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center relative overflow-hidden">
-      <div className="absolute top-0 -left-48 w-96 h-96 bg-[#E83030] rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-      <div className="absolute bottom-0 -right-48 w-96 h-96 bg-[#E83030] rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+    <div className="min-h-screen bg-white flex items-center justify-center relative overflow-hidden px-4 py-8">
+      <div className="absolute -top-32 -left-36 w-96 h-96 bg-[#E83030] rounded-full blur-3xl opacity-15" />
+      <div className="absolute -bottom-36 -right-32 w-96 h-96 bg-[#E83030] rounded-full blur-3xl opacity-15" />
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="relative z-10 w-full max-w-md mx-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-10">
-          <Logo size="xl" className="mb-6" />
+      <main className="relative z-10 w-full max-w-md rounded-3xl border border-red-100/80 bg-white p-7 shadow-[0_24px_70px_-24px_rgba(232,48,48,0.28)] md:p-10">
+        <Logo size="xl" className="mb-7" />
 
-          <div className="mb-6">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-              Lupa Password
-            </h1>
-            <p className="text-gray-600 text-sm md:text-base">
-              Masukkan email Anda untuk menerima tautan reset password.
+        {isLocked && (
+          <section className="mb-7 rounded-2xl border border-red-100 bg-gradient-to-br from-red-50 to-white p-5">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-[#E83030] text-white shadow-lg shadow-red-200">
+                <ShieldCheck size={22} aria-hidden="true" />
+              </span>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#E83030]">Akun dilindungi</p>
+                <h1 className="text-lg font-bold text-gray-900">Login dikunci sementara</h1>
+              </div>
+            </div>
+            <p className="text-sm leading-6 text-gray-600">
+              Terlalu banyak percobaan login. Coba lagi setelah waktu tunggu berakhir atau reset password Anda.
             </p>
-          </div>
+            <div className="mt-4 flex items-center justify-between rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-red-100">
+              <span className="flex items-center gap-2 text-sm font-medium text-gray-600"><Clock3 size={17} /> Coba lagi dalam</span>
+              <span className="font-mono text-xl font-bold tabular-nums text-[#E83030]">{formatCountdown(remainingSeconds)}</span>
+            </div>
+            {emailWasSent && (
+              <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-emerald-700">
+                <MailCheck size={17} className="mt-0.5 shrink-0" /> Email peringatan dan link reset sudah dikirim ke alamat akun Anda.
+              </p>
+            )}
+          </section>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              label="Email"
-              type="email"
-              name="email"
-              placeholder="Enter your mail address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-
-            <Button type="submit" variant="primary" disabled={loading}>
-              {loading ? "Sending..." : "Send Email Verification Link"}
-            </Button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-gray-600">
-            Ingat password Anda?{" "}
-            <Link
-              href="/auth/login"
-              className="text-[#E83030] hover:text-red-600 font-medium"
-            >
-              Kembali ke halaman login
-            </Link>
+        <div className="mb-6">
+          {!isLocked && <h1 className="mb-2 text-2xl font-bold text-gray-900 md:text-3xl">Lupa Password</h1>}
+          <p className="text-sm leading-6 text-gray-600">
+            {isLocked ? "Kirim ulang link jika email belum masuk dalam beberapa menit." : "Masukkan email Anda untuk menerima tautan reset password."}
           </p>
         </div>
-      </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input label="Email" type="email" name="email" placeholder="nama@email.com" value={email} onChange={(event) => setEmail(event.target.value)} required />
+          <Button type="submit" variant="primary" disabled={loading}>
+            {loading ? "Mengirim..." : isLocked ? "Kirim Ulang Link Reset" : "Kirim Link Reset Password"}
+          </Button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-gray-600">
+          <Link href="/auth/login" className="font-semibold text-[#E83030] hover:text-red-600">
+            Kembali ke halaman login
+          </Link>
+        </p>
+      </main>
     </div>
   );
+}
+
+export default function ForgotPasswordPage() {
+  return <Suspense fallback={<div className="min-h-screen bg-white" />}><ForgotPasswordContent /></Suspense>;
 }

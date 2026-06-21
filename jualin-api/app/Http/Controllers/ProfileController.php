@@ -6,6 +6,8 @@ use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Responses\ApiResponse;
 use App\Services\SellerVerificationService;
 use App\Services\UserService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class ProfileController extends Controller
 {
@@ -38,7 +40,7 @@ class ProfileController extends Controller
         );
     }
 
-    public function destroy(\Illuminate\Http\Request $request)
+    public function requestDeletion(Request $request)
     {
         $user = $request->user();
 
@@ -46,8 +48,43 @@ class ProfileController extends Controller
             return ApiResponse::error('Admin accounts cannot be deleted from profile', null, 422);
         }
 
-        $this->userService->delete($user->id);
+        $validated = $request->validate([
+            'password' => 'required|string',
+            'confirmation_phrase' => 'required|string|in:HAPUS AKUN',
+        ]);
 
-        return ApiResponse::success('Account deleted');
+        if (!Hash::check($validated['password'], $user->password)) {
+            return ApiResponse::error('Password akun Jualin tidak sesuai.', null, 422);
+        }
+
+        $scheduledAt = now()->addDays(14);
+        $user->forceFill([
+            'deletion_requested_at' => now(),
+            'scheduled_deletion_at' => $scheduledAt,
+            'refresh_token' => null,
+        ])->save();
+
+        auth()->guard('api')->logout();
+
+        return ApiResponse::success('Penghapusan akun dijadwalkan.', [
+            'scheduled_deletion_at' => $scheduledAt->toIso8601String(),
+            'recovery_days' => 14,
+        ]);
+    }
+
+    public function cancelDeletion(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user->scheduled_deletion_at) {
+            return ApiResponse::error('Akun ini tidak sedang dijadwalkan untuk dihapus.', null, 422);
+        }
+
+        $user->forceFill([
+            'deletion_requested_at' => null,
+            'scheduled_deletion_at' => null,
+        ])->save();
+
+        return ApiResponse::success('Penghapusan akun berhasil dibatalkan.', $user->fresh());
     }
 }

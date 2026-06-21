@@ -46,8 +46,15 @@ export const profileService = {
     return response ?? {};
   },
 
-  async deleteAccount() {
-    return fetcher.delete('/api/v1/me');
+  async requestAccountDeletion(password, confirmationPhrase) {
+    return fetcher.post('/api/v1/me/deletion-request', {
+      password,
+      confirmation_phrase: confirmationPhrase,
+    });
+  },
+
+  async cancelAccountDeletion() {
+    return fetcher.delete('/api/v1/me/deletion-request');
   },
 };
 

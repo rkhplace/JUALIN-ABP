@@ -195,7 +195,6 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     String? orderId;
     String? amount;
     String? status;
-    String? authCode;
 
     if (transactionData != null) {
       orderId = transactionData['order_id']?.toString();
@@ -204,7 +203,6 @@ class _CheckoutScreenState extends State<CheckoutScreen>
         amount = _formatCurrency(grossAmount);
       }
       status = transactionData['transaction_status']?.toString().toUpperCase();
-      authCode = _extractAuthCode(transactionData);
     } else if (isWallet) {
       amount = _formatCurrency(widget.product.price);
       status = 'VERIFIED';
@@ -324,52 +322,6 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                     ],
                   ),
                 ),
-                if (authCode != null && authCode.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF16A34A), Color(0xFF22C55E)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              const Color(0xFF16A34A).withValues(alpha: 0.24),
-                          blurRadius: 18,
-                          spreadRadius: -8,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          'Kode Penukaran Anda',
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          authCode,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
                 if (amount != null || orderId != null || status != null) ...[
                   const SizedBox(height: 14),
                   Container(
@@ -457,19 +409,6 @@ class _CheckoutScreenState extends State<CheckoutScreen>
         ),
       ),
     );
-  }
-
-  String? _extractAuthCode(Map<String, dynamic> data) {
-    final direct = data['auth_code']?.toString();
-    if (direct != null && direct.isNotEmpty) return direct;
-
-    final transaction = data['transaction'];
-    if (transaction is Map) {
-      final nested = transaction['auth_code']?.toString();
-      if (nested != null && nested.isNotEmpty) return nested;
-    }
-
-    return null;
   }
 
   Widget _buildDetailRow(String label, String value, {Color? valueColor}) {

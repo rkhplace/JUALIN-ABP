@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\WalletTransaction;
 use App\Models\Notification;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 
 class TransactionController extends Controller
 {
@@ -216,6 +217,9 @@ class TransactionController extends Controller
                     'transaction_time' => now(),
                 ]);
 
+                app(\App\Services\TransactionChatService::class)
+                    ->publishPaymentVerified($transaction->fresh(), $orderId);
+
                 Notification::create([
                     'user_id' => $buyer->id,
                     'title' => 'Pembayaran Berhasil',
@@ -254,6 +258,37 @@ class TransactionController extends Controller
                 $statusCode
             );
         }
+    }
+
+    public function revealAuthCode(Request $request, string $transactionId): JsonResponse
+    {
+        $user = $request->user('api');
+        $transaction = Transaction::findOrFail($transactionId);
+
+        if ((int) $transaction->customer_id !== (int) $user->id && $user->role !== 'admin') {
+            return ApiResponse::error('Anda tidak memiliki akses ke kode transaksi ini.', null, 403);
+        }
+
+        if ($transaction->status !== 'waiting_cod' || empty($transaction->auth_code)) {
+            return ApiResponse::error('Kode transaksi tidak tersedia untuk status pesanan ini.', null, 422);
+        }
+
+        $validated = $request->validate([
+            'verification_method' => 'required|in:password,biometric',
+            'password' => 'nullable|string',
+        ]);
+
+        if ($validated['verification_method'] === 'password') {
+            if (empty($validated['password']) || !Hash::check($validated['password'], $user->password)) {
+                return ApiResponse::error('Password akun Jualin tidak sesuai.', null, 422);
+            }
+        }
+
+        return ApiResponse::success('Kode transaksi berhasil dibuka.', [
+            'auth_code' => $transaction->auth_code,
+            'transaction_id' => $transaction->id,
+            'expires_at' => now()->addMinutes(2)->toIso8601String(),
+        ]);
     }
 
     public function index(Request $request): JsonResponse

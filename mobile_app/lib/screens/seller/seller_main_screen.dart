@@ -7,6 +7,7 @@ import 'package:mobile_app/services/chat_service.dart';
 import 'package:mobile_app/services/seller_service.dart';
 import 'seller_orders_screen.dart';
 import 'package:mobile_app/screens/chat_screen.dart';
+import 'package:mobile_app/widgets/ui/feature_tour.dart';
 
 class SellerMainScreen extends StatefulWidget {
   const SellerMainScreen({super.key});
@@ -24,6 +25,51 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
   bool _hasUnreadChat = false;
   bool _hasProductAlert = false;
   bool _hasOrderAlert = false;
+  bool _checkedOnboarding = false;
+  final GlobalKey _dashboardTourKey = GlobalKey();
+  final GlobalKey _chatTourKey = GlobalKey();
+  final GlobalKey _productTourKey = GlobalKey();
+  final GlobalKey _orderTourKey = GlobalKey();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_checkedOnboarding) return;
+    _checkedOnboarding = true;
+    final arguments = ModalRoute.of(context)?.settings.arguments;
+    final showOnboarding =
+        arguments is Map && arguments['showOnboarding'] == true;
+    if (showOnboarding) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showOnboarding());
+    }
+  }
+
+  Future<void> _showOnboarding() async {
+    if (!mounted) return;
+    await FeatureTour.show(
+      context,
+      steps: [
+        FeatureTourStep(
+          targetKey: _dashboardTourKey,
+          title: 'Pantau toko',
+          description: 'Lihat ringkasan performa tokomu dari Dasbor.',
+          icon: Icons.storefront_rounded,
+        ),
+        FeatureTourStep(
+          targetKey: _productTourKey,
+          title: 'Kelola produk',
+          description: 'Tambah produk serta atur harga dan stok dari sini.',
+          icon: Icons.inventory_2_rounded,
+        ),
+        FeatureTourStep(
+          targetKey: _orderTourKey,
+          title: 'Proses pesanan',
+          description: 'Pantau pesanan baru dan perbarui status pengirimannya.',
+          icon: Icons.receipt_long_rounded,
+        ),
+      ],
+    );
+  }
 
   @override
   void initState() {
@@ -150,16 +196,20 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
               height: 1.45,
             ),
             items: [
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard_outlined),
-                activeIcon: Icon(Icons.dashboard),
+              BottomNavigationBarItem(
+                icon: SizedBox(
+                    key: _dashboardTourKey,
+                    child: const Icon(Icons.dashboard_outlined)),
+                activeIcon: const Icon(Icons.dashboard),
                 label: 'Dasbor',
               ),
               BottomNavigationBarItem(
-                icon: _navIconWithDot(
-                  Icons.chat_bubble_outline,
-                  showDot: _hasUnreadChat,
-                ),
+                icon: KeyedSubtree(
+                    key: _chatTourKey,
+                    child: _navIconWithDot(
+                      Icons.chat_bubble_outline,
+                      showDot: _hasUnreadChat,
+                    )),
                 activeIcon: _navIconWithDot(
                   Icons.chat_bubble,
                   showDot: _hasUnreadChat,
@@ -167,10 +217,12 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
                 label: 'Pesan',
               ),
               BottomNavigationBarItem(
-                icon: _navIconWithDot(
-                  Icons.inventory_2_outlined,
-                  showDot: _hasProductAlert,
-                ),
+                icon: KeyedSubtree(
+                    key: _productTourKey,
+                    child: _navIconWithDot(
+                      Icons.inventory_2_outlined,
+                      showDot: _hasProductAlert,
+                    )),
                 activeIcon: _navIconWithDot(
                   Icons.inventory_2,
                   showDot: _hasProductAlert,
@@ -178,10 +230,12 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
                 label: 'Produk',
               ),
               BottomNavigationBarItem(
-                icon: _navIconWithDot(
-                  Icons.receipt_long_outlined,
-                  showDot: _hasOrderAlert,
-                ),
+                icon: KeyedSubtree(
+                    key: _orderTourKey,
+                    child: _navIconWithDot(
+                      Icons.receipt_long_outlined,
+                      showDot: _hasOrderAlert,
+                    )),
                 activeIcon: _navIconWithDot(
                   Icons.receipt_long,
                   showDot: _hasOrderAlert,

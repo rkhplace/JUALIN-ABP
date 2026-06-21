@@ -18,12 +18,14 @@ class AuthService {
   static const String userJsonKey = 'user_json';
   static const String rememberMeKey = 'remember_me';
   static const String rememberedEmailKey = 'remembered_email';
+  Map<String, dynamic>? lastLoginLock;
 
   Future<String?> login(
     String email,
     String password, {
     bool rememberMe = false,
   }) async {
+    lastLoginLock = null;
     try {
       final response = await _client.post(
         ApiConfig.login,
@@ -40,6 +42,13 @@ class AuthService {
       await PushNotificationService.instance.registerDeviceToken();
       return null;
     } on ApiException catch (e) {
+      final details = e.data['errors'];
+      if (e.statusCode == 429 &&
+          details is Map &&
+          details['reason'] == 'login_locked') {
+        lastLoginLock = Map<String, dynamic>.from(details);
+        return e.message;
+      }
       if (e.statusCode == 401) return _friendlyLoginError(e.message);
       if (e.statusCode == 422) return e.message;
       return 'Login gagal (${e.statusCode}): ${e.message}';
@@ -157,11 +166,31 @@ class AuthService {
     return message;
   }
 
-  Future<void> deleteAccount() async {
+  Future<Map<String, dynamic>> deleteAccount(
+    String password,
+    String confirmationPhrase,
+  ) async {
     try {
-      await _client.delete('/me');
-    } finally {
+      final response = await _client.post(
+        '/me/deletion-request',
+        body: {
+          'password': password,
+          'confirmation_phrase': confirmationPhrase,
+        },
+      );
       await clearLocalSession();
+      final data = response['data'];
+      return data is Map<String, dynamic> ? data : response;
+    } on ApiException catch (e) {
+      throw Exception(e.message);
+    }
+  }
+
+  Future<void> cancelAccountDeletion() async {
+    try {
+      await _client.delete('/me/deletion-request');
+    } on ApiException catch (e) {
+      throw Exception(e.message);
     }
   }
 

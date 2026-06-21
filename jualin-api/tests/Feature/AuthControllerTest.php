@@ -8,6 +8,7 @@ use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Notification;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\User;
+use App\Notifications\LoginLockedNotification;
 
 class AuthControllerTest extends TestCase
 {
@@ -102,7 +103,55 @@ class AuthControllerTest extends TestCase
             'remember' => true,
         ]);
 
-        $res->assertStatus(401)->assertJson(['message' => 'Invalid credentials']);
+        $res->assertStatus(401)->assertJson(['message' => 'Email atau kata sandi tidak sesuai.']);
+    }
+
+    public function testAccountIsTemporarilyLocked_after_three_wrong_passwords()
+    {
+        Notification::fake();
+        $user = User::create([
+            'username' => 'locked-user',
+            'email' => 'locked@example.com',
+            'password' => 'correct-password',
+            'role' => 'customer',
+        ]);
+
+        for ($attempt = 1; $attempt <= 2; $attempt++) {
+            $this->postJson('/api/v1/login', [
+                'email' => $user->email,
+                'password' => 'wrong-password',
+            ])->assertUnauthorized()
+                ->assertJsonPath('errors.remaining_attempts', 3 - $attempt);
+        }
+
+        $this->postJson('/api/v1/login', [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ])->assertStatus(429)
+            ->assertJsonPath('errors.reason', 'login_locked')
+            ->assertJsonPath('errors.remaining_attempts', 0)
+            ->assertJsonPath('errors.reset_email_sent', true)
+            ->assertJsonStructure(['errors' => ['retry_after', 'locked_until']]);
+
+        $this->assertNotNull($user->fresh()->login_locked_until);
+        Notification::assertSentTo($user, LoginLockedNotification::class);
+    }
+
+    public function test_correct_password_cannot_bypass_an_active_login_lock()
+    {
+        $user = User::create([
+            'username' => 'already-locked-user',
+            'email' => 'already-locked@example.com',
+            'password' => 'correct-password',
+            'role' => 'customer',
+            'failed_login_attempts' => 3,
+            'login_locked_until' => now()->addMinutes(15),
+        ]);
+
+        $this->postJson('/api/v1/login', [
+            'email' => $user->email,
+            'password' => 'correct-password',
+        ])->assertStatus(429)->assertJsonPath('errors.reason', 'login_locked');
     }
 
     public function testMeReturnsAuthenticatedUser()

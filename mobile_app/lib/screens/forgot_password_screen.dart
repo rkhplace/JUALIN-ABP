@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
@@ -17,9 +19,54 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   bool _isLoading = false;
   String? _message;
   bool _isSuccess = false;
+  bool _routeArgumentsLoaded = false;
+  bool _isLoginLocked = false;
+  bool _warningEmailSent = false;
+  DateTime? _lockedUntil;
+  int _remainingSeconds = 0;
+  Timer? _countdownTimer;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_routeArgumentsLoaded) return;
+    _routeArgumentsLoaded = true;
+
+    final arguments = ModalRoute.of(context)?.settings.arguments;
+    if (arguments is! Map) return;
+
+    final lockReason = arguments['reason']?.toString();
+    if (lockReason != 'login_locked') return;
+
+    _isLoginLocked = true;
+    _warningEmailSent = arguments['reset_email_sent'] == true;
+    _emailController.text = arguments['email']?.toString() ?? '';
+    _lockedUntil =
+        DateTime.tryParse(arguments['locked_until']?.toString() ?? '')
+            ?.toLocal();
+    _updateCountdown();
+    _countdownTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _updateCountdown(),
+    );
+  }
+
+  void _updateCountdown() {
+    if (_lockedUntil == null) return;
+    final seconds = _lockedUntil!.difference(DateTime.now()).inSeconds;
+    if (!mounted) return;
+    setState(() => _remainingSeconds = seconds.clamp(0, 15 * 60));
+  }
+
+  String get _countdownLabel {
+    final minutes = _remainingSeconds ~/ 60;
+    final seconds = _remainingSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _emailController.dispose();
     super.dispose();
   }
@@ -54,7 +101,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       _isSuccess = error == null;
       _message = error ??
           'Tautan reset kata sandi telah dikirim. Silakan cek email Anda.';
-      if (error == null) _emailController.clear();
+      if (error == null && !_isLoginLocked) _emailController.clear();
     });
   }
 
@@ -129,8 +176,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 alignment: Alignment.centerLeft,
                               ),
                               SizedBox(height: isCompact ? 16 : 20),
+                              if (_isLoginLocked) ...[
+                                _buildLockNotice(),
+                                SizedBox(height: isCompact ? 18 : 22),
+                              ],
                               Text(
-                                'Lupa Kata Sandi',
+                                _isLoginLocked
+                                    ? 'Reset Kata Sandi'
+                                    : 'Lupa Kata Sandi',
                                 style: TextStyle(
                                   color: const Color(0xFF111827),
                                   fontSize: titleSize,
@@ -139,9 +192,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              const Text(
-                                'Masukkan email Anda untuk menerima tautan reset kata sandi.',
-                                style: TextStyle(
+                              Text(
+                                _isLoginLocked
+                                    ? 'Kirim ulang tautan jika email belum masuk dalam beberapa menit.'
+                                    : 'Masukkan email Anda untuk menerima tautan reset kata sandi.',
+                                style: const TextStyle(
                                   color: Color(0xFF566174),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
@@ -198,9 +253,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                               strokeWidth: 2.3,
                                             ),
                                           )
-                                        : const Text(
-                                            'Kirim Tautan Reset',
-                                            style: TextStyle(
+                                        : Text(
+                                            _isLoginLocked
+                                                ? 'Kirim Ulang Tautan Reset'
+                                                : 'Kirim Tautan Reset',
+                                            style: const TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.w700,
                                             ),
@@ -237,6 +294,107 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   bool _isValidEmail(String value) {
     return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value);
+  }
+
+  Widget _buildLockNotice() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFF1F2), Colors.white],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFFECACA)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              CircleAvatar(
+                radius: 21,
+                backgroundColor: Color(0xFFE83030),
+                child:
+                    Icon(Icons.shield_outlined, color: Colors.white, size: 22),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('AKUN DILINDUNGI',
+                        style: TextStyle(
+                            color: Color(0xFFE83030),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.2)),
+                    SizedBox(height: 2),
+                    Text('Login dikunci sementara',
+                        style: TextStyle(
+                            color: Color(0xFF111827),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'Terlalu banyak percobaan login. Tunggu hingga waktu berakhir atau reset kata sandi Anda.',
+            style:
+                TextStyle(color: Color(0xFF566174), fontSize: 13, height: 1.45),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFEE2E2)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.schedule_rounded,
+                    color: Color(0xFF6B7280), size: 19),
+                const SizedBox(width: 8),
+                const Expanded(
+                    child: Text('Coba lagi dalam',
+                        style: TextStyle(
+                            color: Color(0xFF4B5563),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600))),
+                Text(_countdownLabel,
+                    style: const TextStyle(
+                        color: Color(0xFFE83030),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800)),
+              ],
+            ),
+          ),
+          if (_warningEmailSent) ...[
+            const SizedBox(height: 12),
+            const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.mark_email_read_outlined,
+                    color: Color(0xFF047857), size: 18),
+                SizedBox(width: 8),
+                Expanded(
+                    child: Text(
+                        'Email peringatan dan link reset sudah dikirim ke alamat akun Anda.',
+                        style: TextStyle(
+                            color: Color(0xFF047857),
+                            fontSize: 12,
+                            height: 1.4))),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   Widget _buildAuthInput({

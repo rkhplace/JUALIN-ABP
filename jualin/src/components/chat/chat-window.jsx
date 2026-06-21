@@ -3,6 +3,7 @@ import { useEffect, useRef, useContext, useState } from 'react';
 import { ChatHeader } from './ChatHeader';
 import { ChatBubble } from './ChatBubble';
 import { ProductBubble } from './ProductBubble';
+import { PaymentSystemCard } from './PaymentSystemCard';
 import { ChatInput } from './ChatInput';
 import { AuthContext } from '@/context/AuthProvider';
 import { getProfilePictureUrl } from '@/utils/imageHelper';
@@ -114,7 +115,9 @@ export function ChatWindow({ chat, messages = [], onSend, onSendImages }) {
         ) : (
           <>
             {transformedMessages.map((msg) => (
-              msg.type === 'product' ? (
+              msg.type === 'payment_system' ? (
+                <PaymentSystemCard key={msg.id} message={msg} userRole={user?.role} />
+              ) : msg.type === 'product' ? (
                 <ProductBubble key={msg.id} message={msg} userRole={user?.role} />
               ) : (
                 <ChatBubble key={msg.id} message={msg} />

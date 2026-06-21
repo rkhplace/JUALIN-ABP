@@ -27,6 +27,10 @@ class Transaction extends Model
         'refunded_at' => 'datetime',
     ];
 
+    protected $hidden = [
+        'auth_code',
+    ];
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'customer_id');

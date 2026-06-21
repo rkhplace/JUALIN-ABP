@@ -15,6 +15,7 @@ class User {
   final String phone;
   final String status;
   final String verificationStatus;
+  final String scheduledDeletionAt;
 
   User({
     required this.id,
@@ -31,6 +32,7 @@ class User {
     this.phone = '',
     this.status = 'active',
     this.verificationStatus = '',
+    this.scheduledDeletionAt = '',
   });
 
   /// Handles both the /me response (flat object) and the /login data object.
@@ -66,6 +68,7 @@ class User {
           (json['seller_verified'] == true || json['is_verified'] == true
               ? 'verified'
               : ''),
+      scheduledDeletionAt: json['scheduled_deletion_at']?.toString() ?? '',
     );
   }
 
@@ -94,5 +97,6 @@ class User {
         'phone': phone,
         'status': status,
         'verification_status': verificationStatus,
+        'scheduled_deletion_at': scheduledDeletionAt,
       };
 }
