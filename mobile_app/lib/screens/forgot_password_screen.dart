@@ -307,6 +307,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFFECACA)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF111827).withValues(alpha: 0.16),
+            blurRadius: 26,
+            spreadRadius: -12,
+            offset: const Offset(0, 15),
+          ),
+          BoxShadow(
+            color: const Color(0xFFE83030).withValues(alpha: 0.22),
+            blurRadius: 24,
+            spreadRadius: -14,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,6 +368,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFFEE2E2)),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF111827).withValues(alpha: 0.14),
+                  blurRadius: 16,
+                  spreadRadius: -9,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: Row(
               children: [

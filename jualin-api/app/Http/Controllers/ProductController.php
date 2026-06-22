@@ -26,7 +26,7 @@ class ProductController extends Controller
     {
         $filters = $request->validated();
 
-        $paginated = $this->repo->getAll($filters);
+        $paginated = $this->repo->getMarketplace($filters);
 
         return response()->json([
             'products' => $paginated->items(),
@@ -90,7 +90,7 @@ class ProductController extends Controller
 
     public function show($id): JsonResponse
     {
-        $product = $this->repo->find($id);
+        $product = $this->repo->findMarketplace($id);
         if (!$product) {
             return ApiResponse::error('Product not found', null, 404);
         }

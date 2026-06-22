@@ -6,6 +6,7 @@ import Cookies from "js-cookie"
 import Header from "@/components/common/Header"
 import { ProfileHeaderSection } from "./sections/profile-header"
 import { profileService } from "@/services/profile/profileService"
+import { Check, Eye, EyeOff, KeyRound, ShieldAlert, Type } from "lucide-react"
 
 export default function ProfilePage() {
   const { user, setUser } = useAuth()
@@ -16,6 +17,7 @@ export default function ProfilePage() {
   const [deletePassword, setDeletePassword] = useState("")
   const [deletePhrase, setDeletePhrase] = useState("")
   const [deleteError, setDeleteError] = useState("")
+  const [showDeletePassword, setShowDeletePassword] = useState(false)
   const [scheduledAt, setScheduledAt] = useState(null)
 
   const handleDeleteAccount = async () => {
@@ -94,9 +96,10 @@ export default function ProfilePage() {
 
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-600">
-              <span className="text-3xl">!</span>
+          <div className="w-full max-w-md overflow-hidden rounded-[28px] border border-red-100 bg-white shadow-[0_30px_90px_-24px_rgba(17,24,39,0.48),0_18px_50px_-24px_rgba(232,48,48,0.45)]">
+            <div className="bg-gradient-to-b from-red-50/90 to-white px-6 pb-5 pt-6">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-600 text-white shadow-[0_12px_28px_-10px_rgba(232,48,48,0.7)]">
+              <ShieldAlert size={30} />
             </div>
             <h2 className="text-center text-xl font-black text-gray-900">
               Hapus Akun?
@@ -104,6 +107,8 @@ export default function ProfilePage() {
             <p className="mt-2 text-center text-sm leading-relaxed text-gray-500">
               Akun dijadwalkan untuk dihapus permanen dalam 14 hari. Anda masih dapat login dan membatalkannya selama masa pemulihan.
             </p>
+            </div>
+            <div className="px-6 pb-6">
             <div className="mt-5 rounded-2xl border border-red-100 bg-red-50 p-4 text-left">
               <p className="text-sm font-bold text-red-800">Dampak penghapusan:</p>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-5 text-red-700">
@@ -112,24 +117,20 @@ export default function ProfilePage() {
                 <li>Sesi pada perangkat ini akan langsung dikeluarkan.</li>
               </ul>
             </div>
-            <label className="mt-5 block text-sm font-bold text-gray-700">Password akun</label>
-            <input
-              type="password"
-              value={deletePassword}
-              onChange={(event) => setDeletePassword(event.target.value)}
-              className="mt-2 w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
-              placeholder="Masukkan password"
-              autoComplete="current-password"
-            />
-            <label className="mt-4 block text-sm font-bold text-gray-700">Ketik HAPUS AKUN untuk melanjutkan</label>
-            <input
-              type="text"
-              value={deletePhrase}
-              onChange={(event) => setDeletePhrase(event.target.value)}
-              className="mt-2 w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
-              placeholder="HAPUS AKUN"
-              autoComplete="off"
-            />
+            <div className="mt-5 space-y-3">
+              <div className="rounded-2xl border border-gray-200 bg-gray-50/80 p-3 transition focus-within:border-red-300 focus-within:bg-white focus-within:shadow-[0_10px_24px_-14px_rgba(232,48,48,0.45)]">
+                <div className="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-gray-500"><span className="grid h-6 w-6 place-items-center rounded-lg bg-white text-red-600 shadow-sm"><KeyRound size={14} /></span> 1. Password akun</div>
+                <div className="flex items-center gap-2">
+                  <input type={showDeletePassword ? "text" : "password"} value={deletePassword} onChange={(event) => setDeletePassword(event.target.value)} className="min-w-0 flex-1 bg-transparent px-1 py-1.5 text-sm font-semibold text-gray-900 outline-none placeholder:font-normal placeholder:text-gray-400" placeholder="Masukkan password Jualin" autoComplete="current-password" />
+                  <button type="button" onClick={() => setShowDeletePassword((value) => !value)} className="grid h-9 w-9 place-items-center rounded-xl text-gray-500 hover:bg-white hover:text-red-600" aria-label={showDeletePassword ? "Sembunyikan password" : "Tampilkan password"}>{showDeletePassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                </div>
+              </div>
+              <div className={`rounded-2xl border p-3 transition ${deletePhrase === "HAPUS AKUN" ? "border-emerald-200 bg-emerald-50/60" : "border-gray-200 bg-gray-50/80 focus-within:border-red-300 focus-within:bg-white focus-within:shadow-[0_10px_24px_-14px_rgba(232,48,48,0.45)]"}`}>
+                <div className="mb-2 flex items-center justify-between gap-2"><span className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-gray-500"><span className="grid h-6 w-6 place-items-center rounded-lg bg-white text-red-600 shadow-sm"><Type size={14} /></span> 2. Konfirmasi frasa</span>{deletePhrase === "HAPUS AKUN" && <span className="flex items-center gap-1 text-xs font-bold text-emerald-700"><Check size={14} /> Cocok</span>}</div>
+                <input type="text" value={deletePhrase} onChange={(event) => setDeletePhrase(event.target.value.toUpperCase())} className="w-full bg-transparent px-1 py-1.5 text-sm font-black tracking-[0.12em] text-gray-900 outline-none placeholder:font-semibold placeholder:tracking-normal placeholder:text-gray-400" placeholder="Ketik HAPUS AKUN" autoComplete="off" />
+                <p className="mt-1 px-1 text-xs text-gray-500">Harus sama persis dengan <strong>HAPUS AKUN</strong>.</p>
+              </div>
+            </div>
             {deleteError && <p className="mt-3 text-sm font-semibold text-red-600">{deleteError}</p>}
             <div className="mt-6 grid grid-cols-2 gap-3">
               <button
@@ -146,6 +147,7 @@ export default function ProfilePage() {
               >
                 {deleting ? "Menjadwalkan..." : "Jadwalkan Penghapusan"}
               </button>
+            </div>
             </div>
           </div>
         </div>

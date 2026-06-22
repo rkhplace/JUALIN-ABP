@@ -17,6 +17,32 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
+class _DeletionStepIcon extends StatelessWidget {
+  const _DeletionStepIcon({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 27,
+      height: 27,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(9),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Icon(icon, color: const Color(0xFFE83030), size: 15),
+    );
+  }
+}
+
 class _DeletionVerificationDialog extends StatefulWidget {
   const _DeletionVerificationDialog();
 
@@ -52,6 +78,8 @@ class _DeletionVerificationDialogState
 
   @override
   Widget build(BuildContext context) {
+    final phraseMatches = _phraseController.text == 'HAPUS AKUN';
+
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
       child: Dialog(
@@ -105,56 +133,155 @@ class _DeletionVerificationDialogState
                       color: Colors.black54, fontSize: 13, height: 1.4),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'Masukkan password akun Jualin.',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  autofocus: true,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                      icon: Icon(_obscurePassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined),
-                    ),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(
-                          color: Color(0xFFE83030), width: 1.4),
-                    ),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(13, 11, 8, 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8F9FB),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          _DeletionStepIcon(icon: Icons.key_rounded),
+                          SizedBox(width: 8),
+                          Text(
+                            '1. PASSWORD AKUN',
+                            style: TextStyle(
+                              color: Color(0xFF6B7280),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        autofocus: true,
+                        onChanged: (_) => setState(() {}),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Masukkan password Jualin',
+                          hintStyle: const TextStyle(
+                            color: Color(0xFF9CA3AF),
+                            fontWeight: FontWeight.w400,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding:
+                              const EdgeInsets.only(left: 2, top: 13),
+                          suffixIcon: IconButton(
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              color: const Color(0xFF6B7280),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Ketik HAPUS AKUN untuk melanjutkan.',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _phraseController,
-                  onChanged: (_) => setState(() {}),
-                  onSubmitted: (_) => _submit(),
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: InputDecoration(
-                    hintText: 'HAPUS AKUN',
-                    prefixIcon: const Icon(Icons.edit_outlined),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(
-                          color: Color(0xFFE83030), width: 1.4),
+                const SizedBox(height: 12),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.fromLTRB(13, 11, 13, 10),
+                  decoration: BoxDecoration(
+                    color: phraseMatches
+                        ? const Color(0xFFECFDF3)
+                        : const Color(0xFFF8F9FB),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: phraseMatches
+                          ? const Color(0xFFA7F3D0)
+                          : const Color(0xFFE5E7EB),
                     ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const _DeletionStepIcon(
+                              icon: Icons.text_fields_rounded),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              '2. KONFIRMASI FRASA',
+                              style: TextStyle(
+                                color: Color(0xFF6B7280),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ),
+                          if (phraseMatches)
+                            const Row(
+                              children: [
+                                Icon(Icons.check_circle_rounded,
+                                    color: Color(0xFF047857), size: 16),
+                                SizedBox(width: 4),
+                                Text('Cocok',
+                                    style: TextStyle(
+                                        color: Color(0xFF047857),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800)),
+                              ],
+                            ),
+                        ],
+                      ),
+                      TextField(
+                        controller: _phraseController,
+                        onChanged: (value) {
+                          final upperCase = value.toUpperCase();
+                          if (upperCase != value) {
+                            _phraseController.value =
+                                _phraseController.value.copyWith(
+                              text: upperCase,
+                              selection: TextSelection.collapsed(
+                                  offset: upperCase.length),
+                            );
+                          }
+                          setState(() {});
+                        },
+                        onSubmitted: (_) => _submit(),
+                        textCapitalization: TextCapitalization.characters,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Ketik HAPUS AKUN',
+                          hintStyle: TextStyle(
+                            color: Color(0xFF9CA3AF),
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding:
+                              EdgeInsets.only(left: 2, top: 13, bottom: 5),
+                        ),
+                      ),
+                      const Text(
+                        'Harus sama persis dengan HAPUS AKUN.',
+                        style: TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 20),

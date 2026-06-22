@@ -129,6 +129,13 @@ class AuthService
             ]);
         }
 
+        if ($user->scheduled_deletion_at) {
+            $user->forceFill([
+                'deletion_requested_at' => null,
+                'scheduled_deletion_at' => null,
+            ])->save();
+        }
+
         // Generate refresh token
         $refreshToken = Str::random(60);
 

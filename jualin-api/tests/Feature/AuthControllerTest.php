@@ -154,6 +154,27 @@ class AuthControllerTest extends TestCase
         ])->assertStatus(429)->assertJsonPath('errors.reason', 'login_locked');
     }
 
+    public function test_successful_login_cancels_deletion_grace_period(): void
+    {
+        $user = User::create([
+            'username' => 'recovering-seller',
+            'email' => 'recovering-seller@example.com',
+            'password' => 'correct-password',
+            'role' => 'seller',
+            'deletion_requested_at' => now(),
+            'scheduled_deletion_at' => now()->addDays(14),
+        ]);
+
+        $this->postJson('/api/v1/login', [
+            'email' => $user->email,
+            'password' => 'correct-password',
+        ])->assertOk();
+
+        $user->refresh();
+        $this->assertNull($user->deletion_requested_at);
+        $this->assertNull($user->scheduled_deletion_at);
+    }
+
     public function test_short_wrong_passwords_are_counted_and_lock_the_account(): void
     {
         Notification::fake();
