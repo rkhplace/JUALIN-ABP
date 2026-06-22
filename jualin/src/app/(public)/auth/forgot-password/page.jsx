@@ -62,11 +62,12 @@ function ForgotPasswordContent() {
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <main className="relative z-10 w-full max-w-md rounded-3xl border border-red-100/80 bg-white p-7 shadow-[0_24px_70px_-24px_rgba(232,48,48,0.28)] md:p-10">
+      <main className="relative z-10 w-full max-w-md rounded-3xl border border-red-100/80 bg-white p-7 shadow-[0_28px_80px_-26px_rgba(17,24,39,0.30),0_18px_48px_-24px_rgba(232,48,48,0.48)] md:p-10">
         <Logo size="xl" className="mb-7" />
 
         {isLocked && (
-          <section className="mb-7 rounded-2xl border border-red-100 bg-gradient-to-br from-red-50 to-white p-5">
+          <section className="relative mb-7 overflow-hidden rounded-2xl border border-red-200/80 bg-gradient-to-br from-red-50 via-white to-red-50/40 p-5 shadow-[0_18px_38px_-16px_rgba(17,24,39,0.24),0_12px_30px_-18px_rgba(232,48,48,0.55)] ring-1 ring-white">
+            <div className="pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full bg-red-200/35 blur-2xl" />
             <div className="mb-4 flex items-center gap-3">
               <span className="grid h-11 w-11 place-items-center rounded-full bg-[#E83030] text-white shadow-lg shadow-red-200">
                 <ShieldCheck size={22} aria-hidden="true" />
@@ -79,7 +80,7 @@ function ForgotPasswordContent() {
             <p className="text-sm leading-6 text-gray-600">
               Terlalu banyak percobaan login. Coba lagi setelah waktu tunggu berakhir atau reset password Anda.
             </p>
-            <div className="mt-4 flex items-center justify-between rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-red-100">
+            <div className="relative mt-4 flex items-center justify-between rounded-xl bg-white px-4 py-3 shadow-[0_10px_24px_-12px_rgba(17,24,39,0.28),0_6px_18px_-12px_rgba(232,48,48,0.45)] ring-1 ring-red-100">
               <span className="flex items-center gap-2 text-sm font-medium text-gray-600"><Clock3 size={17} /> Coba lagi dalam</span>
               <span className="font-mono text-xl font-bold tabular-nums text-[#E83030]">{formatCountdown(remainingSeconds)}</span>
             </div>

@@ -72,6 +72,37 @@ class ProductControllerTest extends TestCase
             ->assertJsonPath('data.seller.is_verified', true);
     }
 
+    public function testMarketplaceHidesProductsWhileSellerIsInDeletionGracePeriod(): void
+    {
+        $seller = User::create([
+            'username' => 'seller-grace-period',
+            'email' => 'seller-grace@example.com',
+            'password' => 'password',
+            'role' => 'seller',
+            'deletion_requested_at' => now(),
+            'scheduled_deletion_at' => now()->addDays(14),
+        ]);
+
+        $product = Product::create([
+            'seller_id' => $seller->id,
+            'name' => 'Hidden During Grace Period',
+            'price' => 10000,
+            'stock_quantity' => 1,
+        ]);
+
+        $this->getJson('/api/v1/products')
+            ->assertOk()
+            ->assertJsonMissing(['name' => $product->name]);
+
+        $this->getJson("/api/v1/products/{$product->id}")
+            ->assertNotFound();
+
+        $this->actingAs($seller, 'api')
+            ->getJson('/api/v1/seller/products')
+            ->assertOk()
+            ->assertJsonFragment(['name' => $product->name]);
+    }
+
     public function testIndexMeReturnsOnlyOwnProductsForSeller()
     {
         $seller1 = User::create([

@@ -8,7 +8,22 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductRepository
 {
+    public function getMarketplace(array $filters = []): LengthAwarePaginator
+    {
+        return $this->buildProductQuery($filters)
+            ->whereHas('seller', function ($sellerQuery) {
+                $sellerQuery->whereNull('scheduled_deletion_at');
+            })
+            ->paginate($this->resolvePerPage($filters));
+    }
+
     public function getAll(array $filters = []): LengthAwarePaginator
+    {
+        return $this->buildProductQuery($filters)
+            ->paginate($this->resolvePerPage($filters));
+    }
+
+    private function buildProductQuery(array $filters = [])
     {
         $q = Product::query()->with('seller');
 
@@ -88,17 +103,29 @@ class ProductRepository
             $q->orderByDesc('created_at');
         }
 
+        return $q;
+    }
+
+    private function resolvePerPage(array $filters): int
+    {
         $perPageValue = $filters['per_page'] ?? $filters['limit'] ?? null;
-        $perPage = isset($perPageValue) && (int) $perPageValue > 0
+        return isset($perPageValue) && (int) $perPageValue > 0
             ? (int) $perPageValue
             : 10;
-
-        return $q->paginate($perPage);
     }
 
     public function find(int $id): ?Product
     {
         return Product::with('seller')->find($id);
+    }
+
+    public function findMarketplace(int $id): ?Product
+    {
+        return Product::with('seller')
+            ->whereHas('seller', function ($sellerQuery) {
+                $sellerQuery->whereNull('scheduled_deletion_at');
+            })
+            ->find($id);
     }
 
     public function create(array $data): Product
