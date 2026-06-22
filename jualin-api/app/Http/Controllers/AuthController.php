@@ -60,7 +60,9 @@ class AuthController extends Controller
                 'remaining_attempts' => $result['remaining_attempts'] ?? null,
                 'retry_after' => $result['retry_after'] ?? null,
                 'locked_until' => $result['locked_until'] ?? null,
-                'reset_email_sent' => $resetEmailSent,
+                'reset_email_sent' => ($result['reason'] ?? null) === 'login_locked'
+                    ? $resetEmailSent
+                    : null,
             ], static fn ($value) => $value !== null);
 
             return ApiResponse::error(

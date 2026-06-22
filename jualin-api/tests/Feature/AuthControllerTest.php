@@ -154,6 +154,33 @@ class AuthControllerTest extends TestCase
         ])->assertStatus(429)->assertJsonPath('errors.reason', 'login_locked');
     }
 
+    public function test_short_wrong_passwords_are_counted_and_lock_the_account(): void
+    {
+        Notification::fake();
+        $user = User::create([
+            'username' => 'short-password-attempts',
+            'email' => 'short-attempts@example.com',
+            'password' => 'correct-password',
+            'role' => 'customer',
+        ]);
+
+        foreach ([2, 1] as $remainingAttempts) {
+            $this->postJson('/api/v1/login', [
+                'email' => $user->email,
+                'password' => 'x',
+            ])->assertUnauthorized()
+                ->assertJsonPath('errors.remaining_attempts', $remainingAttempts);
+        }
+
+        $this->postJson('/api/v1/login', [
+            'email' => $user->email,
+            'password' => 'x',
+        ])->assertStatus(429)
+            ->assertJsonPath('errors.reason', 'login_locked');
+
+        $this->assertNotNull($user->fresh()->login_locked_until);
+    }
+
     public function testMeReturnsAuthenticatedUser()
     {
         $user = User::create([

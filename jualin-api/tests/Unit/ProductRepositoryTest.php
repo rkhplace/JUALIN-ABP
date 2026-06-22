@@ -67,11 +67,12 @@ class ProductRepositoryTest extends TestCase
             'name' => 'AA',
             'price' => 10000,
             'stock_quantity' => 1,
-            'image' => UploadedFile::fake()->image('p.jpg'),
+            'image' => UploadedFile::fake()->create('p.jpg', 12, 'image/jpeg'),
         ]);
 
-        $this->assertNotNull($product->getRawOriginal('image'));
-        $this->assertTrue(Storage::disk('public')->exists($product->getRawOriginal('image')));
+        $storedImages = json_decode($product->getRawOriginal('image'), true);
+        $this->assertNotEmpty($storedImages);
+        $this->assertTrue(Storage::disk('public')->exists($storedImages[0]));
     }
 
     public function testUpdateReplacesImageAndDeletesOld()
@@ -91,12 +92,14 @@ class ProductRepositoryTest extends TestCase
         $repo = new ProductRepository();
         $updated = $repo->update($product->id, [
             'name' => 'BB',
-            'image' => UploadedFile::fake()->image('new.jpg'),
+            'image' => UploadedFile::fake()->create('new.jpg', 12, 'image/jpeg'),
         ]);
 
         $this->assertSame('BB', $updated->name);
         $this->assertFalse(Storage::disk('public')->exists('products/old.jpg'));
-        $this->assertTrue(Storage::disk('public')->exists($updated->getRawOriginal('image')));
+        $storedImages = json_decode($updated->getRawOriginal('image'), true);
+        $this->assertNotEmpty($storedImages);
+        $this->assertTrue(Storage::disk('public')->exists($storedImages[0]));
     }
 
     public function testDeleteRemovesImageAndReturnsTrue()

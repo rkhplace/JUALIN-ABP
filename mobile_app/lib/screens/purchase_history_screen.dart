@@ -178,10 +178,6 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
       'Transaksi bermasalah',
       'Lainnya',
     ];
-    String selectedReason = 'Pembeli membatalkan pesanan';
-    final customReasonController = TextEditingController();
-    bool customReasonError = false;
-
     final String? refundReason = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -189,195 +185,8 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (sheetContext, setSheetState) {
-          return SafeArea(
-            child: AnimatedPadding(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 42,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: 18),
-                        decoration: BoxDecoration(
-                          color: Colors.black12,
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                      ),
-                    ),
-                    const Text(
-                      'Ajukan Pengembalian Dana',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Apakah Anda yakin ingin membatalkan pesanan ini? Dana akan dikembalikan ke saldo Jualin Anda.',
-                      style: TextStyle(fontSize: 13, height: 1.4),
-                    ),
-                    const SizedBox(height: 18),
-                    const Text(
-                      'Alasan pengembalian dana',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ...reasons.map(
-                      (reason) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: () {
-                            setSheetState(() {
-                              selectedReason = reason;
-                              customReasonError = false;
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 13,
-                            ),
-                            decoration: BoxDecoration(
-                              color: selectedReason == reason
-                                  ? const Color(0xFFFFEEEE)
-                                  : const Color(0xFFF8F8F8),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: selectedReason == reason
-                                    ? const Color(0xFFE83030)
-                                    : Colors.black12,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    reason,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: selectedReason == reason
-                                          ? const Color(0xFFE83030)
-                                          : Colors.black87,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                                if (selectedReason == reason)
-                                  const Icon(
-                                    Icons.check_circle,
-                                    color: Color(0xFFE83030),
-                                    size: 20,
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (selectedReason == 'Lainnya') ...[
-                      const SizedBox(height: 4),
-                      TextField(
-                        controller: customReasonController,
-                        maxLines: 3,
-                        onChanged: (_) {
-                          if (customReasonError) {
-                            setSheetState(() => customReasonError = false);
-                          }
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'Tulis alasan pengembalian dana',
-                          hintStyle: const TextStyle(fontSize: 13),
-                          filled: true,
-                          fillColor: const Color(0xFFF8F8F8),
-                          errorText: customReasonError
-                              ? 'Alasan pengembalian dana wajib diisi.'
-                              : null,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFE83030),
-                              width: 1.2,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextButton(
-                            onPressed: () => Navigator.pop(sheetContext),
-                            style: TextButton.styleFrom(
-                              foregroundColor: const Color(0xFFE83030),
-                              padding: const EdgeInsets.symmetric(vertical: 13),
-                            ),
-                            child: const Text('Batal'),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE83030),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(22),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 13),
-                            ),
-                            onPressed: () {
-                              final reason = selectedReason == 'Lainnya'
-                                  ? customReasonController.text.trim()
-                                  : selectedReason;
-
-                              if (reason.isEmpty) {
-                                setSheetState(() => customReasonError = true);
-                                return;
-                              }
-
-                              Navigator.pop(sheetContext, reason);
-                            },
-                            child: const Text('Ya, Ajukan'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+      builder: (_) => const _RefundReasonSheet(reasons: reasons),
     );
-
-    customReasonController.dispose();
 
     if (!mounted || refundReason == null || refundReason.trim().isEmpty) {
       return;
@@ -465,78 +274,12 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
   }
 
   Future<String?> _showPasswordVerificationDialog() async {
-    final controller = TextEditingController();
-    var obscure = true;
-    final result = await showDialog<String>(
+    return showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.white,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          icon: const CircleAvatar(
-            backgroundColor: Color(0xFFFFECEC),
-            child: Icon(Icons.lock_outline_rounded, color: Color(0xFFE83030)),
-          ),
-          title: const Text('Verifikasi Keamanan', textAlign: TextAlign.center),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Masukkan password akun Jualin untuk membuka kode dan QR transaksi.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                obscureText: obscure,
-                autofocus: true,
-                onSubmitted: (value) {
-                  if (value.isNotEmpty) Navigator.pop(dialogContext, value);
-                },
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: const Icon(Icons.key_rounded),
-                  suffixIcon: IconButton(
-                    onPressed: () => setDialogState(() => obscure = !obscure),
-                    icon: Icon(obscure
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined),
-                  ),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide:
-                        const BorderSide(color: Color(0xFFE83030), width: 1.5),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Batal')),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFE83030)),
-              onPressed: () {
-                if (controller.text.isNotEmpty) {
-                  Navigator.pop(dialogContext, controller.text);
-                }
-              },
-              child: const Text('Verifikasi'),
-            ),
-          ],
-        ),
-      ),
+      barrierColor: Colors.black.withValues(alpha: 0.38),
+      builder: (_) => const _PasswordVerificationDialog(),
     );
-    controller.dispose();
-    return result;
   }
 
   void _showQrCode(
@@ -577,54 +320,69 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
       barrierColor: Colors.black.withValues(alpha: 0.35),
       builder: (ctx) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-        child: AlertDialog(
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          title: const Icon(
-            Icons.check_circle,
-            color: Colors.green,
-            size: 64,
-          ),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Transaksi Berhasil Dibatalkan',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 12),
-              Text(
-                'Dana pengembalian telah masuk ke saldo Jualin Anda.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black54, fontSize: 13),
-              ),
-            ],
-          ),
-          actions: [
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE83030),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(26),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 34,
+                  spreadRadius: -12,
+                  offset: const Offset(0, 18),
                 ),
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text(
-                  'Tutup',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
+              ],
             ),
-          ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEAF7EE),
+                    borderRadius: BorderRadius.all(Radius.circular(22)),
+                  ),
+                  child: const Icon(Icons.check_circle_rounded,
+                      color: Color(0xFF41B34D), size: 35),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Transaksi Berhasil Dibatalkan',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Dana pengembalian telah masuk ke saldo Jualin Anda.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.black54, fontSize: 13),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE83030),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(16)),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('Tutup',
+                        style: TextStyle(fontWeight: FontWeight.w900)),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1389,6 +1147,340 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen>
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RefundReasonSheet extends StatefulWidget {
+  const _RefundReasonSheet({required this.reasons});
+
+  final List<String> reasons;
+
+  @override
+  State<_RefundReasonSheet> createState() => _RefundReasonSheetState();
+}
+
+class _RefundReasonSheetState extends State<_RefundReasonSheet> {
+  final TextEditingController _customReasonController = TextEditingController();
+  String _selectedReason = 'Pembeli membatalkan pesanan';
+  bool _customReasonError = false;
+
+  @override
+  void dispose() {
+    _customReasonController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final reason = _selectedReason == 'Lainnya'
+        ? _customReasonController.text.trim()
+        : _selectedReason;
+    if (reason.isEmpty) {
+      setState(() => _customReasonError = true);
+      return;
+    }
+    Navigator.of(context).pop(reason);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 18),
+                  decoration: BoxDecoration(
+                      color: Colors.black12,
+                      borderRadius: BorderRadius.circular(99)),
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                        color: const Color(0xFFFFEEEE),
+                        borderRadius: BorderRadius.circular(15)),
+                    child: const Icon(Icons.currency_exchange_rounded,
+                        color: Color(0xFFE83030)),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text('Ajukan Pengembalian Dana',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.w900)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Pilih alasan pembatalan. Dana akan dikembalikan ke saldo Jualin setelah pengajuan berhasil.',
+                style:
+                    TextStyle(color: Colors.black54, fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 18),
+              ...widget.reasons.map((reason) {
+                final selected = _selectedReason == reason;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => setState(() {
+                      _selectedReason = reason;
+                      _customReasonError = false;
+                    }),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 13),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? const Color(0xFFFFEEEE)
+                            : const Color(0xFFF8F8F8),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color: selected
+                                ? const Color(0xFFE83030)
+                                : Colors.black12),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                              child: Text(reason,
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color: selected
+                                          ? const Color(0xFFE83030)
+                                          : Colors.black87,
+                                      fontWeight: FontWeight.w700))),
+                          if (selected)
+                            const Icon(Icons.check_circle,
+                                color: Color(0xFFE83030), size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              if (_selectedReason == 'Lainnya') ...[
+                const SizedBox(height: 4),
+                TextField(
+                  controller: _customReasonController,
+                  maxLines: 3,
+                  onChanged: (_) {
+                    if (_customReasonError) {
+                      setState(() => _customReasonError = false);
+                    }
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Tulis alasan pengembalian dana',
+                    filled: true,
+                    fillColor: const Color(0xFFF8F8F8),
+                    errorText: _customReasonError
+                        ? 'Alasan pengembalian dana wajib diisi.'
+                        : null,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(
+                            color: Color(0xFFE83030), width: 1.2)),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFE83030),
+                          side: const BorderSide(color: Color(0xFFFFC7C7)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16))),
+                      child: const Text('Batal',
+                          style: TextStyle(fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _submit,
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE83030),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16))),
+                      child: const Text('Ya, Ajukan',
+                          style: TextStyle(fontWeight: FontWeight.w900)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PasswordVerificationDialog extends StatefulWidget {
+  const _PasswordVerificationDialog();
+
+  @override
+  State<_PasswordVerificationDialog> createState() =>
+      _PasswordVerificationDialogState();
+}
+
+class _PasswordVerificationDialogState
+    extends State<_PasswordVerificationDialog> {
+  final TextEditingController _controller = TextEditingController();
+  bool _obscure = true;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_controller.text.isNotEmpty) {
+      Navigator.of(context).pop(_controller.text);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(26),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 34,
+                spreadRadius: -12,
+                offset: const Offset(0, 18),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 62,
+                  height: 62,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEFEF),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(Icons.lock_outline_rounded,
+                      color: Color(0xFFE83030), size: 31),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Verifikasi Keamanan',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 7),
+              const Text(
+                'Masukkan password akun Jualin untuk membuka kode dan QR transaksi.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _controller,
+                obscureText: _obscure,
+                autofocus: true,
+                onChanged: (_) => setState(() {}),
+                onSubmitted: (_) => _submit(),
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: const Icon(Icons.key_rounded),
+                  suffixIcon: IconButton(
+                    onPressed: () => setState(() => _obscure = !_obscure),
+                    icon: Icon(_obscure
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined),
+                  ),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide:
+                        const BorderSide(color: Color(0xFFE83030), width: 1.5),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFE83030),
+                        side: const BorderSide(color: Color(0xFFFFC7C7)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: const Text('Batal',
+                          style: TextStyle(fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _controller.text.isEmpty ? null : _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE83030),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: const Text('Verifikasi',
+                          style: TextStyle(fontWeight: FontWeight.w900)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

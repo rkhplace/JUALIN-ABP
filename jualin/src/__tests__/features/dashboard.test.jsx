@@ -10,6 +10,18 @@ jest.mock('next/navigation', () => ({
     useRouter: () => ({ push: jest.fn() }),
 }));
 
+jest.mock('firebase/auth', () => ({
+    signInWithCustomToken: jest.fn(),
+    signOut: jest.fn(),
+    getAuth: jest.fn(() => ({})),
+}));
+
+jest.mock('firebase/firestore', () => ({
+    doc: jest.fn(),
+    setDoc: jest.fn(),
+    getFirestore: jest.fn(() => ({})),
+}));
+
 // Helper to render with Auth Context
 const renderWithAuth = (ui, authValue) => {
     return render(
@@ -23,8 +35,8 @@ describe('Dashboard Feature (Navbar)', () => {
     test('should render guest view when not logged in', () => {
         renderWithAuth(<Navbar />, { user: null, loading: false });
 
-        expect(screen.getByText(/masuk/i)).toBeInTheDocument();
-        expect(screen.getByText(/daftar/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/masuk/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/daftar/i).length).toBeGreaterThan(0);
         expect(screen.queryByText(/jual/i)).not.toBeInTheDocument();
     });
 
@@ -32,8 +44,8 @@ describe('Dashboard Feature (Navbar)', () => {
         const sellerUser = { id: 1, name: 'Seller User', role: 'seller' };
         renderWithAuth(<Navbar />, { user: sellerUser, loading: false });
 
-        expect(screen.getByText(/jual/i)).toBeInTheDocument();
-        expect(screen.getByText(/Seller User/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/Upload Produk/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/Seller User/i).length).toBeGreaterThan(0);
     });
 
     test('should render buyer view when logged in as buyer', () => {
@@ -41,7 +53,7 @@ describe('Dashboard Feature (Navbar)', () => {
         renderWithAuth(<Navbar />, { user: buyerUser, loading: false });
 
         expect(screen.queryByText(/Beli/i)).not.toBeInTheDocument();
-        expect(screen.getByText(/Buyer User/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/Buyer User/i).length).toBeGreaterThan(0);
     });
 
     test('should render loading skeleton when auth is loading', () => {

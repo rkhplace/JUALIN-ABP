@@ -71,8 +71,16 @@ class ApiClient {
     final errors = body['errors'];
     if (errors is Map && errors.isNotEmpty) {
       final messages = <String>[];
+      const metadataFields = {
+        'reason',
+        'remaining_attempts',
+        'retry_after',
+        'locked_until',
+        'reset_email_sent',
+      };
 
       for (final entry in errors.entries) {
+        if (metadataFields.contains(entry.key.toString())) continue;
         final label = _fieldLabel(entry.key.toString());
         final value = entry.value;
         if (value is List && value.isNotEmpty) {
@@ -94,6 +102,8 @@ class ApiClient {
         return 'Nama pengguna';
       case 'email':
         return 'Email';
+      case 'password':
+        return 'Kata sandi';
       case 'profile_picture':
         return 'Foto profil';
       case 'gender':
