@@ -19,6 +19,11 @@ jest.mock('firebase/firestore', () => ({
     setDoc: jest.fn(),
 }));
 
+jest.mock('firebase/auth', () => ({
+    signInWithCustomToken: jest.fn(),
+    signOut: jest.fn(),
+}));
+
 jest.mock('@/services/auth/authService', () => ({
     authService: {
         me: jest.fn(),

@@ -42,13 +42,20 @@ class AuthServiceTest extends TestCase
 
     public function testLoginInvalidCredentialsReturnsError()
     {
-        $service = new AuthService(new UserRepository());
-        $guard = Mockery::mock();
-        $guard->shouldReceive('attempt')->once()->andReturn(false);
-        Auth::shouldReceive('guard')->with('api')->andReturn($guard);
+        $user = User::create([
+            'username' => 'invalid-login-user',
+            'email' => 'x@example.com',
+            'password' => 'correct-password',
+            'role' => 'customer',
+        ]);
 
+        $service = new AuthService(new UserRepository());
         $result = $service->login(['email' => 'x@example.com', 'password' => 'badpassword']);
+
         $this->assertFalse($result['success']);
+        $this->assertSame('invalid_credentials', $result['reason']);
+        $this->assertSame(2, $result['remaining_attempts']);
+        $this->assertSame(1, $user->fresh()->failed_login_attempts);
     }
 
     public function testLoginSuccessReturnsTokensAndSetsRefresh()

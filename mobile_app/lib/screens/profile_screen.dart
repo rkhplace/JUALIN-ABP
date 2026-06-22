@@ -17,6 +17,190 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
+class _DeletionVerificationDialog extends StatefulWidget {
+  const _DeletionVerificationDialog();
+
+  @override
+  State<_DeletionVerificationDialog> createState() =>
+      _DeletionVerificationDialogState();
+}
+
+class _DeletionVerificationDialogState
+    extends State<_DeletionVerificationDialog> {
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _phraseController = TextEditingController();
+  bool _obscurePassword = true;
+
+  bool get _canSubmit =>
+      _passwordController.text.isNotEmpty &&
+      _phraseController.text == 'HAPUS AKUN';
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _phraseController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!_canSubmit) return;
+    Navigator.of(context).pop({
+      'password': _passwordController.text,
+      'confirmation_phrase': _phraseController.text,
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(26),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 34,
+                spreadRadius: -12,
+                offset: const Offset(0, 18),
+              ),
+            ],
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 62,
+                    height: 62,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEFEF),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(
+                      Icons.security_rounded,
+                      color: Color(0xFFE83030),
+                      size: 31,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Verifikasi Penghapusan',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 7),
+                const Text(
+                  'Langkah ini memastikan hanya pemilik akun yang dapat menjadwalkan penghapusan.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: Colors.black54, fontSize: 13, height: 1.4),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Masukkan password akun Jualin.',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  autofocus: true,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Password',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                      icon: Icon(_obscurePassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined),
+                    ),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(
+                          color: Color(0xFFE83030), width: 1.4),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Ketik HAPUS AKUN untuk melanjutkan.',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _phraseController,
+                  onChanged: (_) => setState(() {}),
+                  onSubmitted: (_) => _submit(),
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: InputDecoration(
+                    hintText: 'HAPUS AKUN',
+                    prefixIcon: const Icon(Icons.edit_outlined),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(
+                          color: Color(0xFFE83030), width: 1.4),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFE83030),
+                          side: const BorderSide(color: Color(0xFFFFC7C7)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: const Text('Batal',
+                            style: TextStyle(fontWeight: FontWeight.w800)),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _canSubmit ? _submit : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE83030),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: const Text('Jadwalkan',
+                            style: TextStyle(fontWeight: FontWeight.w900)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ProfileScreenState extends State<ProfileScreen> {
   final ProfileService _profileService = ProfileService();
   final AuthService _authService = AuthService();
@@ -319,99 +503,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<Map<String, String>?> _showDeletionVerificationDialog() async {
-    final passwordController = TextEditingController();
-    final phraseController = TextEditingController();
-    var obscurePassword = true;
-
-    final result = await showDialog<Map<String, String>>(
+    return showDialog<Map<String, String>>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final canSubmit = passwordController.text.isNotEmpty &&
-              phraseController.text == 'HAPUS AKUN';
-          return AlertDialog(
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.white,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-            icon: const CircleAvatar(
-              backgroundColor: Color(0xFFFFECEC),
-              child: Icon(Icons.security_rounded, color: Color(0xFFE83030)),
-            ),
-            title: const Text('Verifikasi Penghapusan',
-                textAlign: TextAlign.center),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Masukkan password akun Jualin.',
-                      style:
-                          TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: passwordController,
-                    obscureText: obscurePassword,
-                    autofocus: true,
-                    onChanged: (_) => setDialogState(() {}),
-                    decoration: InputDecoration(
-                      hintText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        onPressed: () => setDialogState(
-                            () => obscurePassword = !obscurePassword),
-                        icon: Icon(obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined),
-                      ),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Ketik HAPUS AKUN untuk melanjutkan.',
-                      style:
-                          TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: phraseController,
-                    onChanged: (_) => setDialogState(() {}),
-                    textCapitalization: TextCapitalization.characters,
-                    decoration: InputDecoration(
-                      hintText: 'HAPUS AKUN',
-                      prefixIcon: const Icon(Icons.edit_outlined),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Batal')),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFE83030)),
-                onPressed: canSubmit
-                    ? () => Navigator.pop(dialogContext, {
-                          'password': passwordController.text,
-                          'confirmation_phrase': phraseController.text,
-                        })
-                    : null,
-                child: const Text('Jadwalkan Penghapusan'),
-              ),
-            ],
-          );
-        },
-      ),
+      barrierColor: Colors.black.withValues(alpha: 0.38),
+      builder: (_) => const _DeletionVerificationDialog(),
     );
-
-    passwordController.dispose();
-    phraseController.dispose();
-    return result;
   }
 
   Future<void> _showAccountDeletedDialog() {

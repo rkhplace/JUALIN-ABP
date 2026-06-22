@@ -23,11 +23,11 @@ class UserServiceTest extends TestCase
             'username' => 'u1',
             'email' => 'u1@example.com',
             'password' => 'secret',
-            'profile_picture' => UploadedFile::fake()->image('pp.jpg'),
+            'profile_picture' => UploadedFile::fake()->create('pp.jpg', 12, 'image/jpeg'),
         ]);
 
         $this->assertInstanceOf(User::class, $user);
-        $this->assertTrue(Storage::disk('public')->exists($user->profile_picture));
+        $this->assertTrue(Storage::disk('public')->exists($user->getRawOriginal('profile_picture')));
         $this->assertNotEquals('secret', $user->password);
     }
 
@@ -45,10 +45,10 @@ class UserServiceTest extends TestCase
         Storage::disk('public')->put('profile_pictures/old.jpg', 'x');
 
         $updated = $service->update($user->id, [
-            'profile_picture' => UploadedFile::fake()->image('new.jpg'),
+            'profile_picture' => UploadedFile::fake()->create('new.jpg', 12, 'image/jpeg'),
         ]);
 
         $this->assertFalse(Storage::disk('public')->exists('profile_pictures/old.jpg'));
-        $this->assertTrue(Storage::disk('public')->exists($updated->profile_picture));
+        $this->assertTrue(Storage::disk('public')->exists($updated->getRawOriginal('profile_picture')));
     }
 }

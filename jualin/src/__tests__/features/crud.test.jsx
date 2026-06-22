@@ -65,7 +65,7 @@ describe('CRUD Feature (Product Service)', () => {
 
         const result = await productService.delete(1);
 
-        expect(fetcher.delete).toHaveBeenCalledWith('/api/v1/products/1/delete');
+        expect(fetcher.delete).toHaveBeenCalledWith('/api/v1/products/1');
         expect(result).toBe(true);
     });
 });
