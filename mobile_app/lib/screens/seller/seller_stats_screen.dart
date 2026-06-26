@@ -175,6 +175,11 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
                   Icons.account_balance,
                   const Color(0xFF9C27B0),
                   wide: true,
+                  actionLabel: 'Riwayat',
+                  onActionTap: () => Navigator.pushNamed(
+                    context,
+                    '/seller_withdrawals',
+                  ).then((_) => _fetchStats()),
                 ),
                 const SizedBox(height: 16),
                 _buildChartCard(chartTitle, emptyText, chartData),
@@ -510,6 +515,8 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
     IconData icon,
     Color color, {
     bool wide = false,
+    String? actionLabel,
+    VoidCallback? onActionTap,
   }) {
     return Container(
       width: double.infinity,
@@ -563,6 +570,40 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
               ],
             ),
           ),
+          if (actionLabel != null && onActionTap != null) ...[
+            const SizedBox(width: 10),
+            Material(
+              color: color.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(999),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: onActionTap,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        actionLabel,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        color: color,
+                        size: 14,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

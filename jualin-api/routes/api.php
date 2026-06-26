@@ -93,6 +93,7 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
 
     Route::middleware('role:seller')->group(function () {
         Route::get('/transactions/income/statistics', [TransactionController::class, 'incomeStatistics']);
+        Route::get('/transactions/withdrawals', [TransactionController::class, 'withdrawalHistory']);
         Route::post('/escrow/{id}/claim', [\App\Http\Controllers\EscrowController::class, 'claim']);
         Route::get('/seller/verification-status', [SellerController::class, 'verificationStatus']);
     });

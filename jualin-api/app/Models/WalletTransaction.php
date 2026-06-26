@@ -15,6 +15,10 @@ class WalletTransaction extends Model
         'amount',
         'type', // purchase, refund, claim, withdraw
         'reference_transaction_id',
+        'bank_name',
+        'account_number',
+        'account_name',
+        'status',
     ];
 
     public function user(): BelongsTo

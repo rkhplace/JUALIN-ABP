@@ -503,6 +503,48 @@ class TransactionController extends Controller
             ->where('amount', '<', 0);
     }
 
+    public function withdrawalHistory(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'seller') {
+            return ApiResponse::error('Only sellers can view withdrawal history', null, 403);
+        }
+
+        $perPage = (int) $request->get('per_page', 20);
+        $perPage = max(1, min($perPage, 50));
+
+        $withdrawals = WalletTransaction::query()
+            ->where('user_id', $user->id)
+            ->where('type', 'withdraw')
+            ->where('amount', '<', 0)
+            ->latest()
+            ->paginate($perPage);
+
+        $items = $withdrawals->getCollection()->map(function (WalletTransaction $transaction) {
+            return [
+                'id' => $transaction->id,
+                'amount' => abs((float) $transaction->amount),
+                'status' => $transaction->status ?? 'processed',
+                'bank_name' => $transaction->bank_name,
+                'account_number' => $transaction->account_number,
+                'account_name' => $transaction->account_name,
+                'created_at' => optional($transaction->created_at)->toIso8601String(),
+                'updated_at' => optional($transaction->updated_at)->toIso8601String(),
+            ];
+        })->values();
+
+        return ApiResponse::success('Withdrawal history retrieved successfully', [
+            'withdrawals' => $items,
+            'pagination' => [
+                'current_page' => $withdrawals->currentPage(),
+                'last_page' => $withdrawals->lastPage(),
+                'per_page' => $withdrawals->perPage(),
+                'total' => $withdrawals->total(),
+            ],
+        ]);
+    }
+
     private function resolveChartRange(Request $request, string $period): array
     {
         $today = now();
@@ -958,7 +1000,7 @@ private function groupSalesByDay($query, string $driver, $startDate, $endDate): 
         $amount = $request->amount;
 
         try {
-            return DB::transaction(function () use ($user, $amount) {
+            return DB::transaction(function () use ($user, $amount, $request) {
                 // Lock the user row for update
                 $lockedUser = \App\Models\User::where('id', $user->id)->lockForUpdate()->first();
 
@@ -976,6 +1018,10 @@ private function groupSalesByDay($query, string $driver, $startDate, $endDate): 
                     'amount' => -$amount,
                     'type' => 'withdraw',
                     'reference_transaction_id' => null,
+                    'bank_name' => $request->bank_name,
+                    'account_number' => $request->account_number,
+                    'account_name' => $request->account_name,
+                    'status' => 'processed',
                 ]);
 
                 return ApiResponse::success(

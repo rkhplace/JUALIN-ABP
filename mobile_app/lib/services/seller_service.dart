@@ -289,6 +289,25 @@ class SellerService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getWithdrawalHistory() async {
+    try {
+      final response = await _client.get(
+        ApiConfig.sellerWithdrawals,
+        queryParams: {'per_page': '50'},
+      );
+
+      final items = _extractList(response, ['withdrawals']);
+      return items
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+    } on ApiException catch (e) {
+      throw Exception('Gagal memuat riwayat penarikan: ${e.message}');
+    } catch (_) {
+      throw Exception('Tidak dapat terhubung ke server.');
+    }
+  }
+
   /// Fetches verification status for the seller.
   ///
   /// API: GET /v1/seller/verification-status

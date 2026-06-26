@@ -30,6 +30,7 @@ class ApiConfig {
   static const String paymentHistory = '/payments/history';
   static const String sellerStats = '/transactions/income/statistics';
   static const String sellerWithdraw = '/transactions/withdraw';
+  static const String sellerWithdrawals = '/transactions/withdrawals';
   static const String sellerVerificationStatus = '/seller/verification-status';
   static const String reports = '/reports';
   static const String escrow = '/escrow';
