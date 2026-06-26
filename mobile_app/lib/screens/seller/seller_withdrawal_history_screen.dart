@@ -15,15 +15,76 @@ class SellerWithdrawalHistoryScreen extends StatefulWidget {
 class _SellerWithdrawalHistoryScreenState
     extends State<SellerWithdrawalHistoryScreen> {
   final SellerService _sellerService = SellerService();
+  final TextEditingController _searchController = TextEditingController();
 
   bool _isLoading = true;
   String? _errorMessage;
   List<Map<String, dynamic>> _withdrawals = [];
+  String _periodFilter = 'all';
+  String _sortOrder = 'newest';
+
+  List<Map<String, dynamic>> get _filteredWithdrawals {
+    final query = _searchController.text.trim().toLowerCase();
+    final now = DateTime.now();
+
+    final filtered = _withdrawals.where((withdrawal) {
+      final createdAt =
+          DateTime.tryParse(withdrawal['created_at']?.toString() ?? '')
+              ?.toLocal();
+      final matchesPeriod = switch (_periodFilter) {
+        'today' => createdAt != null &&
+            createdAt.year == now.year &&
+            createdAt.month == now.month &&
+            createdAt.day == now.day,
+        'week' => createdAt != null &&
+            createdAt.isAfter(now.subtract(const Duration(days: 7))),
+        'month' => createdAt != null &&
+            createdAt.year == now.year &&
+            createdAt.month == now.month,
+        _ => true,
+      };
+
+      if (!matchesPeriod) return false;
+      if (query.isEmpty) return true;
+
+      final amount = _formatCurrency(_parseAmount(withdrawal['amount']));
+      final searchable = [
+        amount,
+        withdrawal['amount'],
+        withdrawal['bank_name'],
+        withdrawal['account_number'],
+        withdrawal['account_name'],
+        withdrawal['status'],
+        _formatDate(withdrawal['created_at']),
+      ].whereType<Object>().join(' ').toLowerCase();
+
+      return searchable.contains(query);
+    }).toList();
+
+    filtered.sort((a, b) {
+      final aDate = DateTime.tryParse(a['created_at']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate = DateTime.tryParse(b['created_at']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      return _sortOrder == 'oldest'
+          ? aDate.compareTo(bDate)
+          : bDate.compareTo(aDate);
+    });
+
+    return filtered;
+  }
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(() => setState(() {}));
     _fetchWithdrawals();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchWithdrawals() async {
@@ -78,6 +139,8 @@ class _SellerWithdrawalHistoryScreenState
       return const JualinLogoLoader(size: 64);
     }
 
+    final filteredWithdrawals = _filteredWithdrawals;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
       children: [
@@ -95,12 +158,17 @@ class _SellerWithdrawalHistoryScreenState
                 else ...[
                   _buildSummaryCard(),
                   const SizedBox(height: 12),
-                  ..._withdrawals.map(
-                    (withdrawal) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _buildWithdrawalCard(withdrawal),
+                  _buildFilterCard(),
+                  const SizedBox(height: 12),
+                  if (filteredWithdrawals.isEmpty)
+                    _buildNoFilterResults()
+                  else
+                    ...filteredWithdrawals.map(
+                      (withdrawal) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _buildWithdrawalCard(withdrawal),
+                      ),
                     ),
-                  ),
                 ],
               ],
             ),
@@ -228,7 +296,8 @@ class _SellerWithdrawalHistoryScreenState
   }
 
   Widget _buildSummaryCard() {
-    final total = _withdrawals.fold<double>(
+    final filteredWithdrawals = _filteredWithdrawals;
+    final total = filteredWithdrawals.fold<double>(
       0,
       (sum, item) => sum + _parseAmount(item['amount']),
     );
@@ -285,7 +354,7 @@ class _SellerWithdrawalHistoryScreenState
             ),
           ),
           Text(
-            '${_withdrawals.length} data',
+            '${filteredWithdrawals.length} data',
             style: const TextStyle(
               color: Color(0xFFE83030),
               fontSize: 12,
@@ -293,6 +362,227 @@ class _SellerWithdrawalHistoryScreenState
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilterCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 18,
+            spreadRadius: -10,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          TextField(
+            controller: _searchController,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: 'Cari nominal, bank, rekening...',
+              hintStyle: const TextStyle(
+                color: Color(0xFF9CA3AF),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: Color(0xFFE83030),
+                size: 20,
+              ),
+              suffixIcon: _searchController.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Hapus pencarian',
+                      onPressed: () => _searchController.clear(),
+                      icon: const Icon(Icons.close_rounded, size: 18),
+                    ),
+              filled: true,
+              fillColor: const Color(0xFFF8FAFC),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildPeriodChips(),
+          const SizedBox(height: 10),
+          _buildSortToggle(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeriodChips() {
+    const items = {
+      'all': 'Semua',
+      'today': 'Hari ini',
+      'week': '7 hari',
+      'month': 'Bulan ini',
+    };
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: items.entries.map((entry) {
+          final selected = _periodFilter == entry.key;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: _buildFilterChip(
+              label: entry.value,
+              icon: Icons.calendar_today_rounded,
+              selected: selected,
+              onTap: () => setState(() => _periodFilter = entry.key),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildSortToggle() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildSortOption(
+              label: 'Terbaru',
+              icon: Icons.south_rounded,
+              selected: _sortOrder == 'newest',
+              onTap: () => setState(() => _sortOrder = 'newest'),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: _buildSortOption(
+              label: 'Terlama',
+              icon: Icons.north_rounded,
+              selected: _sortOrder == 'oldest',
+              onTap: () => setState(() => _sortOrder = 'oldest'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: selected ? const Color(0xFFE83030) : const Color(0xFFF8FAFC),
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color:
+                  selected ? const Color(0xFFE83030) : const Color(0xFFE5E7EB),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: selected ? Colors.white : const Color(0xFFE83030),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected ? Colors.white : const Color(0xFF4B5563),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSortOption({
+    required String label,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: selected ? Colors.white : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 12,
+                      spreadRadius: -6,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                color: selected
+                    ? const Color(0xFFE83030)
+                    : const Color(0xFF9CA3AF),
+                size: 15,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected
+                      ? const Color(0xFFE83030)
+                      : const Color(0xFF6B7280),
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -490,6 +780,66 @@ class _SellerWithdrawalHistoryScreenState
               fontSize: 12.5,
               height: 1.4,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoFilterResults() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(22, 26, 22, 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF1F2),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Icon(
+              Icons.search_off_rounded,
+              color: Color(0xFFE83030),
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 13),
+          const Text(
+            'Riwayat Tidak Ditemukan',
+            style: TextStyle(
+              color: Color(0xFF111827),
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Coba ubah kata kunci, periode, atau urutan riwayat.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xFF6B7280),
+              fontSize: 12.5,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: () {
+              _searchController.clear();
+              setState(() {
+                _periodFilter = 'all';
+                _sortOrder = 'newest';
+              });
+            },
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Reset Filter'),
           ),
         ],
       ),
