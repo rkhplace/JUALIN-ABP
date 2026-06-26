@@ -299,6 +299,7 @@ class _SellerWithdrawalHistoryScreenState
 
   Widget _buildWithdrawalCard(Map<String, dynamic> withdrawal) {
     final amount = _parseAmount(withdrawal['amount']);
+    final status = withdrawal['status']?.toString() ?? 'processed';
     final bank = withdrawal['bank_name']?.toString().trim();
     final accountNumber = withdrawal['account_number']?.toString().trim();
     final accountName = withdrawal['account_name']?.toString().trim();
@@ -362,6 +363,7 @@ class _SellerWithdrawalHistoryScreenState
                   ],
                 ),
               ),
+              _buildStatusPill(status),
             ],
           ),
           const SizedBox(height: 14),
@@ -419,6 +421,30 @@ class _SellerWithdrawalHistoryScreenState
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildStatusPill(String status) {
+    final normalized = status.toLowerCase();
+    final isFailed = normalized == 'failed' || normalized == 'rejected';
+    final color = isFailed ? const Color(0xFFDC2626) : const Color(0xFF16A34A);
+    final label = isFailed ? 'Gagal' : 'Berhasil';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
     );
   }
 
