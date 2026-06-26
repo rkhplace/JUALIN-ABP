@@ -376,53 +376,21 @@ class _SellerWithdrawalHistoryScreenState
             ),
             child: Column(
               children: [
-                _buildDetailRow('Bank', _fallback(bank, 'Belum tercatat')),
+                _buildDetailRow('Bank', _fallback(bank, 'Data lama')),
                 const SizedBox(height: 8),
                 _buildDetailRow(
                   'Rekening',
-                  _maskAccountNumber(_fallback(accountNumber, '-')),
+                  _maskAccountNumber(accountNumber),
                 ),
                 const SizedBox(height: 8),
                 _buildDetailRow(
                   'Atas Nama',
-                  _fallback(accountName, 'Belum tercatat'),
+                  _fallback(accountName, 'Data lama'),
                 ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildStatusPill(String status) {
-    final normalized = status.toLowerCase();
-    final color = switch (normalized) {
-      'failed' || 'rejected' => const Color(0xFFDC2626),
-      'pending' => const Color(0xFFEA580C),
-      _ => const Color(0xFF16A34A),
-    };
-    final label = switch (normalized) {
-      'failed' => 'Gagal',
-      'rejected' => 'Ditolak',
-      'pending' => 'Diproses',
-      _ => 'Diproses',
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.22)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-        ),
       ),
     );
   }
@@ -453,6 +421,30 @@ class _SellerWithdrawalHistoryScreenState
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildStatusPill(String status) {
+    final normalized = status.toLowerCase();
+    final isFailed = normalized == 'failed' || normalized == 'rejected';
+    final color = isFailed ? const Color(0xFFDC2626) : const Color(0xFF16A34A);
+    final label = isFailed ? 'Gagal' : 'Berhasil';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
     );
   }
 
@@ -574,10 +566,14 @@ class _SellerWithdrawalHistoryScreenState
     return '$day $month ${date.year}, $hour:$minute';
   }
 
-  String _maskAccountNumber(String value) {
-    if (value == '-' || value.length <= 4) return value;
-    final suffix = value.substring(value.length - 4);
-    return '•••• $suffix';
+  String _maskAccountNumber(String? value) {
+    final sanitized = value?.replaceAll(RegExp(r'\s+'), '') ?? '';
+    if (sanitized.isEmpty) return 'Data lama';
+
+    final suffix = sanitized.length <= 4
+        ? sanitized
+        : sanitized.substring(sanitized.length - 4);
+    return '****$suffix';
   }
 
   String _fallback(String? value, String fallback) {
