@@ -75,7 +75,7 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
 
     Route::patch('/users/{id}/update', [UserController::class, 'update']);
     Route::get('/transactions', [TransactionController::class, 'index']);
-    Route::get('/transactions/{id}', [TransactionController::class, 'show']);
+    Route::get('/transactions/{id}', [TransactionController::class, 'show'])->whereNumber('id');
 
     // ── Notifications ────────────────────────────────────────────────────
     Route::get('/notifications', [NotificationController::class, 'index']);
