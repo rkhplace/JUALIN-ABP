@@ -341,9 +341,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               ),
                               SizedBox(height: isCompact ? 16 : 18),
                               TextButton(
-                                onPressed: () => Navigator.pushReplacementNamed(
+                                onPressed: () =>
+                                    Navigator.pushNamedAndRemoveUntil(
                                   context,
                                   '/login',
+                                  (route) => false,
                                 ),
                                 child: const Text(
                                   'Kembali ke halaman login',

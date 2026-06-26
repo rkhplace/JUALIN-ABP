@@ -64,17 +64,29 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
   Widget build(BuildContext context) {
     return FrostedScaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      title: 'Statistik Penjualan',
+      showAppBar: false,
       body: RefreshIndicator(
         color: const Color(0xFFE83030),
         onRefresh: _fetchStats,
-        child: _isLoading
-            ? const JualinLogoLoader(size: 64)
-            : _errorMessage != null
-                ? _buildError()
-                : _buildContent(),
+        child: SafeArea(
+          child: _isLoading
+              ? const JualinLogoLoader(size: 64)
+              : _errorMessage != null
+                  ? _buildError()
+                  : _buildContent(),
+        ),
       ),
     );
+  }
+
+  void _handleBack() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+
+    navigator.pushReplacementNamed('/seller_main');
   }
 
   Widget _buildError() {
@@ -131,6 +143,8 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
             constraints: const BoxConstraints(maxWidth: 430),
             child: Column(
               children: [
+                _buildPageHeader(),
+                const SizedBox(height: 14),
                 _buildBalanceHero(walletBalance),
                 const SizedBox(height: 14),
                 Row(
@@ -161,6 +175,11 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
                   Icons.account_balance,
                   const Color(0xFF9C27B0),
                   wide: true,
+                  actionLabel: 'Riwayat',
+                  onActionTap: () => Navigator.pushNamed(
+                    context,
+                    '/seller_withdrawals',
+                  ).then((_) => _fetchStats()),
                 ),
                 const SizedBox(height: 16),
                 _buildChartCard(chartTitle, emptyText, chartData),
@@ -169,6 +188,123 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPageHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE83030), Color(0xFFF64A4A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE83030).withValues(alpha: 0.24),
+            blurRadius: 24,
+            spreadRadius: -8,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -26,
+            top: -32,
+            child: Container(
+              width: 104,
+              height: 104,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.13),
+                  width: 2,
+                ),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              _buildHeaderButton(
+                icon: Icons.arrow_back_rounded,
+                onTap: _handleBack,
+              ),
+              const SizedBox(width: 10),
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.bar_chart_rounded,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Statistik Penjualan',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'Pantau saldo, penjualan, dan penarikan toko.',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        height: 1.3,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.18),
+      borderRadius: BorderRadius.circular(15),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(15),
+        onTap: onTap,
+        child: Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Icon(icon, color: Colors.white),
+        ),
+      ),
     );
   }
 
@@ -379,6 +515,8 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
     IconData icon,
     Color color, {
     bool wide = false,
+    String? actionLabel,
+    VoidCallback? onActionTap,
   }) {
     return Container(
       width: double.infinity,
@@ -432,6 +570,40 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
               ],
             ),
           ),
+          if (actionLabel != null && onActionTap != null) ...[
+            const SizedBox(width: 10),
+            Material(
+              color: color.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(999),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: onActionTap,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        actionLabel,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        color: color,
+                        size: 14,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -536,6 +708,9 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
     }).toList();
 
     final total = points.fold<double>(0, (sum, point) => sum + point.amount);
+    final metricLabel = _chartType == 'sales'
+        ? 'Nominal penjualan (Rp)'
+        : 'Nominal penarikan (Rp)';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -549,7 +724,10 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
             border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
           ),
           child: CustomPaint(
-            painter: _SellerLineChartPainter(points),
+            painter: _SellerLineChartPainter(
+              points,
+              yAxisLabel: metricLabel,
+            ),
           ),
         ),
         const SizedBox(height: 10),
@@ -604,16 +782,41 @@ class _ChartPoint {
   const _ChartPoint({required this.label, required this.amount});
 }
 
+String _formatCompactCurrency(double value) {
+  final amount = value.round();
+  if (amount <= 0) return 'Rp0';
+  if (amount >= 1000000000) {
+    final text =
+        (amount / 1000000000).toStringAsFixed(amount % 1000000000 == 0 ? 0 : 1);
+    return 'Rp${text.replaceAll('.', ',')} M';
+  }
+  if (amount >= 1000000) {
+    final text =
+        (amount / 1000000).toStringAsFixed(amount % 1000000 == 0 ? 0 : 1);
+    return 'Rp${text.replaceAll('.', ',')} jt';
+  }
+  if (amount >= 1000) {
+    final text = (amount / 1000)
+        .toStringAsFixed(amount < 10000 && amount % 1000 != 0 ? 1 : 0);
+    return 'Rp$text rb';
+  }
+  return 'Rp$amount';
+}
+
 class _SellerLineChartPainter extends CustomPainter {
   final List<_ChartPoint> points;
+  final String yAxisLabel;
 
-  const _SellerLineChartPainter(this.points);
+  const _SellerLineChartPainter(
+    this.points, {
+    required this.yAxisLabel,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (points.isEmpty) return;
 
-    const chartPadding = EdgeInsets.fromLTRB(16, 18, 16, 28);
+    const chartPadding = EdgeInsets.fromLTRB(66, 34, 16, 28);
     final chartRect = Rect.fromLTWH(
       chartPadding.left,
       chartPadding.top,
@@ -621,22 +824,46 @@ class _SellerLineChartPainter extends CustomPainter {
       size.height - chartPadding.vertical,
     );
 
+    final maxAmount = points
+        .map((point) => point.amount)
+        .fold<double>(0, (max, value) => value > max ? value : max);
+    final safeMax = maxAmount <= 0 ? 1 : maxAmount;
+
+    _drawText(
+      canvas,
+      yAxisLabel,
+      Offset(chartRect.left, 11),
+      const TextStyle(
+        color: Color(0xFF6B7280),
+        fontSize: 10,
+        fontWeight: FontWeight.w700,
+      ),
+      maxWidth: chartRect.width,
+    );
+
     final gridPaint = Paint()
       ..color = Colors.black.withValues(alpha: 0.055)
       ..strokeWidth = 1;
     for (var i = 0; i <= 4; i++) {
       final y = chartRect.top + chartRect.height * (i / 4);
+      final value = safeMax * (1 - i / 4);
+      _drawText(
+        canvas,
+        _formatCompactCurrency(value),
+        Offset(8, y - 7),
+        const TextStyle(
+          color: Color(0xFF9CA3AF),
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+        ),
+        maxWidth: chartPadding.left - 14,
+      );
       canvas.drawLine(
         Offset(chartRect.left, y),
         Offset(chartRect.right, y),
         gridPaint,
       );
     }
-
-    final maxAmount = points
-        .map((point) => point.amount)
-        .fold<double>(0, (max, value) => value > max ? value : max);
-    final safeMax = maxAmount <= 0 ? 1 : maxAmount;
 
     final offsets = <Offset>[];
     for (var i = 0; i < points.length; i++) {
@@ -685,8 +912,24 @@ class _SellerLineChartPainter extends CustomPainter {
     }
   }
 
+  void _drawText(
+    Canvas canvas,
+    String text,
+    Offset offset,
+    TextStyle style, {
+    double? maxWidth,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+      ellipsis: '…',
+    )..layout(maxWidth: maxWidth ?? double.infinity);
+    painter.paint(canvas, offset);
+  }
+
   @override
   bool shouldRepaint(covariant _SellerLineChartPainter oldDelegate) {
-    return oldDelegate.points != points;
+    return oldDelegate.points != points || oldDelegate.yAxisLabel != yAxisLabel;
   }
 }

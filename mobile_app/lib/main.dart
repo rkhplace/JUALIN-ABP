@@ -23,6 +23,7 @@ import 'screens/seller/seller_main_screen.dart';
 import 'screens/seller/seller_orders_screen.dart';
 import 'screens/seller/seller_stats_screen.dart';
 import 'screens/seller/seller_withdraw_screen.dart';
+import 'screens/seller/seller_withdrawal_history_screen.dart';
 import 'screens/checkout_screen.dart';
 import 'screens/purchase_history_screen.dart';
 import 'services/push_notification_service.dart';
@@ -160,6 +161,12 @@ class _MyAppState extends State<MyApp> {
         '/seller_withdraw': (context) => const AuthRequiredScreen(
               message: 'Silakan login terlebih dahulu untuk menarik saldo.',
               child: SellerWithdrawScreen(),
+            ),
+
+        '/seller_withdrawals': (context) => const AuthRequiredScreen(
+              message:
+                  'Silakan login terlebih dahulu untuk melihat riwayat penarikan.',
+              child: SellerWithdrawalHistoryScreen(),
             ),
 
         '/wallet': (context) => const AuthRequiredScreen(
