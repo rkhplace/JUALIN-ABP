@@ -124,9 +124,19 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
   Future<void> _handleClaimPayment(
       BuildContext context, Map<String, dynamic> order) async {
     final transactionId = _parseInt(order['id']);
+    final parentContext = context;
     debugPrint(
         '[SellerOrders] Claim button clicked for transactionId=$transactionId');
     final TextEditingController authCodeController = TextEditingController();
+
+    Future<void> closeClaimDialog(BuildContext dialogContext,
+        [String? result]) async {
+      FocusManager.instance.primaryFocus?.unfocus();
+      await SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      if (!dialogContext.mounted) return;
+      Navigator.of(dialogContext, rootNavigator: true).pop(result);
+    }
 
     debugPrint('[SellerOrders] Opening claim code dialog');
     final String? authCode = await showDialog<String>(
@@ -140,246 +150,253 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
             final code = authCodeController.text.trim().toUpperCase();
             final canClaim = code.length == 6;
 
-            return Dialog(
-              backgroundColor: Colors.transparent,
-              insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.14),
-                      blurRadius: 28,
-                      offset: const Offset(0, 16),
-                    ),
-                  ],
-                ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFEAEA),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Icon(
-                              Icons.payments_outlined,
-                              color: Color(0xFFE83030),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Klaim Pembayaran',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF1D1D1F),
-                                  ),
-                                ),
-                                SizedBox(height: 3),
-                                Text(
-                                  'Cek kode dari pembeli',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF8C8C8C),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+            return PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, result) {
+                if (didPop) return;
+                closeClaimDialog(ctx);
+              },
+              child: Dialog(
+                backgroundColor: Colors.transparent,
+                insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.14),
+                        blurRadius: 28,
+                        offset: const Offset(0, 16),
                       ),
-                      const SizedBox(height: 18),
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF7F7),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: const Color(0xFFFFD6D6)),
-                        ),
-                        child: const Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    ],
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
                           children: [
-                            Icon(
-                              Icons.info_outline,
-                              size: 19,
-                              color: Color(0xFFE83030),
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFEAEA),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Icon(
+                                Icons.payments_outlined,
+                                color: Color(0xFFE83030),
+                              ),
                             ),
-                            SizedBox(width: 10),
+                            const SizedBox(width: 14),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Klaim Pembayaran',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF1D1D1F),
+                                    ),
+                                  ),
+                                  SizedBox(height: 3),
+                                  Text(
+                                    'Cek kode dari pembeli',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF8C8C8C),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF7F7),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0xFFFFD6D6)),
+                          ),
+                          child: const Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                size: 19,
+                                color: Color(0xFFE83030),
+                              ),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Minta pembeli membuka Riwayat Pembelian, lalu tunjukkan kode atau QR penukaran untuk barang ini.',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    height: 1.35,
+                                    color: Color(0xFF5B3A3A),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        TextField(
+                          controller: authCodeController,
+                          maxLength: 6,
+                          keyboardType: TextInputType.text,
+                          textAlign: TextAlign.center,
+                          textCapitalization: TextCapitalization.characters,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'[a-zA-Z0-9]'),
+                            ),
+                            UpperCaseTextFormatter(),
+                          ],
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 5,
+                            color: Color(0xFF1D1D1F),
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'Kode Autentikasi',
+                            hintText: 'ABC123',
+                            hintStyle: TextStyle(
+                              color: Colors.grey.shade300,
+                              letterSpacing: 4,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            counterText: '',
+                            errorText: showCodeError && !canClaim
+                                ? 'Kode harus 6 karakter.'
+                                : null,
+                            filled: true,
+                            fillColor: const Color(0xFFFAFAFA),
+                            floatingLabelStyle:
+                                const TextStyle(color: Color(0xFFE83030)),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide:
+                                  const BorderSide(color: Color(0xFFE7E7E7)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFE83030),
+                                width: 1.4,
+                              ),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide:
+                                  const BorderSide(color: Color(0xFFE83030)),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFE83030),
+                                width: 1.4,
+                              ),
+                            ),
+                          ),
+                          onChanged: (_) {
+                            if (showCodeError) {
+                              setDialogState(() => showCodeError = false);
+                            } else {
+                              setDialogState(() {});
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            final scanned = await _scanAuthCode(parentContext);
+                            if (!ctx.mounted) return;
+                            if (scanned != null && scanned.isNotEmpty) {
+                              closeClaimDialog(ctx, scanned.toUpperCase());
+                            }
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFE83030),
+                            side: const BorderSide(color: Color(0xFFFFC8C8)),
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                          icon: const Icon(Icons.qr_code_scanner, size: 19),
+                          label: const Text(
+                            'Scan QR dari pembeli',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
                             Expanded(
-                              child: Text(
-                                'Minta pembeli membuka Riwayat Pembelian, lalu tunjukkan kode atau QR penukaran untuk barang ini.',
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  height: 1.35,
-                                  color: Color(0xFF5B3A3A),
-                                  fontWeight: FontWeight.w500,
+                              child: TextButton(
+                                onPressed: () => closeClaimDialog(ctx),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: const Color(0xFF777777),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Batal',
+                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFE83030),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  final submittedCode =
+                                      authCodeController.text.trim();
+                                  debugPrint(
+                                    '[SellerOrders] Claim dialog submit tapped '
+                                    'for transactionId=$transactionId codeLength=${submittedCode.length}',
+                                  );
+                                  if (submittedCode.length == 6) {
+                                    closeClaimDialog(ctx, submittedCode);
+                                  } else {
+                                    debugPrint(
+                                        '[SellerOrders] Claim dialog ignored: code must be 6 chars');
+                                    setDialogState(() => showCodeError = true);
+                                  }
+                                },
+                                child: const Text(
+                                  'Klaim',
+                                  style: TextStyle(fontWeight: FontWeight.w800),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 18),
-                      TextField(
-                        controller: authCodeController,
-                        maxLength: 6,
-                        keyboardType: TextInputType.text,
-                        textAlign: TextAlign.center,
-                        textCapitalization: TextCapitalization.characters,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'[a-zA-Z0-9]'),
-                          ),
-                          UpperCaseTextFormatter(),
-                        ],
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 5,
-                          color: Color(0xFF1D1D1F),
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'Kode Autentikasi',
-                          hintText: 'ABC123',
-                          hintStyle: TextStyle(
-                            color: Colors.grey.shade300,
-                            letterSpacing: 4,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          counterText: '',
-                          errorText: showCodeError && !canClaim
-                              ? 'Kode harus 6 karakter.'
-                              : null,
-                          filled: true,
-                          fillColor: const Color(0xFFFAFAFA),
-                          floatingLabelStyle:
-                              const TextStyle(color: Color(0xFFE83030)),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide:
-                                const BorderSide(color: Color(0xFFE7E7E7)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFE83030),
-                              width: 1.4,
-                            ),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide:
-                                const BorderSide(color: Color(0xFFE83030)),
-                          ),
-                          focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFE83030),
-                              width: 1.4,
-                            ),
-                          ),
-                        ),
-                        onChanged: (_) {
-                          if (showCodeError) {
-                            setDialogState(() => showCodeError = false);
-                          } else {
-                            setDialogState(() {});
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: () async {
-                          final scanned = await _scanAuthCode(ctx);
-                          if (!ctx.mounted) return;
-                          if (scanned != null && scanned.isNotEmpty) {
-                            Navigator.pop(ctx, scanned.toUpperCase());
-                          }
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFE83030),
-                          side: const BorderSide(color: Color(0xFFFFC8C8)),
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
-                        icon: const Icon(Icons.qr_code_scanner, size: 19),
-                        label: const Text(
-                          'Scan QR dari pembeli',
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextButton(
-                              onPressed: () => Navigator.pop(ctx, null),
-                              style: TextButton.styleFrom(
-                                foregroundColor: const Color(0xFF777777),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              child: const Text(
-                                'Batal',
-                                style: TextStyle(fontWeight: FontWeight.w700),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFE83030),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              onPressed: () {
-                                final submittedCode =
-                                    authCodeController.text.trim();
-                                debugPrint(
-                                  '[SellerOrders] Claim dialog submit tapped '
-                                  'for transactionId=$transactionId codeLength=${submittedCode.length}',
-                                );
-                                if (submittedCode.length == 6) {
-                                  Navigator.pop(ctx, submittedCode);
-                                } else {
-                                  debugPrint(
-                                      '[SellerOrders] Claim dialog ignored: code must be 6 chars');
-                                  setDialogState(() => showCodeError = true);
-                                }
-                              },
-                              child: const Text(
-                                'Klaim',
-                                style: TextStyle(fontWeight: FontWeight.w800),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -388,7 +405,9 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
         );
       },
     );
-    authCodeController.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      authCodeController.dispose();
+    });
 
     if (authCode == null || authCode.isEmpty) return;
 
@@ -422,9 +441,11 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
   }
 
   Future<String?> _scanAuthCode(BuildContext context) async {
-    return showDialog<String>(
-      context: context,
-      builder: (_) => const _EscrowCodeScannerDialog(),
+    return Navigator.of(context, rootNavigator: true).push<String>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => const _EscrowCodeScannerPage(),
+      ),
     );
   }
 
@@ -1294,17 +1315,17 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
   }
 }
 
-class _EscrowCodeScannerDialog extends StatefulWidget {
-  const _EscrowCodeScannerDialog();
+class _EscrowCodeScannerPage extends StatefulWidget {
+  const _EscrowCodeScannerPage();
 
   @override
-  State<_EscrowCodeScannerDialog> createState() =>
-      _EscrowCodeScannerDialogState();
+  State<_EscrowCodeScannerPage> createState() => _EscrowCodeScannerPageState();
 }
 
-class _EscrowCodeScannerDialogState extends State<_EscrowCodeScannerDialog> {
+class _EscrowCodeScannerPageState extends State<_EscrowCodeScannerPage> {
   late final MobileScannerController _scannerController;
   bool _hasScanned = false;
+  bool _isClosing = false;
 
   @override
   void initState() {
@@ -1318,6 +1339,23 @@ class _EscrowCodeScannerDialogState extends State<_EscrowCodeScannerDialog> {
   void dispose() {
     _scannerController.dispose();
     super.dispose();
+  }
+
+  Future<void> _closeScanner([String? result]) async {
+    if (_isClosing) return;
+    _isClosing = true;
+
+    try {
+      await _scannerController.stop();
+    } catch (_) {
+      // Kamera mungkin belum sempat aktif; tetap tutup dialog dengan aman.
+    }
+
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).pop(result);
+    });
   }
 
   Future<void> _handleDetect(BarcodeCapture capture) async {
@@ -1348,141 +1386,151 @@ class _EscrowCodeScannerDialogState extends State<_EscrowCodeScannerDialog> {
     if (authCode == null || authCode.isEmpty) return;
 
     _hasScanned = true;
-    await _scannerController.stop();
-    if (mounted) {
-      Navigator.pop(context, authCode);
-    }
+    await _closeScanner(authCode);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.white,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 28),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 16, 10, 10),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Scan Escrow Code',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Tutup',
-                    onPressed: () => Navigator.pop(context, null),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: AspectRatio(
-                aspectRatio: 1,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Stack(
-                    fit: StackFit.expand,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _closeScanner();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF111827),
+        body: SafeArea(
+          child: Container(
+            color: const Color(0xFF111827),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 10, 12),
+                  child: Row(
                     children: [
-                      MobileScanner(
-                        controller: _scannerController,
-                        fit: BoxFit.cover,
-                        onDetect: _handleDetect,
-                        placeholderBuilder: (context, child) => Container(
-                          color: Colors.black,
-                          alignment: Alignment.center,
-                          child: const CircularProgressIndicator(
+                      const Expanded(
+                        child: Text(
+                          'Scan Escrow Code',
+                          style: TextStyle(
                             color: Colors.white,
-                          ),
-                        ),
-                        errorBuilder: (context, error, child) => Container(
-                          color: Colors.black,
-                          padding: const EdgeInsets.all(18),
-                          alignment: Alignment.center,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.no_photography_outlined,
-                                color: Colors.white,
-                                size: 44,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                _scannerErrorMessage(error),
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                            ],
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
-                      IgnorePointer(
-                        child: Center(
-                          child: Container(
-                            width: 210,
-                            height: 210,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
+                      IconButton(
+                        tooltip: 'Tutup',
+                        onPressed: _closeScanner,
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          MobileScanner(
+                            controller: _scannerController,
+                            fit: BoxFit.cover,
+                            onDetect: _handleDetect,
+                            placeholderBuilder: (context, child) => Container(
+                              color: Colors.black,
+                              alignment: Alignment.center,
+                              child: const CircularProgressIndicator(
                                 color: Colors.white,
-                                width: 3,
+                              ),
+                            ),
+                            errorBuilder: (context, error, child) => Container(
+                              color: Colors.black,
+                              padding: const EdgeInsets.all(18),
+                              alignment: Alignment.center,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.no_photography_outlined,
+                                    color: Colors.white,
+                                    size: 44,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    _scannerErrorMessage(error),
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
+                          IgnorePointer(
+                            child: Center(
+                              child: Container(
+                                width: 210,
+                                height: 210,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 3,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(22, 16, 22, 6),
+                  child: Text(
+                    'Arahkan kamera ke QR/barcode escrow. Jika tidak terbaca, tutup scanner dan masukkan kode manual.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: Colors.white70),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isClosing
+                              ? null
+                              : () => _scannerController.switchCamera(),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: Colors.white30),
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                          ),
+                          icon: const Icon(Icons.cameraswitch_outlined),
+                          label: const Text('Ganti Kamera'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE83030),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                          ),
+                          onPressed: _closeScanner,
+                          child: const Text('Input Manual'),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(18, 12, 18, 4),
-              child: Text(
-                'Arahkan kamera ke QR/barcode escrow. Jika tidak terbaca, tutup scanner dan masukkan kode manual.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.black54),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _scannerController.switchCamera(),
-                      icon: const Icon(Icons.cameraswitch_outlined),
-                      label: const Text('Ganti Kamera'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE83030),
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () => Navigator.pop(context, null),
-                      child: const Text('Input Manual'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

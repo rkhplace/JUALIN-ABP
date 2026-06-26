@@ -17,32 +17,6 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _DeletionStepIcon extends StatelessWidget {
-  const _DeletionStepIcon({required this.icon});
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 27,
-      height: 27,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(9),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Icon(icon, color: const Color(0xFFE83030), size: 15),
-    );
-  }
-}
-
 class _DeletionVerificationDialog extends StatefulWidget {
   const _DeletionVerificationDialog();
 
@@ -76,9 +50,242 @@ class _DeletionVerificationDialogState
     });
   }
 
+  Widget _buildVerificationField({
+    required String step,
+    required String title,
+    required IconData icon,
+    required TextEditingController controller,
+    required String hintText,
+    required String helperText,
+    required bool isComplete,
+    required ValueChanged<String> onChanged,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    TextCapitalization textCapitalization = TextCapitalization.none,
+    TextInputAction textInputAction = TextInputAction.next,
+    ValueChanged<String>? onSubmitted,
+    double letterSpacing = 0,
+  }) {
+    final accentColor =
+        isComplete ? const Color(0xFF047857) : const Color(0xFFE83030);
+    final softAccent =
+        isComplete ? const Color(0xFFECFDF3) : const Color(0xFFFFF1F2);
+    final borderColor =
+        isComplete ? const Color(0xFFA7F3D0) : const Color(0xFFFFD6D6);
+
+    return Focus(
+      child: Builder(
+        builder: (context) {
+          final focused = Focus.of(context).hasFocus;
+
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  isComplete
+                      ? const Color(0xFFF0FDF4)
+                      : const Color(0xFFFFFBFB),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: focused || isComplete
+                    ? borderColor
+                    : const Color(0xFFE8ECF3),
+                width: focused ? 1.4 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: accentColor.withValues(
+                    alpha: focused || isComplete ? 0.18 : 0.09,
+                  ),
+                  blurRadius: focused || isComplete ? 28 : 18,
+                  spreadRadius: -10,
+                  offset: const Offset(0, 16),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 18,
+                  spreadRadius: -14,
+                  offset: const Offset(0, 9),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: softAccent,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: borderColor),
+                      ),
+                      child: Icon(icon, color: accentColor, size: 20),
+                    ),
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            step,
+                            style: const TextStyle(
+                              color: Color(0xFF9CA3AF),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              color: Color(0xFF111827),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (isComplete)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD1FAE5),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_rounded,
+                                color: Color(0xFF047857), size: 13),
+                            SizedBox(width: 3),
+                            Text(
+                              'OK',
+                              style: TextStyle(
+                                color: Color(0xFF047857),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: focused || isComplete
+                          ? borderColor
+                          : const Color(0xFFE5E7EB),
+                      width: focused ? 1.3 : 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor.withValues(
+                            alpha: focused || isComplete ? 0.1 : 0.04),
+                        blurRadius: focused || isComplete ? 18 : 10,
+                        spreadRadius: -8,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: TextField(
+                      controller: controller,
+                      obscureText: obscureText,
+                      autofocus: step.startsWith('01'),
+                      onChanged: onChanged,
+                      onSubmitted: onSubmitted,
+                      textInputAction: textInputAction,
+                      textCapitalization: textCapitalization,
+                      style: TextStyle(
+                        color: const Color(0xFF111827),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: letterSpacing,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: hintText,
+                        hintStyle: const TextStyle(
+                          color: Color(0xFF9CA3AF),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
+                        suffixIcon: suffixIcon,
+                        suffixIconConstraints:
+                            const BoxConstraints(minWidth: 44, minHeight: 44),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 9),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      isComplete
+                          ? Icons.verified_rounded
+                          : Icons.info_outline_rounded,
+                      color: isComplete
+                          ? const Color(0xFF047857)
+                          : const Color(0xFF9CA3AF),
+                      size: 14,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        helperText,
+                        style: TextStyle(
+                          color: isComplete
+                              ? const Color(0xFF047857)
+                              : const Color(0xFF6B7280),
+                          fontSize: 11,
+                          height: 1.35,
+                          fontWeight:
+                              isComplete ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final phraseMatches = _phraseController.text == 'HAPUS AKUN';
+    final passwordFilled = _passwordController.text.isNotEmpty;
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
@@ -133,156 +340,60 @@ class _DeletionVerificationDialogState
                       color: Colors.black54, fontSize: 13, height: 1.4),
                 ),
                 const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.fromLTRB(13, 11, 8, 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8F9FB),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Row(
-                        children: [
-                          _DeletionStepIcon(icon: Icons.key_rounded),
-                          SizedBox(width: 8),
-                          Text(
-                            '1. PASSWORD AKUN',
-                            style: TextStyle(
-                              color: Color(0xFF6B7280),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ],
-                      ),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        autofocus: true,
-                        onChanged: (_) => setState(() {}),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Masukkan password Jualin',
-                          hintStyle: const TextStyle(
-                            color: Color(0xFF9CA3AF),
-                            fontWeight: FontWeight.w400,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding:
-                              const EdgeInsets.only(left: 2, top: 13),
-                          suffixIcon: IconButton(
-                            onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            ),
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: const Color(0xFF6B7280),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                _buildVerificationField(
+                  step: '01 / KUNCI AKUN',
+                  title: 'Masukkan password aktif',
+                  icon: Icons.key_rounded,
+                  controller: _passwordController,
+                  hintText: 'Password akun Jualin',
+                  helperText: passwordFilled
+                      ? 'Password sudah diisi, lanjut konfirmasi frasa.'
+                      : 'Gunakan password akun yang sedang kamu pakai login.',
+                  isComplete: passwordFilled,
+                  obscureText: _obscurePassword,
+                  onChanged: (_) => setState(() {}),
+                  suffixIcon: IconButton(
+                    tooltip: _obscurePassword
+                        ? 'Tampilkan password'
+                        : 'Sembunyikan password',
+                    onPressed: () => setState(
+                      () => _obscurePassword = !_obscurePassword,
+                    ),
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: const Color(0xFF6B7280),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.fromLTRB(13, 11, 13, 10),
-                  decoration: BoxDecoration(
-                    color: phraseMatches
-                        ? const Color(0xFFECFDF3)
-                        : const Color(0xFFF8F9FB),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: phraseMatches
-                          ? const Color(0xFFA7F3D0)
-                          : const Color(0xFFE5E7EB),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const _DeletionStepIcon(
-                              icon: Icons.text_fields_rounded),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              '2. KONFIRMASI FRASA',
-                              style: TextStyle(
-                                color: Color(0xFF6B7280),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ),
-                          if (phraseMatches)
-                            const Row(
-                              children: [
-                                Icon(Icons.check_circle_rounded,
-                                    color: Color(0xFF047857), size: 16),
-                                SizedBox(width: 4),
-                                Text('Cocok',
-                                    style: TextStyle(
-                                        color: Color(0xFF047857),
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w800)),
-                              ],
-                            ),
-                        ],
-                      ),
-                      TextField(
-                        controller: _phraseController,
-                        onChanged: (value) {
-                          final upperCase = value.toUpperCase();
-                          if (upperCase != value) {
-                            _phraseController.value =
-                                _phraseController.value.copyWith(
-                              text: upperCase,
-                              selection: TextSelection.collapsed(
-                                  offset: upperCase.length),
-                            );
-                          }
-                          setState(() {});
-                        },
-                        onSubmitted: (_) => _submit(),
-                        textCapitalization: TextCapitalization.characters,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
-                        ),
-                        decoration: const InputDecoration(
-                          hintText: 'Ketik HAPUS AKUN',
-                          hintStyle: TextStyle(
-                            color: Color(0xFF9CA3AF),
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding:
-                              EdgeInsets.only(left: 2, top: 13, bottom: 5),
-                        ),
-                      ),
-                      const Text(
-                        'Harus sama persis dengan HAPUS AKUN.',
-                        style: TextStyle(
-                          color: Color(0xFF6B7280),
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
+                _buildVerificationField(
+                  step: '02 / FRASA FINAL',
+                  title: 'Ketik frasa penghapusan',
+                  icon: Icons.text_fields_rounded,
+                  controller: _phraseController,
+                  hintText: 'Ketik HAPUS AKUN',
+                  helperText: phraseMatches
+                      ? 'Frasa cocok. Tombol jadwalkan sudah bisa digunakan.'
+                      : 'Harus sama persis: HAPUS AKUN.',
+                  isComplete: phraseMatches,
+                  textCapitalization: TextCapitalization.characters,
+                  textInputAction: TextInputAction.done,
+                  letterSpacing: 1.1,
+                  onSubmitted: (_) => _submit(),
+                  onChanged: (value) {
+                    final upperCase = value.toUpperCase();
+                    if (upperCase != value) {
+                      _phraseController.value =
+                          _phraseController.value.copyWith(
+                        text: upperCase,
+                        selection:
+                            TextSelection.collapsed(offset: upperCase.length),
+                      );
+                    }
+                    setState(() {});
+                  },
                 ),
                 const SizedBox(height: 20),
                 Row(

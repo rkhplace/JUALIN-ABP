@@ -105,6 +105,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
   }
 
+  void _returnToLogin() {
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -118,174 +122,184 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final logoHeight = isCompact ? 58.0 : 64.0;
     final titleSize = isCompact ? 20.0 : 22.0;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFFFF0F0),
-              Color(0xFFFFFFFF),
-              Color(0xFFFFFFFF),
-              Color(0xFFFFE8EA),
-            ],
-            stops: [0, 0.26, 0.76, 1],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _returnToLogin();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F8F8),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFFF0F0),
+                Color(0xFFFFFFFF),
+                Color(0xFFFFFFFF),
+                Color(0xFFFFE8EA),
+              ],
+              stops: [0, 0.26, 0.76, 1],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                padding:
-                    EdgeInsets.symmetric(horizontal: outerHorizontalPadding),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Center(
-                    child: Padding(
-                      padding:
-                          EdgeInsets.symmetric(vertical: outerVerticalPadding),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 520),
-                        child: Container(
-                          padding: cardPadding,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.15),
-                                blurRadius: 36,
-                                spreadRadius: -14,
-                                offset: const Offset(0, 22),
-                              ),
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.06),
-                                blurRadius: 18,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Logo(
-                                width: logoWidth,
-                                height: logoHeight,
-                                alignment: Alignment.centerLeft,
-                              ),
-                              SizedBox(height: isCompact ? 16 : 20),
-                              if (_isLoginLocked) ...[
-                                _buildLockNotice(),
-                                SizedBox(height: isCompact ? 18 : 22),
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: outerHorizontalPadding),
+                  child: ConstrainedBox(
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                            vertical: outerVerticalPadding),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 520),
+                          child: Container(
+                            padding: cardPadding,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.15),
+                                  blurRadius: 36,
+                                  spreadRadius: -14,
+                                  offset: const Offset(0, 22),
+                                ),
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.06),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 8),
+                                ),
                               ],
-                              Text(
-                                _isLoginLocked
-                                    ? 'Reset Kata Sandi'
-                                    : 'Lupa Kata Sandi',
-                                style: TextStyle(
-                                  color: const Color(0xFF111827),
-                                  fontSize: titleSize,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.15,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Logo(
+                                  width: logoWidth,
+                                  height: logoHeight,
+                                  alignment: Alignment.centerLeft,
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _isLoginLocked
-                                    ? 'Kirim ulang tautan jika email belum masuk dalam beberapa menit.'
-                                    : 'Masukkan email Anda untuk menerima tautan reset kata sandi.',
-                                style: const TextStyle(
-                                  color: Color(0xFF566174),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  height: 1.35,
-                                ),
-                              ),
-                              SizedBox(height: isCompact ? 22 : 24),
-                              _buildAuthInput(
-                                label: 'Email',
-                                hintText: 'Masukkan alamat email',
-                                keyboardType: TextInputType.emailAddress,
-                                controller: _emailController,
-                                textInputAction: TextInputAction.done,
-                                onSubmitted: (_) => _handleSubmit(),
-                              ),
-                              SizedBox(height: isCompact ? 16 : 18),
-                              if (_message != null)
-                                _buildMessage(_message!, _isSuccess),
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                height: isCompact ? 48 : 50,
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFFE83030)
-                                            .withValues(alpha: 0.2),
-                                        blurRadius: 16,
-                                        offset: const Offset(0, 8),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ElevatedButton(
-                                    onPressed:
-                                        _isLoading ? null : _handleSubmit,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFE83030),
-                                      foregroundColor: Colors.white,
-                                      disabledBackgroundColor:
-                                          const Color(0xFFE83030)
-                                              .withValues(alpha: 0.65),
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                    ),
-                                    child: _isLoading
-                                        ? const SizedBox(
-                                            width: 22,
-                                            height: 22,
-                                            child: CircularProgressIndicator(
-                                              color: Colors.white,
-                                              strokeWidth: 2.3,
-                                            ),
-                                          )
-                                        : Text(
-                                            _isLoginLocked
-                                                ? 'Kirim Ulang Tautan Reset'
-                                                : 'Kirim Tautan Reset',
-                                            style: const TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: isCompact ? 16 : 18),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text(
-                                  'Kembali ke halaman login',
+                                SizedBox(height: isCompact ? 16 : 20),
+                                if (_isLoginLocked) ...[
+                                  _buildLockNotice(),
+                                  SizedBox(height: isCompact ? 18 : 22),
+                                ],
+                                Text(
+                                  _isLoginLocked
+                                      ? 'Reset Kata Sandi'
+                                      : 'Lupa Kata Sandi',
                                   style: TextStyle(
-                                    color: Color(0xFFE83030),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF111827),
+                                    fontSize: titleSize,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.15,
                                   ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 8),
+                                Text(
+                                  _isLoginLocked
+                                      ? 'Kirim ulang tautan jika email belum masuk dalam beberapa menit.'
+                                      : 'Masukkan email Anda untuk menerima tautan reset kata sandi.',
+                                  style: const TextStyle(
+                                    color: Color(0xFF566174),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.35,
+                                  ),
+                                ),
+                                SizedBox(height: isCompact ? 22 : 24),
+                                _buildAuthInput(
+                                  label: 'Email',
+                                  hintText: 'Masukkan alamat email',
+                                  keyboardType: TextInputType.emailAddress,
+                                  controller: _emailController,
+                                  textInputAction: TextInputAction.done,
+                                  onSubmitted: (_) => _handleSubmit(),
+                                ),
+                                SizedBox(height: isCompact ? 16 : 18),
+                                if (_message != null)
+                                  _buildMessage(_message!, _isSuccess),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  height: isCompact ? 48 : 50,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFFE83030)
+                                              .withValues(alpha: 0.2),
+                                          blurRadius: 16,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ElevatedButton(
+                                      onPressed:
+                                          _isLoading ? null : _handleSubmit,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            const Color(0xFFE83030),
+                                        foregroundColor: Colors.white,
+                                        disabledBackgroundColor:
+                                            const Color(0xFFE83030)
+                                                .withValues(alpha: 0.65),
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                        ),
+                                      ),
+                                      child: _isLoading
+                                          ? const SizedBox(
+                                              width: 22,
+                                              height: 22,
+                                              child: CircularProgressIndicator(
+                                                color: Colors.white,
+                                                strokeWidth: 2.3,
+                                              ),
+                                            )
+                                          : Text(
+                                              _isLoginLocked
+                                                  ? 'Kirim Ulang Tautan Reset'
+                                                  : 'Kirim Tautan Reset',
+                                              style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: isCompact ? 16 : 18),
+                                TextButton(
+                                  onPressed: _returnToLogin,
+                                  child: const Text(
+                                    'Kembali ke halaman login',
+                                    style: TextStyle(
+                                      color: Color(0xFFE83030),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),

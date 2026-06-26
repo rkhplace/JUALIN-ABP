@@ -34,8 +34,13 @@ class _SellerWithdrawScreenState extends State<SellerWithdrawScreen> {
   Future<void> _handleWithdraw() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final amountText = _amountController.text;
+    final bankName = _bankNameController.text.trim();
+    final accountNumber = _accountNumberController.text.trim();
+    final accountName = _accountNameController.text.trim();
     final amount = double.tryParse(
-        _amountController.text.replaceAll(RegExp(r'[^0-9]'), ''));
+      amountText.replaceAll(RegExp(r'[^0-9]'), ''),
+    );
     if (amount == null || amount <= 0) {
       setState(() => _errorMessage = 'Masukkan jumlah yang valid.');
       return;
@@ -49,19 +54,20 @@ class _SellerWithdrawScreenState extends State<SellerWithdrawScreen> {
     try {
       await _sellerService.withdrawWallet(
         amount: amount,
-        bankName: _bankNameController.text.trim(),
-        accountNumber: _accountNumberController.text.trim(),
-        accountName: _accountNameController.text.trim(),
+        bankName: bankName,
+        accountNumber: accountNumber,
+        accountName: accountName,
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Penarikan saldo berhasil diproses!'),
-            backgroundColor: Colors.green,
-          ),
+        setState(() => _isLoading = false);
+        await _showWithdrawSuccessDialog(
+          amountText: _formatCurrency(amount),
+          bankName: bankName,
+          accountNumber: accountNumber,
+          accountName: accountName,
         );
-        Navigator.pop(context); // Return to stats / dashboard
+        if (mounted) Navigator.pop(context); // Return to stats / dashboard
       }
     } catch (e) {
       if (mounted) {
@@ -73,11 +79,233 @@ class _SellerWithdrawScreenState extends State<SellerWithdrawScreen> {
     }
   }
 
+  void _handleBack() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+
+    navigator.pushReplacementNamed('/seller_main');
+  }
+
+  String _formatCurrency(dynamic val) {
+    int amount = 0;
+    if (val is num) {
+      amount = val.toInt();
+    } else if (val is String) {
+      amount =
+          double.tryParse(val.replaceAll(RegExp(r'[^0-9]'), ''))?.toInt() ?? 0;
+    }
+    return 'Rp${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
+  }
+
+  String _maskAccountNumber(String value) {
+    if (value.length <= 4) return value;
+    final suffix = value.substring(value.length - 4);
+    return '•••• $suffix';
+  }
+
+  Future<void> _showWithdrawSuccessDialog({
+    required String amountText,
+    required String bankName,
+    required String accountNumber,
+    required String accountName,
+  }) {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 22),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 34,
+                  spreadRadius: -12,
+                  offset: const Offset(0, 18),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF16A34A), Color(0xFF22C55E)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              const Color(0xFF16A34A).withValues(alpha: 0.24),
+                          blurRadius: 22,
+                          spreadRadius: -8,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 38,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Penarikan Berhasil Diajukan',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF111827),
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                const Text(
+                  'Saldo akan diproses dalam 1–3 hari kerja ke rekening tujuan.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontSize: 12.5,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildSuccessDetailRow('Nominal', amountText,
+                          valueColor: const Color(0xFFE83030)),
+                      const SizedBox(height: 10),
+                      _buildSuccessDetailRow('Bank', bankName),
+                      const SizedBox(height: 10),
+                      _buildSuccessDetailRow(
+                        'Rekening',
+                        _maskAccountNumber(accountNumber),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildSuccessDetailRow('Atas Nama', accountName),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFFED7AA)),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.schedule_rounded,
+                          color: Color(0xFFEA580C), size: 18),
+                      SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          'Pengajuan penarikan sudah tercatat. Pantau saldo Anda secara berkala di menu statistik.',
+                          style: TextStyle(
+                            color: Color(0xFF9A3412),
+                            fontSize: 12,
+                            height: 1.35,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE83030),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Lihat Statistik',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSuccessDetailRow(
+    String label,
+    String value, {
+    Color valueColor = const Color(0xFF111827),
+  }) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF6B7280),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: valueColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FrostedScaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      title: 'Tarik Saldo',
+      showAppBar: false,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -117,17 +345,17 @@ class _SellerWithdrawScreenState extends State<SellerWithdrawScreen> {
                               _buildTextField(
                                 label: 'Jumlah Penarikan',
                                 controller: _amountController,
-                                hint: 'Contoh: 100000',
+                                hint: 'Contoh: Rp100.000',
                                 icon: Icons.payments_outlined,
                                 keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly
-                                ],
+                                inputFormatters: [RupiahInputFormatter()],
                                 validator: (v) {
                                   if (v == null || v.isEmpty) {
                                     return 'Jumlah wajib diisi.';
                                   }
-                                  final n = double.tryParse(v);
+                                  final n = double.tryParse(
+                                    v.replaceAll(RegExp(r'[^0-9]'), ''),
+                                  );
                                   if (n == null || n <= 0) {
                                     return 'Masukkan jumlah yang valid.';
                                   }
@@ -254,40 +482,64 @@ class _SellerWithdrawScreenState extends State<SellerWithdrawScreen> {
       ),
       child: Row(
         children: [
+          Material(
+            color: Colors.white.withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(15),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(15),
+              onTap: _handleBack,
+              child: Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_rounded,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
           Container(
-            width: 52,
-            height: 52,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
             ),
             child: const Icon(
               Icons.account_balance_wallet_outlined,
               color: Colors.white,
-              size: 26,
+              size: 23,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Ajukan Penarikan Saldo',
+                  'Tarik Saldo',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                SizedBox(height: 4),
+                SizedBox(height: 3),
                 Text(
-                  'Isi data rekening dengan benar agar pencairan berjalan lancar.',
+                  'Ajukan pencairan saldo ke rekening bank.',
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
-                    height: 1.35,
+                    height: 1.3,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -389,6 +641,31 @@ class _SellerWithdrawScreenState extends State<SellerWithdrawScreen> {
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: Colors.red),
       ),
+    );
+  }
+}
+
+class RupiahInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) {
+      return const TextEditingValue(
+        text: '',
+        selection: TextSelection.collapsed(offset: 0),
+      );
+    }
+
+    final normalized = digits.replaceFirst(RegExp(r'^0+(?=.)'), '');
+    final formatted =
+        'Rp${normalized.replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]}.')}';
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
