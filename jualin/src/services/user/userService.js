@@ -36,6 +36,11 @@ export const userService = {
     const response = await fetcher.patch(`/api/v1/users/${id}/unban`);
     return response?.data || response;
   },
+
+  async deleteUser(id) {
+    const response = await fetcher.delete(`/api/v1/users/${id}`);
+    return response?.data || response;
+  },
 };
 
 export default userService;
