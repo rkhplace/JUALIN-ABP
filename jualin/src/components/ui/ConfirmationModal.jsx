@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 const ConfirmationModal = ({
     isOpen,
@@ -10,8 +10,20 @@ const ConfirmationModal = ({
     confirmText = "Konfirmasi",
     cancelText = "Batal",
     isDanger = false,
+    requiredPhrase = "",
 }) => {
+    const [confirmationText, setConfirmationText] = useState("");
+
+    useEffect(() => {
+        if (isOpen) {
+            setConfirmationText("");
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
+
+    const needsPhrase = requiredPhrase.trim().length > 0;
+    const canConfirm = !needsPhrase || confirmationText.trim() === requiredPhrase;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
@@ -46,6 +58,25 @@ const ConfirmationModal = ({
                         {message}
                     </p>
 
+                    {needsPhrase && (
+                        <div className="w-full text-left mb-6">
+                            <label className="block text-sm font-semibold text-gray-800 mb-2">
+                                Ketik <span className="font-bold text-red-600">{requiredPhrase}</span> untuk melanjutkan
+                            </label>
+                            <input
+                                type="text"
+                                value={confirmationText}
+                                onChange={(e) => setConfirmationText(e.target.value)}
+                                placeholder={requiredPhrase}
+                                className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                                autoComplete="off"
+                            />
+                            <p className="mt-2 text-xs text-gray-500">
+                                Aksi destruktif membutuhkan konfirmasi manual agar tidak terpicu tanpa sengaja.
+                            </p>
+                        </div>
+                    )}
+
                     <div className="flex w-full gap-3">
                         <button
                             onClick={onClose}
@@ -55,7 +86,8 @@ const ConfirmationModal = ({
                         </button>
                         <button
                             onClick={onConfirm}
-                            className={`flex-1 px-4 py-2 text-white rounded-xl font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${isDanger
+                            disabled={!canConfirm}
+                            className={`flex-1 px-4 py-2 text-white rounded-xl font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${isDanger
                                     ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500 shadow-red-200'
                                     : 'bg-brand-red hover:bg-red-700 focus:ring-brand-red shadow-red-200' // Assuming brand-red is primary logic
                                 }`}

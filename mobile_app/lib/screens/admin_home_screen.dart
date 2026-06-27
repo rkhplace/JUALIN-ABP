@@ -2651,6 +2651,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             message:
                 'Apakah Anda yakin ingin menghapus akun "$username"? Tindakan ini tidak dapat dibatalkan.',
             primaryLabel: 'Hapus',
+            requiredPhrase: 'HAPUS $username',
             onCancel: () => Navigator.pop(dialogContext, false),
             onPrimary: () => Navigator.pop(dialogContext, true),
           ),
@@ -2687,95 +2688,175 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     required String primaryLabel,
     required VoidCallback onCancel,
     required VoidCallback onPrimary,
+    String requiredPhrase = '',
   }) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 34,
-            spreadRadius: -12,
-            offset: const Offset(0, 18),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 62,
-            height: 62,
+    var confirmationText = '';
+
+    return StatefulBuilder(
+      builder: (context, setDialogState) {
+        final needsPhrase = requiredPhrase.trim().isNotEmpty;
+        final canProceed =
+            !needsPhrase || confirmationText.trim() == requiredPhrase;
+
+        return SingleChildScrollView(
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFEFEF),
-              borderRadius: BorderRadius.circular(20),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(26),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 34,
+                  spreadRadius: -12,
+                  offset: const Offset(0, 18),
+                ),
+              ],
             ),
-            child: Icon(icon, color: const Color(0xFFE83030), size: 32),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.black54,
-              fontSize: 13,
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: 22),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onCancel,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFE83030),
-                    side: const BorderSide(color: Color(0xFFFFC7C7)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 62,
+                  height: 62,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEFEF),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
-                    'Batal',
-                    style: TextStyle(fontWeight: FontWeight.w800),
+                  child:
+                      Icon(icon, color: const Color(0xFFE83030), size: 32),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: onPrimary,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE83030),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    primaryLabel,
-                    style: const TextStyle(fontWeight: FontWeight.w900),
+                const SizedBox(height: 8),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 13,
+                    height: 1.45,
                   ),
                 ),
-              ),
-            ],
+                if (needsPhrase) ...[
+                  const SizedBox(height: 18),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 12.5,
+                          height: 1.35,
+                        ),
+                        children: [
+                          const TextSpan(text: 'Ketik '),
+                          TextSpan(
+                            text: requiredPhrase,
+                            style: const TextStyle(
+                              color: Color(0xFFE83030),
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const TextSpan(text: ' untuk melanjutkan.'),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    autofocus: true,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    textInputAction: TextInputAction.done,
+                    onChanged: (value) =>
+                        setDialogState(() => confirmationText = value),
+                    decoration: InputDecoration(
+                      hintText: requiredPhrase,
+                      filled: true,
+                      fillColor: const Color(0xFFFFFBFB),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 13,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide:
+                            const BorderSide(color: Color(0xFFFFC7C7)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFE83030),
+                          width: 1.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Konfirmasi manual ini mencegah penghapusan tidak sengaja.',
+                      style: TextStyle(color: Colors.black45, fontSize: 11.5),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: onCancel,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFE83030),
+                          side: const BorderSide(color: Color(0xFFFFC7C7)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Batal',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: canProceed ? onPrimary : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE83030),
+                          disabledBackgroundColor: const Color(0xFFFFB8B8),
+                          foregroundColor: Colors.white,
+                          disabledForegroundColor: Colors.white70,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          primaryLabel,
+                          style: const TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

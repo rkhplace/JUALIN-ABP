@@ -176,6 +176,27 @@ export default function UserManagement() {
     }
   };
 
+  const executeDeleteUser = async (user) => {
+    if (!user) return;
+
+    setProcessingUserId(user.id);
+    const promise = userService.deleteUser(user.id);
+
+    try {
+      await toast.promise(promise, {
+        loading: `Menghapus akun ${user.username}...`,
+        success: () => `Akun ${user.username} berhasil dihapus`,
+        error: (err) => err.message || `Gagal menghapus akun ${user.username}`,
+      });
+
+      setAllUsers((prev) => prev.filter((u) => u.id !== user.id));
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+    } finally {
+      setProcessingUserId(null);
+    }
+  };
+
   const handleConfirmAction = async () => {
     if (!confirmModal.user || !confirmModal.action) return;
 
@@ -187,6 +208,8 @@ export default function UserManagement() {
       await executeBanUser(user);
     } else if (action === "unban") {
       await executeUnbanUser(user);
+    } else if (action === "delete") {
+      await executeDeleteUser(user);
     }
   };
 
@@ -313,14 +336,24 @@ export default function UserManagement() {
                         <div className="flex items-center gap-2">
                           {(["seller", "customer"].includes(user.role)) && (
                             user.is_banned ? (
-                              <button
-                                type="button"
-                                onClick={() => openConfirmModal(user, "unban")}
-                                disabled={processingUserId === user.id}
-                                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                {processingUserId === user.id ? "Memproses..." : "Unban"}
-                              </button>
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => openConfirmModal(user, "unban")}
+                                  disabled={processingUserId === user.id}
+                                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {processingUserId === user.id ? "Memproses..." : "Unban"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openConfirmModal(user, "delete")}
+                                  disabled={processingUserId === user.id}
+                                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Hapus
+                                </button>
+                              </>
                             ) : (
                               <>
                                 <select
@@ -340,6 +373,14 @@ export default function UserManagement() {
                                   className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-red-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                   {processingUserId === user.id ? "Memproses..." : "Ban"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openConfirmModal(user, "delete")}
+                                  disabled={processingUserId === user.id}
+                                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Hapus
                                 </button>
                               </>
                             )
@@ -409,15 +450,30 @@ export default function UserManagement() {
         title={
           confirmModal.action === "ban"
             ? `Ban user ${confirmModal.user?.username}`
-            : `Unban user ${confirmModal.user?.username}`
+            : confirmModal.action === "unban"
+              ? `Unban user ${confirmModal.user?.username}`
+              : `Hapus akun ${confirmModal.user?.username}`
         }
         message={
           confirmModal.action === "ban"
             ? `Apakah Anda yakin ingin memban user ${confirmModal.user?.username} selama ${banDurations[confirmModal.user?.id] || "7"} hari?`
-            : `Apakah Anda yakin ingin meng-unban user ${confirmModal.user?.username}?`
+            : confirmModal.action === "unban"
+              ? `Apakah Anda yakin ingin meng-unban user ${confirmModal.user?.username}?`
+              : `Apakah Anda yakin ingin menghapus akun ${confirmModal.user?.username}? Aksi ini akan menghapus akun dari sistem dan tidak dapat dibatalkan.`
         }
-        confirmText={confirmModal.action === "unban" ? "Unban" : "Ban"}
-        isDanger={confirmModal.action === "ban"}
+        confirmText={
+          confirmModal.action === "unban"
+            ? "Unban"
+            : confirmModal.action === "delete"
+              ? "Hapus"
+              : "Ban"
+        }
+        isDanger={confirmModal.action === "ban" || confirmModal.action === "delete"}
+        requiredPhrase={
+          confirmModal.action === "delete"
+            ? `HAPUS ${confirmModal.user?.username || "AKUN"}`
+            : ""
+        }
       />
     </section>
   );
