@@ -926,7 +926,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       ? 'Mengirim tautan reset...'
                                       : 'Ubah Kata Sandi',
                                   subtitle: 'Ganti kata sandi akun Anda',
-                                  isOutlined: true,
                                   isLoading: _isSendingResetLink,
                                   onTap: _isSendingResetLink
                                       ? null
@@ -943,25 +942,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       MaterialPageRoute(
                                           builder: (_) => const ReportScreen()),
                                     );
-                                  },
-                                ),
-                                const SizedBox(height: 12),
-                                _buildProfileMenuItem(
-                                  icon: Icons.logout_outlined,
-                                  title: 'Keluar',
-                                  subtitle: 'Keluar dari akun Anda',
-                                  isDanger: true,
-                                  showChevron: false,
-                                  onTap: () async {
-                                    final confirmed =
-                                        await _showLogoutConfirmation();
-                                    if (confirmed == true) {
-                                      await _authService.logout();
-                                      if (context.mounted) {
-                                        Navigator.pushReplacementNamed(
-                                            context, '/login');
-                                      }
-                                    }
                                   },
                                 ),
                                 const SizedBox(height: 12),
@@ -984,6 +964,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               false)
                                           ? _handleCancelAccountDeletion
                                           : _handleDeleteAccount,
+                                ),
+                                const SizedBox(height: 12),
+                                _buildProfileMenuItem(
+                                  icon: Icons.logout_outlined,
+                                  title: 'Keluar',
+                                  subtitle: 'Keluar dari akun Anda',
+                                  isDanger: true,
+                                  showChevron: false,
+                                  onTap: () async {
+                                    final confirmed =
+                                        await _showLogoutConfirmation();
+                                    if (confirmed == true) {
+                                      await _authService.logout();
+                                      if (context.mounted) {
+                                        Navigator.pushReplacementNamed(
+                                            context, '/login');
+                                      }
+                                    }
+                                  },
                                 ),
                               ],
                             ),
@@ -1295,7 +1294,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isOutlined ? const Color(0xFFE83030) : Colors.black12,
+              color: isOutlined
+                  ? const Color(0xFFE83030).withValues(alpha: 0.22)
+                  : Colors.black12,
             ),
             boxShadow: [
               BoxShadow(

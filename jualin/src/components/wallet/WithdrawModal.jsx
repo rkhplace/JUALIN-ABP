@@ -1,9 +1,64 @@
 import React, { useState } from "react";
 import { formatCurrency } from "@/utils/formatters/currency";
 
+const BANK_OPTIONS = [
+    "Bank Aladin Syariah",
+    "Bank Amar Indonesia",
+    "Bank Artha Graha Internasional",
+    "Bank BCA Syariah",
+    "Bank BJB",
+    "Bank BJB Syariah",
+    "Bank BNI",
+    "Bank BRI",
+    "Bank BRI Agroniaga (BRI Agro)",
+    "Bank BSI (Bank Syariah Indonesia)",
+    "Bank BTN",
+    "Bank BTN Syariah",
+    "Bank Bukopin",
+    "Bank CIMB Niaga",
+    "Bank Danamon Indonesia",
+    "Bank DKI",
+    "Bank INA Perdana",
+    "Bank Jago",
+    "Bank Jambi",
+    "Bank Jateng",
+    "Bank Jatim",
+    "Bank Kalbar",
+    "Bank Kalsel",
+    "Bank Kalteng",
+    "Bank Kaltimtara",
+    "Bank Lampung",
+    "Bank Mandiri",
+    "Bank Mayapada",
+    "Bank Maybank Indonesia",
+    "Bank Mega",
+    "Bank Muamalat Indonesia",
+    "Bank Nagari",
+    "Bank Neo Commerce",
+    "Bank NTT",
+    "Bank OCBC",
+    "Bank Panin Bank",
+    "Bank Papua",
+    "Bank Permata",
+    "Bank Raya Indonesia",
+    "Bank Riau Kepri Syariah",
+    "Bank Sinarmas",
+    "Bank Sulselbar",
+    "Bank Sultra",
+    "Bank Sulteng",
+    "Bank Sumsel Babel",
+    "Bank Sumut",
+    "Bank UOB Indonesia",
+    "Bank Victoria International",
+    "Bank Woori Saudara",
+    "SeaBank Indonesia",
+    "Superbank Indonesia",
+];
+
 export default function WithdrawModal({ isOpen, onClose, onConfirm, walletBalance }) {
     const [amount, setAmount] = useState("");
     const [bankName, setBankName] = useState("");
+    const [isBankListOpen, setIsBankListOpen] = useState(false);
     const [accountNumber, setAccountNumber] = useState("");
     const [accountName, setAccountName] = useState("");
 
@@ -36,7 +91,7 @@ export default function WithdrawModal({ isOpen, onClose, onConfirm, walletBalanc
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div
-                className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                className="bg-white rounded-2xl shadow-xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200"
                 role="dialog"
                 aria-modal="true"
             >
@@ -62,14 +117,55 @@ export default function WithdrawModal({ isOpen, onClose, onConfirm, walletBalanc
                     <div className="space-y-3">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
-                            <input
-                                type="text"
-                                value={bankName}
-                                onChange={(e) => setBankName(e.target.value)}
-                                placeholder="e.g. BCA, Mandiri, BRI"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
-                                required
-                            />
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsBankListOpen((current) => !current)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all bg-white text-left flex items-center justify-between gap-3"
+                                    aria-haspopup="listbox"
+                                    aria-expanded={isBankListOpen}
+                                >
+                                    <span className={bankName ? "text-gray-900" : "text-gray-400"}>
+                                        {bankName || "Pilih bank tujuan"}
+                                    </span>
+                                    <svg
+                                        className={`w-4 h-4 text-gray-500 transition-transform ${isBankListOpen ? "rotate-180" : ""}`}
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                {isBankListOpen && (
+                                    <div
+                                        className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5"
+                                        role="listbox"
+                                    >
+                                        <div className="max-h-56 overflow-y-auto scroll-smooth py-1">
+                                            {BANK_OPTIONS.map((bank) => (
+                                                <button
+                                                    key={bank}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setBankName(bank);
+                                                        setIsBankListOpen(false);
+                                                    }}
+                                                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-red-50 hover:text-red-700 ${bankName === bank
+                                                            ? "bg-red-50 font-semibold text-red-700"
+                                                            : "text-gray-700"
+                                                        }`}
+                                                    role="option"
+                                                    aria-selected={bankName === bank}
+                                                >
+                                                    {bank}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div>
