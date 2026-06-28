@@ -1074,46 +1074,47 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildLocationMapFallback() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFFEAF7EF), Color(0xFFEFF6FF)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    return Container(
+      color: const Color(0xFFFFF7F7),
+      padding: const EdgeInsets.all(18),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFEAEA),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.map_outlined,
+                color: Color(0xFFE83030),
+                size: 26,
+              ),
             ),
-          ),
-        ),
-        Positioned(
-          left: -24,
-          top: 18,
-          child: _buildMapStrip(150, const Color(0xFFBDE3FF)),
-        ),
-        Positioned(
-          right: -34,
-          bottom: 28,
-          child: _buildMapStrip(190, const Color(0xFFFFD0D0)),
-        ),
-        Positioned(
-          left: 42,
-          bottom: 36,
-          child: _buildMapStrip(130, const Color(0xFFC8EBC8)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMapStrip(double width, Color color) {
-    return Transform.rotate(
-      angle: -0.18,
-      child: Container(
-        width: width,
-        height: 22,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.76),
-          borderRadius: BorderRadius.circular(999),
+            const SizedBox(height: 10),
+            const Text(
+              'Titik peta belum dipilih',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.black87,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Edit produk lalu tap titik lokasi pada peta.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.black45,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1132,41 +1133,46 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           borderRadius: BorderRadius.circular(14),
           child: AspectRatio(
             aspectRatio: 1.12,
-            child: Container(
-              width: double.infinity,
-              color: const Color(0xFFF2F2F2),
-              child: visibleImages.isNotEmpty
-                  ? PageView.builder(
-                      controller: _imagePageController,
-                      itemCount: visibleImages.length,
-                      onPageChanged: (index) {
-                        setState(() => _activeImageIndex = index);
-                      },
-                      itemBuilder: (context, index) => Image.network(
-                        visibleImages[index],
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          );
-                        },
-                        errorBuilder: (_, __, ___) => Center(
+            child: Stack(
+              children: [
+                Container(
+                  width: double.infinity,
+                  color: const Color(0xFFF2F2F2),
+                  child: visibleImages.isNotEmpty
+                      ? PageView.builder(
+                          controller: _imagePageController,
+                          itemCount: visibleImages.length,
+                          onPageChanged: (index) {
+                            setState(() => _activeImageIndex = index);
+                          },
+                          itemBuilder: (context, index) => Image.network(
+                            visibleImages[index],
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              return const Center(
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              );
+                            },
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Icon(
+                                Icons.image_outlined,
+                                size: 56,
+                                color: Colors.grey[400],
+                              ),
+                            ),
+                          ),
+                        )
+                      : Center(
                           child: Icon(
                             Icons.image_outlined,
                             size: 56,
                             color: Colors.grey[400],
                           ),
                         ),
-                      ),
-                    )
-                  : Center(
-                      child: Icon(
-                        Icons.image_outlined,
-                        size: 56,
-                        color: Colors.grey[400],
-                      ),
-                    ),
+                ),
+              ],
             ),
           ),
         ),
@@ -1177,6 +1183,68 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             children: List.generate(
               visibleImages.length,
               (index) => _buildImageDot(index == _activeImageIndex),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFAFAFA),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFF0F0F0)),
+            ),
+            child: SizedBox(
+              height: 62,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: visibleImages.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final active = index == _activeImageIndex;
+                  return GestureDetector(
+                    onTap: () {
+                      _imagePageController.animateToPage(
+                        index,
+                        duration: const Duration(milliseconds: 260),
+                        curve: Curves.easeOut,
+                      );
+                      setState(() => _activeImageIndex = index);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 58,
+                      height: 58,
+                      padding: EdgeInsets.all(active ? 2 : 0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(13),
+                        border: Border.all(
+                          color: active
+                              ? const Color(0xFFE83030)
+                              : const Color(0xFFE4E4E4),
+                          width: active ? 2 : 1,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(
+                          visibleImages[index],
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: const Color(0xFFF2F2F2),
+                            child: const Icon(
+                              Icons.image_outlined,
+                              color: Colors.black26,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],

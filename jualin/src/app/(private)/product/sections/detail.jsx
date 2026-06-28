@@ -2,7 +2,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { BadgeCheck, MapPin, Shirt, Tag } from "lucide-react";
+import { BadgeCheck, ChevronRight, MapPin, Shirt, Tag } from "lucide-react";
 import Toast from "../../../../components/ui/Toast";
 import Spinner from "../../../../components/ui/Spinner";
 import useMidtransPayment from "../hooks/useMidtransPayment";
@@ -431,21 +431,32 @@ export default function ProductDetailSection({ product, seller }) {
           <h1 className="text-lg md:text-2xl font-bold mb-4 md:mb-6 text-blue-700">
             {product.brand || product.category}
           </h1>
-          <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6 break-words w-full line-clamp-2">{product.description}</p>
 
           {/* Seller Info */}
-          <div className="flex items-center gap-3 mb-4 md:mb-6 p-3 md:p-4 bg-gray-50 rounded-xl border border-gray-100">
-            <UserAvatar
-              name={seller?.username || "Seller"}
-              src={seller?.profile_picture || seller?.avatar}
-              sizeClass="w-10 h-10"
-            />
-            <div>
-              <p className="font-semibold text-gray-900 flex items-center gap-1">
-                {seller?.username || "Seller"}
-                {seller?.is_verified && <VerifiedBadge size="sm" />}
-              </p>
-              {seller?.city && <p className="text-xs text-gray-500">{seller.city}</p>}
+          <div className="mb-4 md:mb-6 rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <UserAvatar
+                name={seller?.username || "Seller"}
+                src={seller?.profile_picture || seller?.avatar}
+                sizeClass="w-12 h-12"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1 font-bold text-gray-950">
+                  <span className="truncate">{seller?.username || "Seller"}</span>
+                  {seller?.is_verified && <VerifiedBadge size="sm" />}
+                </p>
+                <p className="mt-0.5 text-sm font-medium text-gray-500">
+                  {seller?.city || "Penjual Jualin"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleChatSeller}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:border-red-200 hover:text-[#E83030]"
+                aria-label="Hubungi penjual"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
             </div>
           </div>
 

@@ -193,6 +193,7 @@ class ApiClient {
   Future<Map<String, dynamic>> postMultipart(
       String path, Map<String, String> fields,
       {File? imageFile,
+      List<File>? imageFiles,
       String imageField = 'image',
       String method = 'POST'}) async {
     final normalizedMethod = method.toUpperCase();
@@ -207,9 +208,14 @@ class ApiClient {
       })
       ..fields.addAll(fields);
 
-    if (imageFile != null) {
+    final files = <File>[
+      if (imageFile != null) imageFile,
+      ...?imageFiles,
+    ];
+
+    for (final file in files) {
       request.files
-          .add(await http.MultipartFile.fromPath(imageField, imageFile.path));
+          .add(await http.MultipartFile.fromPath(imageField, file.path));
     }
 
     final streamed = await request.send().timeout(

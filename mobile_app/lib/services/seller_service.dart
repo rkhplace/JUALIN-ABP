@@ -38,9 +38,13 @@ class SellerService {
 
   /// Creates a new product for the authenticated seller.
   Future<bool> createProduct(Map<String, String> data,
-      {File? imageFile}) async {
+      {File? imageFile, List<File>? imageFiles}) async {
     try {
-      await _productService.createProduct(data, imageFile: imageFile);
+      await _productService.createProduct(
+        data,
+        imageFile: imageFile,
+        imageFiles: imageFiles,
+      );
       return true;
     } catch (e) {
       rethrow;
@@ -49,9 +53,14 @@ class SellerService {
 
   /// Updates an existing seller product.
   Future<bool> updateProduct(int id, Map<String, String> data,
-      {File? imageFile}) async {
+      {File? imageFile, List<File>? imageFiles}) async {
     try {
-      await _productService.updateProduct(id, data, imageFile: imageFile);
+      await _productService.updateProduct(
+        id,
+        data,
+        imageFile: imageFile,
+        imageFiles: imageFiles,
+      );
       return true;
     } catch (e) {
       rethrow;
