@@ -12,6 +12,8 @@ const normalizeProduct = (product) => ({
   id: product.id,
   category: product.category?.toLowerCase() || "",
   stock: product.stock ?? product.stock_quantity ?? 0,
+  location_radius_km: product.location_radius_km ?? product.radius_km ?? null,
+  radius_km: product.radius_km ?? product.location_radius_km ?? null,
 });
 
 export const productService = {

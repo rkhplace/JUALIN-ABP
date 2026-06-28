@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import '../services/product_service.dart';
 import '../services/chat_service.dart';
 import '../services/auth_service.dart';
@@ -887,9 +889,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _buildOfferLocationCard(Product product) {
     final radius = product.locationRadiusKm ?? 10;
+    final hasPoint = product.latitude != null && product.longitude != null;
+    final point = hasPoint
+        ? LatLng(product.latitude!, product.longitude!)
+        : const LatLng(-6.9175, 107.6191);
 
     return Container(
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -903,58 +908,213 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ],
       ),
-      child: Row(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFEFEF),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: const Icon(
-              Icons.location_on_outlined,
-              color: Color(0xFFE83030),
+          SizedBox(
+            height: 158,
+            width: double.infinity,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (hasPoint)
+                  FlutterMap(
+                    options: MapOptions(
+                      initialCenter: point,
+                      initialZoom: _zoomForRadius(radius).toDouble(),
+                      interactionOptions: const InteractionOptions(
+                        flags: InteractiveFlag.drag |
+                            InteractiveFlag.pinchZoom |
+                            InteractiveFlag.doubleTapZoom,
+                      ),
+                    ),
+                    children: [
+                      TileLayer(
+                        urlTemplate:
+                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.jualin.mobile_app',
+                      ),
+                      CircleLayer(
+                        circles: [
+                          CircleMarker(
+                            point: point,
+                            radius: radius * 1000,
+                            useRadiusInMeter: true,
+                            color:
+                                const Color(0xFFE83030).withValues(alpha: 0.16),
+                            borderColor:
+                                const Color(0xFFE83030).withValues(alpha: 0.46),
+                            borderStrokeWidth: 2,
+                          ),
+                        ],
+                      ),
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: point,
+                            width: 42,
+                            height: 42,
+                            child: const Icon(
+                              Icons.location_on,
+                              color: Color(0xFFE83030),
+                              size: 38,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
+                else
+                  _buildLocationMapFallback(),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.20),
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Container(
+                    width: 92,
+                    height: 92,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFE83030).withValues(alpha: 0.14),
+                      border: Border.all(
+                        color: const Color(0xFFE83030).withValues(alpha: 0.38),
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+                const Center(
+                  child: Icon(
+                    Icons.location_on,
+                    color: Color(0xFFE83030),
+                    size: 34,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
               children: [
-                const Text(
-                  'Lokasi Tawaran',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.black87,
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEFEF),
+                    borderRadius: BorderRadius.circular(15),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  product.locationLabel,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.black54,
-                    fontSize: 12,
-                    height: 1.3,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Area sekitar $radius km dari lokasi penjual',
-                  style: const TextStyle(
+                  child: const Icon(
+                    Icons.location_on_outlined,
                     color: Color(0xFFE83030),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Lokasi Tawaran',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        product.locationLabel,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 12,
+                          height: 1.3,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Ditawarkan dalam radius $radius km',
+                        style: const TextStyle(
+                          color: Color(0xFFE83030),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  int _zoomForRadius(int radiusKm) {
+    if (radiusKm <= 1) return 14;
+    if (radiusKm <= 3) return 13;
+    if (radiusKm <= 5) return 12;
+    if (radiusKm <= 10) return 11;
+    if (radiusKm <= 15) return 10;
+    return 9;
+  }
+
+  Widget _buildLocationMapFallback() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFEAF7EF), Color(0xFFEFF6FF)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        Positioned(
+          left: -24,
+          top: 18,
+          child: _buildMapStrip(150, const Color(0xFFBDE3FF)),
+        ),
+        Positioned(
+          right: -34,
+          bottom: 28,
+          child: _buildMapStrip(190, const Color(0xFFFFD0D0)),
+        ),
+        Positioned(
+          left: 42,
+          bottom: 36,
+          child: _buildMapStrip(130, const Color(0xFFC8EBC8)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMapStrip(double width, Color color) {
+    return Transform.rotate(
+      angle: -0.18,
+      child: Container(
+        width: width,
+        height: 22,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.76),
+          borderRadius: BorderRadius.circular(999),
+        ),
       ),
     );
   }

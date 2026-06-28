@@ -50,6 +50,11 @@ export default function BackofficeEditProductPage() {
         category: formData.category,
         condition: formData.condition,
         status: formData.status,
+        location_label: formData.location_label || "Area sekitar titik peta",
+        location_radius_km: formData.location_radius_km || 10,
+        radius_km: formData.location_radius_km || 10,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
       };
 
       const updatedProduct = await productService.update(

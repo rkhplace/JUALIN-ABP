@@ -26,6 +26,11 @@ export default function NewProductPage() {
         category: formData.category.trim() || "",
         condition: formData.condition,
         status: formData.status,
+        location_label: formData.location_label || "Area sekitar titik peta",
+        location_radius_km: formData.location_radius_km || 10,
+        radius_km: formData.location_radius_km || 10,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
       };
 
       console.log("📦 Product data prepared:", productData);
