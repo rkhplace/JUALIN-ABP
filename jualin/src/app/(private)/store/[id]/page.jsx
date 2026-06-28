@@ -46,6 +46,7 @@ export default function StoreProfilePage() {
   const [toast, setToast] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -301,7 +302,7 @@ export default function StoreProfilePage() {
 
         <section className="rounded-[30px] border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
           <div className="mb-5">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="relative flex items-center gap-3">
               <label className="relative flex-1">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#E83030]" />
                 <input
@@ -312,23 +313,41 @@ export default function StoreProfilePage() {
                   className="h-12 w-full rounded-2xl border border-gray-100 bg-gray-50 pl-11 pr-4 text-sm font-semibold text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-red-200 focus:bg-white focus:ring-4 focus:ring-red-50"
                 />
               </label>
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:max-w-[52%]">
-                <StoreFilterChip
-                  active={activeCategory === "all"}
-                  label="Semua"
-                  onClick={() => setActiveCategory("all")}
-                />
-                {categories.map((category) => (
-                  <StoreFilterChip
-                    key={category}
-                    active={activeCategory === category.toLowerCase()}
-                    label={category}
-                    onClick={() => setActiveCategory(category.toLowerCase())}
-                  />
-                ))}
-              </div>
-              <div className="hidden shrink-0 rounded-full bg-red-50 px-3 py-2 text-xs font-bold text-[#E83030] lg:block">
-                {filteredProducts.length} produk
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsFilterOpen((current) => !current)}
+                  className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E83030] text-white shadow-[0_12px_22px_rgba(232,48,48,0.22)] transition hover:bg-red-600"
+                  aria-label="Filter kategori"
+                >
+                  <Filter className="h-5 w-5" />
+                  {activeCategory !== "all" && (
+                    <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-white" />
+                  )}
+                </button>
+                {isFilterOpen && (
+                  <div className="absolute right-0 top-14 z-20 w-56 overflow-hidden rounded-2xl border border-gray-100 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.15)]">
+                    <StoreFilterOption
+                      active={activeCategory === "all"}
+                      label="Semua Produk"
+                      onClick={() => {
+                        setActiveCategory("all");
+                        setIsFilterOpen(false);
+                      }}
+                    />
+                    {categories.map((category) => (
+                      <StoreFilterOption
+                        key={category}
+                        active={activeCategory === category.toLowerCase()}
+                        label={category}
+                        onClick={() => {
+                          setActiveCategory(category.toLowerCase());
+                          setIsFilterOpen(false);
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -456,18 +475,22 @@ function SellerMetric({ icon: Icon, label, value, badge = null }) {
   );
 }
 
-function StoreFilterChip({ active, label, onClick }) {
+function StoreFilterOption({ active, label, onClick }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-xs font-black transition ${
+      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-black transition ${
         active
-          ? "border-[#E83030] bg-[#E83030] text-white shadow-[0_10px_22px_rgba(232,48,48,0.18)]"
-          : "border-gray-100 bg-white text-gray-700 hover:border-red-100 hover:text-[#E83030]"
+          ? "bg-red-50 text-[#E83030]"
+          : "text-gray-700 hover:bg-gray-50 hover:text-[#E83030]"
       }`}
     >
-      <Filter className="h-3.5 w-3.5" />
+      <span
+        className={`h-2.5 w-2.5 rounded-full ${
+          active ? "bg-[#E83030]" : "bg-gray-300"
+        }`}
+      />
       {label}
     </button>
   );
