@@ -11,7 +11,9 @@ import '../widgets/ui/user_avatar.dart';
 import '../screens/report_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.inSellerMode = false});
+
+  final bool inSellerMode;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -450,6 +452,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _userRole = 'customer';
   String? _errorMessage;
 
+  bool get _isSellerAccount => _userRole == 'seller';
+  bool get _isSellerMode => widget.inSellerMode && _isSellerAccount;
+
   @override
   void initState() {
     super.initState();
@@ -618,7 +623,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       );
 
-      Navigator.pushNamed(context, '/seller_main');
+      Navigator.pushNamed(
+        context,
+        '/seller_main',
+        arguments: {'showOnboarding': true},
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isBecomingSeller = false);
@@ -629,6 +638,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       );
     }
+  }
+
+  void _switchToBuyerMode() {
+    Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);
+  }
+
+  void _switchToSellerMode() {
+    Navigator.pushNamedAndRemoveUntil(context, '/seller_main', (route) => false);
   }
 
   Future<void> _handlePasswordReset() async {
@@ -1043,7 +1060,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             padding: const EdgeInsets.fromLTRB(14, 0, 14, 24),
                             child: Column(
                               children: [
-                                if (_userRole != 'seller') ...[
+                                if (!_isSellerMode) ...[
                                   _buildWalletBalanceCard(_user!),
                                   const SizedBox(height: 12),
                                 ] else ...[
@@ -1052,7 +1069,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ],
                                 _buildAccountInfo(_user!),
                                 const SizedBox(height: 12),
-                                if (_userRole != 'seller') ...[
+                                if (!_isSellerAccount) ...[
                                   _buildProfileMenuItem(
                                     icon: Icons.storefront_outlined,
                                     title: _isBecomingSeller
@@ -1066,11 +1083,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         : _handleBecomeSeller,
                                   ),
                                   const SizedBox(height: 12),
+                                ] else if (_isSellerMode) ...[
+                                  _buildProfileMenuItem(
+                                    icon: Icons.shopping_bag_outlined,
+                                    title: 'Masuk Mode Pembeli',
+                                    subtitle:
+                                        'Belanja dan jelajahi marketplace sebagai pembeli',
+                                    onTap: _switchToBuyerMode,
+                                  ),
+                                  const SizedBox(height: 12),
+                                ] else ...[
+                                  _buildProfileMenuItem(
+                                    icon: Icons.storefront_outlined,
+                                    title: 'Masuk Mode Penjual',
+                                    subtitle:
+                                        'Kelola produk, pesanan, dan saldo toko',
+                                    onTap: _switchToSellerMode,
+                                  ),
+                                  const SizedBox(height: 12),
                                 ],
                                 _buildProfileMenuItem(
                                   icon: Icons.edit_outlined,
                                   title: 'Edit Profil',
-                                  subtitle: _userRole == 'seller'
+                                  subtitle: _isSellerMode
                                       ? 'Ubah informasi profil dan toko'
                                       : 'Ubah informasi profil Anda',
                                   onTap: () async {
@@ -1266,8 +1301,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileHero(User user) {
-    final roleLabel = _userRole == 'seller' ? 'Penjual' : 'Pembeli';
-    final roleColor = _userRole == 'seller'
+    final roleLabel = _isSellerMode ? 'Penjual' : 'Pembeli';
+    final roleColor = _isSellerMode
         ? const Color(0xFFE83030)
         : const Color(0xFF2563EB);
     final isVerifiedProfile = ['verified', 'approved']
@@ -2145,7 +2180,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildInfoRow('Foto Profil',
                       user.avatarUrl.trim().isEmpty ? '' : 'Sudah diisi'),
                   _buildInfoRow(
-                      'Peran', _userRole == 'seller' ? 'Penjual' : 'Pembeli'),
+                      'Mode Aktif', _isSellerMode ? 'Penjual' : 'Pembeli'),
+                  if (_isSellerAccount)
+                    _buildInfoRow('Akses Akun', 'Pembeli & Penjual'),
                   _buildInfoRow('Status Akun', user.status),
                   _buildInfoRow(
                     'Status Verifikasi',

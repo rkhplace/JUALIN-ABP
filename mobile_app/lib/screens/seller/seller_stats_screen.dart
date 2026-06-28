@@ -13,7 +13,7 @@ class SellerStatsScreen extends StatefulWidget {
 class _SellerStatsScreenState extends State<SellerStatsScreen> {
   final SellerService _sellerService = SellerService();
 
-  String _period = 'Month';
+  String _period = '7d';
   String _chartType = 'sales';
   Map<String, dynamic>? _stats;
   bool _isLoading = true;
@@ -122,7 +122,7 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
 
   Widget _buildContent() {
     final balance = _stats?['balance'] ?? 0;
-    final totalSales = _stats?['total_sales'] ?? balance;
+    final totalSales = _stats?['total_sales'] ?? _stats?['chart_total'] ?? 0;
     final completedTransactions = _stats?['total_completed_transactions'] ??
         _stats?['valid_order_count'] ??
         0;
@@ -131,6 +131,11 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
     final walletBalance = _stats?['wallet_balance'] ?? balance;
     final chartTitle =
         _chartType == 'sales' ? 'Grafik Penjualan' : 'Grafik Penarikan Saldo';
+    final periodDescription = switch (_period) {
+      '7d' => 'Performa harian selama 7 hari terakhir.',
+      '30d' => 'Performa harian selama 1 bulan terakhir.',
+      _ => 'Ringkasan bulanan dalam 12 bulan terakhir.',
+    };
     final emptyText = _chartType == 'sales'
         ? 'Belum ada data penjualan untuk periode ini.'
         : 'Belum ada data penarikan saldo untuk periode ini.';
@@ -182,7 +187,8 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
                   ).then((_) => _fetchStats()),
                 ),
                 const SizedBox(height: 16),
-                _buildChartCard(chartTitle, emptyText, chartData),
+                _buildChartCard(
+                    chartTitle, periodDescription, emptyText, chartData),
               ],
             ),
           ),
@@ -413,6 +419,7 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
 
   Widget _buildChartCard(
     String chartTitle,
+    String periodDescription,
     String emptyText,
     List<dynamic> chartData,
   ) {
@@ -463,9 +470,10 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    const Text(
-                      'Pantau performa berdasarkan periode pilihan.',
-                      style: TextStyle(color: Colors.black45, fontSize: 12),
+                    Text(
+                      periodDescription,
+                      style:
+                          const TextStyle(color: Colors.black45, fontSize: 12),
                     ),
                   ],
                 ),
@@ -481,11 +489,11 @@ class _SellerStatsScreenState extends State<SellerStatsScreen> {
           ),
           const SizedBox(height: 10),
           _buildSegmentedSurface(
-            children: ['Week', 'Month', 'Year'].map((p) {
+            children: ['7d', '30d', '12m'].map((p) {
               final labels = {
-                'Week': 'Minggu',
-                'Month': 'Bulan',
-                'Year': 'Tahun',
+                '7d': '7 Hari',
+                '30d': '1 Bulan',
+                '12m': '12 Bulan',
               };
               return _buildPeriodButton(p, labels[p] ?? p);
             }).toList(),
@@ -875,30 +883,24 @@ class _SellerLineChartPainter extends CustomPainter {
       offsets.add(Offset(x, y));
     }
 
-    final fillPath = Path()..moveTo(offsets.first.dx, chartRect.bottom);
-    for (final offset in offsets) {
-      fillPath.lineTo(offset.dx, offset.dy);
-    }
-    fillPath
+    final linePath = _smoothPath(offsets, chartRect);
+
+    final fillPath = Path.from(linePath)
       ..lineTo(offsets.last.dx, chartRect.bottom)
+      ..lineTo(offsets.first.dx, chartRect.bottom)
       ..close();
 
     final fillPaint = Paint()
       ..shader = const LinearGradient(
-        colors: [Color(0x30E83030), Color(0x00E83030)],
+        colors: [Color(0x22E83030), Color(0x00E83030)],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ).createShader(chartRect);
     canvas.drawPath(fillPath, fillPaint);
 
-    final linePath = Path()..moveTo(offsets.first.dx, offsets.first.dy);
-    for (var i = 1; i < offsets.length; i++) {
-      linePath.lineTo(offsets[i].dx, offsets[i].dy);
-    }
-
     final linePaint = Paint()
       ..color = const Color(0xFFE83030)
-      ..strokeWidth = 3.2
+      ..strokeWidth = 2.15
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
@@ -907,9 +909,45 @@ class _SellerLineChartPainter extends CustomPainter {
     final dotPaint = Paint()..color = const Color(0xFFE83030);
     final dotBorderPaint = Paint()..color = Colors.white;
     for (final offset in offsets) {
-      canvas.drawCircle(offset, 5.4, dotBorderPaint);
-      canvas.drawCircle(offset, 3.1, dotPaint);
+      canvas.drawCircle(offset, 4.2, dotBorderPaint);
+      canvas.drawCircle(offset, 2.35, dotPaint);
     }
+  }
+
+  Path _smoothPath(List<Offset> offsets, Rect chartRect) {
+    final path = Path()..moveTo(offsets.first.dx, offsets.first.dy);
+    if (offsets.length < 3) {
+      for (var i = 1; i < offsets.length; i++) {
+        path.lineTo(offsets[i].dx, offsets[i].dy);
+      }
+      return path;
+    }
+
+    for (var i = 0; i < offsets.length - 1; i++) {
+      final current = offsets[i];
+      final next = offsets[i + 1];
+      final previous = i == 0 ? current : offsets[i - 1];
+      final following = i + 2 < offsets.length ? offsets[i + 2] : next;
+      final controlPoint1 = Offset(
+        current.dx + (next.dx - previous.dx) / 6,
+        (current.dy + (next.dy - previous.dy) / 6)
+            .clamp(chartRect.top, chartRect.bottom),
+      );
+      final controlPoint2 = Offset(
+        next.dx - (following.dx - current.dx) / 6,
+        (next.dy - (following.dy - current.dy) / 6)
+            .clamp(chartRect.top, chartRect.bottom),
+      );
+      path.cubicTo(
+        controlPoint1.dx,
+        controlPoint1.dy,
+        controlPoint2.dx,
+        controlPoint2.dy,
+        next.dx,
+        next.dy,
+      );
+    }
+    return path;
   }
 
   void _drawText(

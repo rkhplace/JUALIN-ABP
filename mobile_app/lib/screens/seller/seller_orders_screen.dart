@@ -768,24 +768,6 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
         ),
       );
     }
-    if (_orders.isEmpty) {
-      return ListView(
-        children: const [
-          SizedBox(height: 120),
-          Center(
-            child: Column(
-              children: [
-                Icon(Icons.receipt_long, size: 56, color: Colors.grey),
-                SizedBox(height: 12),
-                Text('Belum ada pesanan masuk.',
-                    style: TextStyle(color: Colors.black54, fontSize: 16)),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-
     final orders = _filteredOrders;
 
     return ListView.separated(
@@ -800,16 +782,12 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
               _buildPageHeader(orders.length),
               const SizedBox(height: 14),
               _buildSearchAndFilterBar(),
-              if (orders.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(top: 80),
-                  child: Center(
-                    child: Text(
-                      'Tidak ada pesanan sesuai filter.',
-                      style: TextStyle(color: Colors.black54),
-                    ),
-                  ),
+              if (orders.isEmpty) ...[
+                const SizedBox(height: 18),
+                _buildEmptyOrdersState(
+                  isFiltered: _orders.isNotEmpty,
                 ),
+              ],
             ],
           );
         }
@@ -973,6 +951,78 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildEmptyOrdersState({required bool isFiltered}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 34, 20, 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            spreadRadius: -10,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 66,
+            height: 66,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFEFEF),
+              borderRadius: BorderRadius.circular(22),
+            ),
+            child: const Icon(
+              Icons.receipt_long_outlined,
+              color: Color(0xFFE83030),
+              size: 32,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isFiltered ? 'Pesanan tidak ditemukan' : 'Belum ada pesanan masuk',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isFiltered
+                ? 'Coba ubah kata kunci atau status pesanan.'
+                : 'Pesanan dari pembeli akan muncul di sini setelah produkmu dibeli.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.black54,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 18),
+          if (isFiltered)
+            OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _searchController.clear();
+                  _statusFilter = 'all';
+                });
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reset Filter'),
+            )
+          else
+            OutlinedButton.icon(
+              onPressed: _fetchOrders,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh'),
+            ),
+        ],
+      ),
     );
   }
 

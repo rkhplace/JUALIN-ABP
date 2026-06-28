@@ -150,7 +150,7 @@ class _MainScreenState extends State<MainScreen> {
       HomeScreen(onNavigateToProducts: _navigateToProducts),
       _currentIndex == 1 ? const PurchaseHistoryScreen() : const SizedBox(),
       const ChatScreen(),
-      const ProfileScreen(),
+      const ProfileScreen(inSellerMode: false),
     ];
 
     return Scaffold(

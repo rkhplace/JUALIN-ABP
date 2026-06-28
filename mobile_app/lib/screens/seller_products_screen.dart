@@ -149,9 +149,6 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
   Widget _buildBody() {
     if (_isLoading) return const JualinLogoLoader(size: 64);
     if (_errorMessage != null) return _buildError();
-    if (_products.isEmpty) {
-      return const Center(child: Text('Tidak ada produk yang dijual.'));
-    }
 
     final products = _filteredProducts;
 
@@ -167,22 +164,106 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
               _buildPageHeader(products.length),
               const SizedBox(height: 14),
               _buildSearchAndFilterBar(),
-              if (products.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(top: 80),
-                  child: Center(
-                    child: Text(
-                      'Tidak ada produk sesuai filter.',
-                      style: TextStyle(color: Colors.black54),
-                    ),
-                  ),
+              if (products.isEmpty) ...[
+                const SizedBox(height: 18),
+                _buildEmptyProductsState(
+                  isFiltered: _products.isNotEmpty,
                 ),
+              ],
             ],
           );
         }
 
         return _buildProductCard(products[index - 1]);
       },
+    );
+  }
+
+  Widget _buildEmptyProductsState({required bool isFiltered}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 34, 20, 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            spreadRadius: -10,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 66,
+            height: 66,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFEFEF),
+              borderRadius: BorderRadius.circular(22),
+            ),
+            child: const Icon(
+              Icons.inventory_2_outlined,
+              color: Color(0xFFE83030),
+              size: 32,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isFiltered ? 'Produk tidak ditemukan' : 'Belum ada produk',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isFiltered
+                ? 'Coba ubah kata kunci atau filter produk.'
+                : 'Tambahkan produk pertama agar toko mulai terlihat oleh pembeli.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.black54,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 18),
+          if (isFiltered)
+            OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _searchController.clear();
+                  _categoryFilter = 'all';
+                  _stockFilter = 'all';
+                });
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reset Filter'),
+            )
+          else
+            ElevatedButton.icon(
+              onPressed: () async {
+                await Navigator.pushNamed(context, '/seller_product_new');
+                _fetchProducts();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE83030),
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              icon: const Icon(Icons.add),
+              label: const Text(
+                'Tambah Produk',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
