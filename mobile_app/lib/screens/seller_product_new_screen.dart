@@ -66,7 +66,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
 
   final ImagePicker _imagePicker = ImagePicker();
   SellerProduct? _editingProduct;
-  File? _selectedImage;
+  final List<File> _selectedImages = [];
   bool _isLoading = false;
   bool _isFormattingStock = false;
   String? _errorMessage;
@@ -177,12 +177,12 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
         await _sellerService.updateProduct(
           _editingProduct!.id,
           payload,
-          imageFile: _selectedImage,
+          imageFiles: _selectedImages,
         );
       } else {
         await _sellerService.createProduct(
           payload,
-          imageFile: _selectedImage,
+          imageFiles: _selectedImages,
         );
       }
 
@@ -254,13 +254,27 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
+      if (source == ImageSource.gallery) {
+        final picked = await _imagePicker.pickMultiImage(
+          imageQuality: 80,
+          maxWidth: 1600,
+        );
+        if (picked.isEmpty) return;
+        setState(() {
+          _selectedImages
+            ..clear()
+            ..addAll(picked.map((item) => File(item.path)));
+        });
+        return;
+      }
+
       final picked = await _imagePicker.pickImage(
         source: source,
         imageQuality: 80,
         maxWidth: 1600,
       );
       if (picked == null) return;
-      setState(() => _selectedImage = File(picked.path));
+      setState(() => _selectedImages.add(File(picked.path)));
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -295,6 +309,11 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
     if (source != null) {
       _pickImage(source);
     }
+  }
+
+  void _removeSelectedImage(int index) {
+    if (index < 0 || index >= _selectedImages.length) return;
+    setState(() => _selectedImages.removeAt(index));
   }
 
   Future<void> _showLocationSheet() async {
@@ -1113,7 +1132,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
             child: Stack(
               children: [
                 Positioned.fill(child: _buildImagePreview()),
-                if (_selectedImage != null ||
+                if (_selectedImages.isNotEmpty ||
                     (_editingProduct?.imagePath ?? '').isNotEmpty)
                   Positioned(
                     top: 12,
@@ -1125,9 +1144,11 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
                         color: const Color(0xFFE83030),
                         borderRadius: BorderRadius.circular(999),
                       ),
-                      child: const Text(
-                        'Cover',
-                        style: TextStyle(
+                      child: Text(
+                        _selectedImages.length > 1
+                            ? 'Cover 1/${_selectedImages.length}'
+                            : 'Cover',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -1175,6 +1196,82 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
           ),
         ),
         const SizedBox(height: 12),
+        if (_selectedImages.isNotEmpty) ...[
+          SizedBox(
+            height: 82,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _selectedImages.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.file(
+                        _selectedImages[index],
+                        width: 74,
+                        height: 74,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    if (index == 0)
+                      Positioned(
+                        left: 6,
+                        bottom: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE83030),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: const Text(
+                            'Cover',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    Positioned(
+                      top: -6,
+                      right: -6,
+                      child: InkWell(
+                        onTap: () => _removeSelectedImage(index),
+                        borderRadius: BorderRadius.circular(999),
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.16),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            size: 15,
+                            color: Color(0xFFE83030),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         Row(
           children: [
             Expanded(
@@ -1189,7 +1286,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
               child: _buildImageSourceButton(
                 onPressed: () => _pickImage(ImageSource.gallery),
                 icon: const Icon(Icons.photo_library_outlined),
-                label: 'Galeri',
+                label: 'Galeri Banyak',
               ),
             ),
           ],
@@ -1752,10 +1849,10 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
   }
 
   Widget _buildImagePreview() {
-    if (_selectedImage != null) {
+    if (_selectedImages.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: Image.file(_selectedImage!, fit: BoxFit.cover),
+        child: Image.file(_selectedImages.first, fit: BoxFit.cover),
       );
     }
 

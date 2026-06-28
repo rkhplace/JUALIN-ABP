@@ -103,14 +103,15 @@ class ProductService {
 
   /// Creates a new product for the authenticated seller.
   /// [data] must include: name, price, stock_quantity, description, category, condition.
-  /// Optionally provide an [imageFile] for the product image.
+  /// Optionally provide [imageFiles] for product images.
   Future<Product?> createProduct(Map<String, String> data,
-      {File? imageFile}) async {
+      {File? imageFile, List<File>? imageFiles}) async {
     try {
       final response = await _client.postMultipart(
         ApiConfig.products,
         data,
         imageFile: imageFile,
+        imageFiles: imageFiles,
         imageField: 'images[]',
       );
 
@@ -127,12 +128,13 @@ class ProductService {
 
   /// Updates a seller product. Uses multipart so product images can be replaced.
   Future<Product?> updateProduct(int id, Map<String, String> data,
-      {File? imageFile}) async {
+      {File? imageFile, List<File>? imageFiles}) async {
     try {
       final response = await _client.postMultipart(
         '${ApiConfig.products}/$id?_method=PATCH',
         data,
         imageFile: imageFile,
+        imageFiles: imageFiles,
         imageField: 'images[]',
       );
 
