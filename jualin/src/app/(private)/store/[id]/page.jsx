@@ -20,6 +20,7 @@ import Toast from "@/components/ui/Toast";
 import UserAvatar from "@/components/ui/UserAvatar";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import { ProductCardSkeleton } from "@/components/ui/skeleton";
+import Pagination from "@/components/ui/Pagination";
 import { AuthContext } from "@/context/AuthProvider";
 import { ChatContext } from "@/context/ChatProvider";
 import { sellerService } from "@/services/seller/sellerService";
@@ -58,7 +59,7 @@ export default function StoreProfilePage() {
       try {
         const [sellerData, productData] = await Promise.all([
           userService.fetchById(sellerId),
-          sellerService.fetchProducts(sellerId, 12, page),
+          sellerService.fetchProducts(sellerId, 9, page),
         ]);
 
         if (!mounted) return;
@@ -169,8 +170,8 @@ export default function StoreProfilePage() {
       <main className="min-h-screen bg-[#F7F7F8] px-4 py-8">
         <div className="mx-auto max-w-6xl space-y-6">
           <div className="h-52 animate-pulse rounded-[28px] bg-white" />
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {[...Array(8)].map((_, index) => (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 sm:gap-8">
+            {[...Array(9)].map((_, index) => (
               <ProductCardSkeleton key={index} />
             ))}
           </div>
@@ -384,71 +385,57 @@ export default function StoreProfilePage() {
             </div>
           ) : (
             <>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 sm:gap-8">
                 {filteredProducts.map((product) => (
                   <button
                     key={product.id}
                     type="button"
                     onClick={() => router.push(`/product/${product.id}`)}
-                    className="group flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm transition hover:-translate-y-1 hover:border-red-100 hover:shadow-xl"
+                    className="group flex h-full flex-col items-start rounded-2xl bg-white p-4 text-left shadow transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-xl active:scale-95 focus:outline-none sm:p-6"
                   >
                     <img
                       src={getProductImageUrl(product.img || product.image)}
                       alt={product.name || "Produk"}
                       loading="lazy"
-                      className="h-44 w-full rounded-xl bg-gray-50 object-cover transition group-hover:scale-[1.02]"
+                      className="mb-4 h-36 w-full rounded-xl bg-gray-50 object-cover transition-transform duration-200 group-hover:scale-[1.02] sm:h-60"
                       onError={(event) => {
                         event.currentTarget.src =
                           "https://via.placeholder.com/400x400?text=No+Image";
                       }}
                     />
-                    <div className="mt-3 flex flex-1 flex-col">
-                      <div className="text-xs font-black uppercase tracking-wide text-blue-700">
-                        {product.brand || product.category || "Produk"}
-                      </div>
-                      <h3 className="mt-1 line-clamp-2 text-sm font-black text-gray-950">
-                        {product.name || "Produk Jualin"}
-                      </h3>
-                      <p className="mt-1 line-clamp-2 text-xs font-medium leading-5 text-gray-500">
-                        {product.description || "Tidak ada deskripsi."}
-                      </p>
-                      <div className="mt-auto flex items-center justify-between gap-3 pt-4">
-                        <span className="text-base font-black text-gray-950">
-                          {formatCurrency(product.price || 0)}
-                        </span>
-                        <span className="rounded-full bg-gray-100 px-2 py-1 text-[11px] font-bold text-gray-600">
-                          Stok: {product.stock ?? product.stock_quantity ?? 0}
-                        </span>
-                      </div>
+                    <span className="mb-2 text-sm font-bold uppercase tracking-wide text-blue-700">
+                      {product.brand || product.category || "Produk"}
+                    </span>
+                    <h3 className="mb-1 text-base font-semibold text-black sm:text-xl">
+                      {product.name || "Produk Jualin"}
+                    </h3>
+                    <p className="mb-2 hidden h-12 overflow-hidden text-ellipsis break-all text-base leading-6 text-gray-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] sm:block">
+                      {product.description || "Tidak ada deskripsi."}
+                    </p>
+                    <div className="mb-2 flex items-center gap-1.5 self-start rounded-full border border-red-100 bg-red-50 px-3 py-1.5 sm:mb-3">
+                      <User className="h-3 w-3 text-red-600" />
+                      <span className="text-xs font-medium text-red-800">
+                        {seller.username || "Seller"}
+                      </span>
+                    </div>
+                    <div className="mt-auto flex w-full items-center justify-between gap-3">
+                      <span className="text-lg font-bold text-black">
+                        {formatCurrency(product.price || 0)}
+                      </span>
+                      <span className="text-sm font-medium text-gray-600">
+                        Stok: {product.stock ?? product.stock_quantity ?? 0}
+                      </span>
                     </div>
                   </button>
                 ))}
               </div>
 
-              {meta.totalPages > 1 && (
-                <div className="mt-6 flex items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPage((current) => Math.max(1, current - 1))}
-                    disabled={page <= 1}
-                    className="rounded-full border border-gray-200 px-4 py-2 text-sm font-bold text-gray-700 disabled:opacity-40"
-                  >
-                    Sebelumnya
-                  </button>
-                  <span className="rounded-full bg-red-50 px-4 py-2 text-sm font-black text-[#E83030]">
-                    {meta.currentPage} / {meta.totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPage((current) => Math.min(meta.totalPages, current + 1))
-                    }
-                    disabled={page >= meta.totalPages}
-                    className="rounded-full border border-gray-200 px-4 py-2 text-sm font-bold text-gray-700 disabled:opacity-40"
-                  >
-                    Berikutnya
-                  </button>
-                </div>
+              {meta.totalPages > 1 && !searchQuery && activeCategory === "all" && (
+                <Pagination
+                  currentPage={meta.currentPage}
+                  totalPages={meta.totalPages}
+                  onPageChange={setPage}
+                />
               )}
             </>
           )}

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Badge } from '@/components/ui/Badge';
 import UserAvatar from '@/components/ui/UserAvatar';
 import { fetchChatPartnerProfile } from '@/services/chat/chatService';
@@ -23,6 +24,9 @@ export function ChatItem({
 }) {
   const [fetchedUser, setFetchedUser] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
+  const menuButtonRef = useRef(null);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -39,6 +43,55 @@ export function ChatItem({
 
   const displayAvatar = fetchedUser?.profile_picture || chat.avatar;
 
+  const updateMenuPosition = useCallback(() => {
+    const button = menuButtonRef.current;
+    if (!button || typeof window === 'undefined') return;
+
+    const rect = button.getBoundingClientRect();
+    const menuHeight = 196;
+    const top =
+      rect.bottom + 8 + menuHeight > window.innerHeight
+        ? Math.max(12, rect.top - menuHeight - 8)
+        : rect.bottom + 8;
+
+    setMenuPosition({
+      top,
+      right: Math.max(12, window.innerWidth - rect.right),
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen || typeof window === 'undefined') return;
+
+    updateMenuPosition();
+
+    const handlePointerDown = (event) => {
+      if (
+        menuRef.current?.contains(event.target) ||
+        menuButtonRef.current?.contains(event.target)
+      ) {
+        return;
+      }
+      setMenuOpen(false);
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', updateMenuPosition);
+    window.addEventListener('scroll', updateMenuPosition, true);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', updateMenuPosition);
+      window.removeEventListener('scroll', updateMenuPosition, true);
+    };
+  }, [menuOpen, updateMenuPosition]);
+
   const handleMenuAction = (event, action) => {
     event.stopPropagation();
     setMenuOpen(false);
@@ -48,7 +101,7 @@ export function ChatItem({
   return (
     <div
       onClick={onClick}
-      className={`mx-2 md:mx-3 my-2 p-3 md:p-4 rounded-2xl cursor-pointer transition-all duration-300 ease-in-out group relative overflow-hidden ${isSelected
+      className={`mx-2 md:mx-3 my-2 p-3 md:p-4 rounded-2xl cursor-pointer transition-all duration-300 ease-in-out group relative ${isSelected
           ? 'bg-gradient-to-r from-red-50 via-white to-white shadow-md border-l-4 border-red-500 translate-x-1'
           : 'hover:bg-gray-50 border border-transparent hover:shadow-sm hover:translate-x-1'
         }`}
@@ -87,9 +140,11 @@ export function ChatItem({
                 </span>
               )}
               <button
+                ref={menuButtonRef}
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
+                  updateMenuPosition();
                   setMenuOpen((value) => !value);
                 }}
                 className={`grid h-7 w-7 place-items-center rounded-full transition ${
@@ -101,39 +156,21 @@ export function ChatItem({
               >
                 <MoreHorizontal className="h-4 w-4" />
               </button>
-              {menuOpen && (
-                <div
-                  className="absolute right-0 top-8 z-30 w-52 overflow-hidden rounded-2xl border border-gray-100 bg-white py-2 shadow-[0_18px_48px_rgba(15,23,42,0.18)]"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <ChatMenuButton
-                    icon={CheckCheck}
-                    label="Tandai dibaca"
-                    onClick={(event) => handleMenuAction(event, onMarkRead)}
-                  />
-                  <ChatMenuButton
-                    icon={chat.isPinned ? PinOff : Pin}
-                    label={chat.isPinned ? 'Lepas pin' : 'Pin obrolan'}
-                    onClick={(event) => handleMenuAction(event, onTogglePin)}
-                  />
-                  <ChatMenuButton
-                    icon={chat.isMuted ? Volume2 : BellOff}
-                    label={chat.isMuted ? 'Nyalakan' : 'Matikan'}
-                    onClick={(event) => handleMenuAction(event, onToggleMute)}
-                  />
-                  <div className="my-1 h-px bg-gray-100" />
-                  <ChatMenuButton
-                    icon={Trash2}
-                    label="Hapus obrolan"
-                    danger
-                    onClick={(event) => {
-                      if (window.confirm('Sembunyikan obrolan ini dari daftar chat?')) {
-                        handleMenuAction(event, onHideChat);
-                      }
-                    }}
-                  />
-                </div>
-              )}
+              <ChatItemMenu
+                chat={chat}
+                isOpen={menuOpen}
+                menuRef={menuRef}
+                position={menuPosition}
+                onMarkRead={(event) => handleMenuAction(event, onMarkRead)}
+                onTogglePin={(event) => handleMenuAction(event, onTogglePin)}
+                onToggleMute={(event) => handleMenuAction(event, onToggleMute)}
+                onHideChat={(event) => {
+                  event.stopPropagation();
+                  if (window.confirm('Sembunyikan obrolan ini dari daftar chat?')) {
+                    handleMenuAction(event, onHideChat);
+                  }
+                }}
+              />
             </div>
           </div>
 
@@ -151,6 +188,52 @@ export function ChatItem({
         </div>
       </div>
     </div>
+  );
+}
+
+function ChatItemMenu({
+  chat,
+  isOpen,
+  menuRef,
+  position,
+  onMarkRead,
+  onTogglePin,
+  onToggleMute,
+  onHideChat,
+}) {
+  if (!isOpen || typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      ref={menuRef}
+      className="fixed z-[9999] w-52 overflow-hidden rounded-2xl border border-gray-100 bg-white py-2 shadow-[0_22px_56px_rgba(15,23,42,0.22)]"
+      style={{ top: position.top, right: position.right }}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <ChatMenuButton
+        icon={CheckCheck}
+        label="Tandai dibaca"
+        onClick={onMarkRead}
+      />
+      <ChatMenuButton
+        icon={chat.isPinned ? PinOff : Pin}
+        label={chat.isPinned ? 'Lepas pin' : 'Pin obrolan'}
+        onClick={onTogglePin}
+      />
+      <ChatMenuButton
+        icon={chat.isMuted ? Volume2 : BellOff}
+        label={chat.isMuted ? 'Nyalakan' : 'Matikan'}
+        onClick={onToggleMute}
+      />
+      <div className="my-1 h-px bg-gray-100" />
+      <ChatMenuButton
+        icon={Trash2}
+        label="Hapus obrolan"
+        danger
+        onClick={onHideChat}
+      />
+    </div>,
+    document.body
   );
 }
 
