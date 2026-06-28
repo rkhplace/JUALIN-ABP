@@ -6,9 +6,11 @@ import {
   ArrowLeft,
   BadgeCheck,
   Boxes,
+  Filter,
   MapPin,
   MessageCircle,
   PackageSearch,
+  Search,
   ShieldCheck,
   Store,
   User,
@@ -42,6 +44,8 @@ export default function StoreProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isStartingChat, setIsStartingChat] = useState(false);
   const [toast, setToast] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
 
   useEffect(() => {
     let mounted = true;
@@ -91,6 +95,33 @@ export default function StoreProfilePage() {
       "Lokasi belum ditentukan"
     );
   }, [seller]);
+
+  const categories = useMemo(() => {
+    return Array.from(
+      new Set(
+        products
+          .map((product) => String(product.category || product.brand || "").trim())
+          .filter(Boolean)
+      )
+    ).sort((a, b) => a.localeCompare(b));
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return products.filter((product) => {
+      const category = String(product.category || product.brand || "").toLowerCase();
+      const matchesCategory = activeCategory === "all" || category === activeCategory;
+      if (!matchesCategory) return false;
+      if (!query) return true;
+
+      return (
+        String(product.name || "").toLowerCase().includes(query) ||
+        String(product.description || "").toLowerCase().includes(query) ||
+        category.includes(query)
+      );
+    });
+  }, [activeCategory, products, searchQuery]);
 
   const handleChatSeller = async () => {
     if (!user) {
@@ -192,13 +223,14 @@ export default function StoreProfilePage() {
           Kembali
         </button>
 
-        <section className="overflow-hidden rounded-[28px] border border-gray-100 bg-white shadow-[0_22px_55px_rgba(15,23,42,0.08)]">
-          <div className="relative bg-gradient-to-br from-[#E83030] to-[#FF5A5F] px-5 py-7 sm:px-8 sm:py-9">
-            <div className="absolute right-8 top-0 h-36 w-36 rounded-full border border-white/15" />
-            <div className="absolute -right-10 bottom-0 h-28 w-28 rounded-full border border-white/15" />
+        <section className="overflow-hidden rounded-[34px] border border-white/75 bg-white/90 shadow-[0_28px_70px_rgba(15,23,42,0.10)] backdrop-blur">
+          <div className="relative bg-gradient-to-br from-[#E83030] via-[#F43D46] to-[#FF6268] px-5 py-7 sm:px-8 sm:py-10">
+            <div className="absolute right-10 top-[-52px] h-44 w-44 rounded-full border border-white/20" />
+            <div className="absolute right-28 bottom-[-88px] h-44 w-44 rounded-full bg-white/10" />
+            <div className="absolute -right-12 bottom-[-32px] h-32 w-32 rounded-full border border-white/15" />
             <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex items-center gap-4">
-                <div className="rounded-[24px] bg-white/15 p-2 ring-1 ring-white/20">
+                <div className="rounded-[28px] bg-white/15 p-2 ring-1 ring-white/25 backdrop-blur">
                   <UserAvatar
                     name={seller.username || seller.email || "Seller"}
                     src={seller.profile_picture || seller.avatar}
@@ -229,7 +261,7 @@ export default function StoreProfilePage() {
                 type="button"
                 onClick={handleChatSeller}
                 disabled={isStartingChat || String(user?.id) === String(seller.id)}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-[#E83030] shadow-[0_14px_30px_rgba(127,29,29,0.22)] transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/95 px-5 py-3 text-sm font-black text-[#E83030] shadow-[0_16px_34px_rgba(127,29,29,0.20)] ring-1 ring-white/70 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isStartingChat ? (
                   <Spinner size="sm" color="red" />
@@ -245,11 +277,12 @@ export default function StoreProfilePage() {
             </div>
           </div>
 
-          <div className="grid gap-3 px-5 py-5 sm:grid-cols-3 sm:px-8">
+          <div className="px-5 py-5 sm:px-8">
+            <div className="grid gap-3 rounded-[26px] border border-white/80 bg-white/70 p-3 shadow-inner shadow-white/60 backdrop-blur sm:grid-cols-3">
             <SellerMetric
               icon={Boxes}
               label="Produk Aktif"
-              value={`${meta.totalProducts || products.length} produk`}
+              value={`${filteredProducts.length} produk`}
             />
             <SellerMetric
               icon={ShieldCheck}
@@ -262,21 +295,41 @@ export default function StoreProfilePage() {
               label="Penjual"
               value={seller.email || "Informasi email tidak ditampilkan"}
             />
+            </div>
           </div>
         </section>
 
-        <section className="rounded-[24px] border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
-          <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-xl font-black text-gray-950">
-                Barang yang Dijual
-              </h2>
-              <p className="mt-1 text-sm font-medium text-gray-500">
-                Lihat produk aktif dari {seller.username || "seller"}.
-              </p>
-            </div>
-            <div className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-[#E83030]">
-              {meta.totalProducts || products.length} produk
+        <section className="rounded-[30px] border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+          <div className="mb-5">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+              <label className="relative flex-1">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#E83030]" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Cari produk di toko ini..."
+                  className="h-12 w-full rounded-2xl border border-gray-100 bg-gray-50 pl-11 pr-4 text-sm font-semibold text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-red-200 focus:bg-white focus:ring-4 focus:ring-red-50"
+                />
+              </label>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:max-w-[52%]">
+                <StoreFilterChip
+                  active={activeCategory === "all"}
+                  label="Semua"
+                  onClick={() => setActiveCategory("all")}
+                />
+                {categories.map((category) => (
+                  <StoreFilterChip
+                    key={category}
+                    active={activeCategory === category.toLowerCase()}
+                    label={category}
+                    onClick={() => setActiveCategory(category.toLowerCase())}
+                  />
+                ))}
+              </div>
+              <div className="hidden shrink-0 rounded-full bg-red-50 px-3 py-2 text-xs font-bold text-[#E83030] lg:block">
+                {filteredProducts.length} produk
+              </div>
             </div>
           </div>
 
@@ -290,10 +343,30 @@ export default function StoreProfilePage() {
                 Seller ini belum memiliki produk aktif yang bisa ditampilkan.
               </p>
             </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-red-100 bg-red-50/30 px-6 py-14 text-center">
+              <PackageSearch className="h-12 w-12 text-[#E83030]" />
+              <h3 className="mt-4 text-lg font-black text-gray-900">
+                Produk tidak ditemukan
+              </h3>
+              <p className="mt-1 max-w-md text-sm font-medium leading-6 text-gray-500">
+                Coba ubah kata kunci atau filter kategori.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setActiveCategory("all");
+                }}
+                className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#E83030] bg-white px-4 py-2 text-sm font-bold text-[#E83030] transition hover:bg-red-50"
+              >
+                Reset Filter
+              </button>
+            </div>
           ) : (
             <>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {products.map((product) => (
+                {filteredProducts.map((product) => (
                   <button
                     key={product.id}
                     type="button"
@@ -368,8 +441,8 @@ export default function StoreProfilePage() {
 
 function SellerMetric({ icon: Icon, label, value, badge = null }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[#E83030] shadow-sm">
+    <div className="flex items-center gap-3 rounded-2xl border border-white/80 bg-white/80 px-4 py-3 shadow-sm">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-[#E83030] shadow-sm">
         <Icon className="h-5 w-5" />
       </div>
       <div className="min-w-0">
@@ -380,5 +453,22 @@ function SellerMetric({ icon: Icon, label, value, badge = null }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function StoreFilterChip({ active, label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-xs font-black transition ${
+        active
+          ? "border-[#E83030] bg-[#E83030] text-white shadow-[0_10px_22px_rgba(232,48,48,0.18)]"
+          : "border-gray-100 bg-white text-gray-700 hover:border-red-100 hover:text-[#E83030]"
+      }`}
+    >
+      <Filter className="h-3.5 w-3.5" />
+      {label}
+    </button>
   );
 }
