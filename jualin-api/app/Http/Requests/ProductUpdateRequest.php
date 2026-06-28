@@ -24,6 +24,10 @@ class ProductUpdateRequest extends FormRequest
             'category' => ['sometimes','nullable','string','max:100'],
             'condition' => ['sometimes','nullable','in:new,used,refurbished'],
             'status' => ['sometimes','nullable','in:active,inactive,archived'],
+            'location_label' => ['sometimes','required','string','max:255'],
+            'location_radius_km' => ['sometimes','required','integer','in:1,3,5,10,15,25'],
+            'latitude' => ['sometimes','nullable','numeric','between:-90,90'],
+            'longitude' => ['sometimes','nullable','numeric','between:-180,180'],
         ];
     }
 
@@ -31,6 +35,8 @@ class ProductUpdateRequest extends FormRequest
     {
         return [
             'image.max' => 'Ukuran gambar terlalu besar. Maksimal 2MB. Silakan gunakan gambar dengan ukuran lebih kecil atau kompres terlebih dahulu.',
+            'location_label.required' => 'Lokasi tawaran wajib diisi.',
+            'location_radius_km.required' => 'Radius lokasi wajib dipilih.',
         ];
     }
 }

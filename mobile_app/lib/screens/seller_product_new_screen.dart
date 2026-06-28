@@ -1,9 +1,13 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../models/seller_product.dart';
+import '../services/api_config.dart';
 import '../services/seller_service.dart';
 import '../widgets/ui/frosted_app_bar.dart';
 
@@ -21,6 +25,20 @@ const Map<String, String> _productConditions = {
   'new': 'Baru',
   'used': 'Bekas',
 };
+
+const List<int> _locationRadiusOptions = [1, 3, 5, 10, 15, 25];
+
+class _ResolvedLocation {
+  final String label;
+  final double latitude;
+  final double longitude;
+
+  const _ResolvedLocation({
+    required this.label,
+    required this.latitude,
+    required this.longitude,
+  });
+}
 
 // Shared form used by both New and Edit screens
 class SellerProductFormScreen extends StatefulWidget {
@@ -40,6 +58,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _stockController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
 
   final ImagePicker _imagePicker = ImagePicker();
   SellerProduct? _editingProduct;
@@ -51,6 +70,9 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
   String? _selectedCategory;
   String? _selectedCondition;
   bool _isFormattingPrice = false;
+  int _locationRadiusKm = 10;
+  double? _latitude;
+  double? _longitude;
 
   @override
   void didChangeDependencies() {
@@ -68,6 +90,10 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
       _priceController.text = _formatPriceInput(args.price.toString());
       _stockController.text = _formatPriceInput(args.stock.toString());
       _descriptionController.text = args.description;
+      _locationController.text = args.locationLabel;
+      _locationRadiusKm = args.locationRadiusKm ?? 10;
+      _latitude = args.latitude;
+      _longitude = args.longitude;
     }
     _didInitializeEditData = true;
   }
@@ -78,6 +104,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
     _priceController.dispose();
     _stockController.dispose();
     _descriptionController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
@@ -86,6 +113,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
     final price = _priceController.text.replaceAll(RegExp(r'[^0-9]'), '');
     final stock = _stockController.text.replaceAll(RegExp(r'[^0-9]'), '');
     final description = _descriptionController.text.trim();
+    final locationLabel = _locationController.text.trim();
     final priceValue = int.tryParse(price);
     final stockValue = int.tryParse(stock);
 
@@ -115,6 +143,10 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
       setState(() => _errorMessage = 'Deskripsi produk wajib diisi.');
       return;
     }
+    if (locationLabel.isEmpty) {
+      setState(() => _errorMessage = 'Lokasi tawaran wajib diisi.');
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -130,7 +162,11 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
         'description': description,
         'condition': _selectedCondition!,
         'status': 'active',
+        'location_label': locationLabel,
+        'location_radius_km': _locationRadiusKm.toString(),
       };
+      if (_latitude != null) payload['latitude'] = _latitude!.toString();
+      if (_longitude != null) payload['longitude'] = _longitude!.toString();
 
       if (widget.isEdit && _editingProduct != null) {
         await _sellerService.updateProduct(
@@ -256,6 +292,506 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
     }
   }
 
+  bool get _hasGoogleMapsKey => ApiConfig.googleMapsApiKey.trim().isNotEmpty;
+
+  Future<_ResolvedLocation?> _resolveLocation(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty || !_hasGoogleMapsKey) return null;
+
+    final uri = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
+      'address': trimmed,
+      'region': 'id',
+      'key': ApiConfig.googleMapsApiKey,
+    });
+
+    final response = await http.get(uri);
+    if (response.statusCode != 200) return null;
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final results = body['results'];
+    if (results is! List || results.isEmpty) return null;
+
+    final first = Map<String, dynamic>.from(results.first as Map);
+    final geometry = Map<String, dynamic>.from(first['geometry'] as Map);
+    final location = Map<String, dynamic>.from(geometry['location'] as Map);
+
+    return _ResolvedLocation(
+      label: first['formatted_address']?.toString() ?? trimmed,
+      latitude: (location['lat'] as num).toDouble(),
+      longitude: (location['lng'] as num).toDouble(),
+    );
+  }
+
+  Future<void> _showLocationSheet() async {
+    final draftController =
+        TextEditingController(text: _locationController.text.trim());
+    var draftRadius = _locationRadiusKm;
+    var draftLatitude = _latitude;
+    var draftLongitude = _longitude;
+    var draftError = '';
+    var isSearching = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            Future<void> searchLocation() async {
+              final query = draftController.text.trim();
+              if (query.isEmpty) {
+                setSheetState(() => draftError = 'Masukkan kota, area, atau kode pos.');
+                return;
+              }
+              if (!_hasGoogleMapsKey) {
+                setSheetState(() {
+                  draftError =
+                      'API key Google Maps belum aktif. Lokasi tetap bisa disimpan sebagai teks.';
+                });
+                return;
+              }
+
+              setSheetState(() {
+                isSearching = true;
+                draftError = '';
+              });
+
+              try {
+                final resolved = await _resolveLocation(query);
+                if (!context.mounted) return;
+                setSheetState(() {
+                  if (resolved == null) {
+                    draftError = 'Lokasi tidak ditemukan. Coba kata kunci lain.';
+                  } else {
+                    draftController.text = resolved.label;
+                    draftLatitude = resolved.latitude;
+                    draftLongitude = resolved.longitude;
+                  }
+                  isSearching = false;
+                });
+              } catch (_) {
+                if (!context.mounted) return;
+                setSheetState(() {
+                  isSearching = false;
+                  draftError = 'Gagal mencari lokasi. Periksa koneksi atau API key.';
+                });
+              }
+            }
+
+            void applyLocation() {
+              final label = draftController.text.trim();
+              if (label.isEmpty) {
+                setSheetState(() => draftError = 'Lokasi tawaran wajib diisi.');
+                return;
+              }
+
+              setState(() {
+                _locationController.text = label;
+                _locationRadiusKm = draftRadius;
+                _latitude = draftLatitude;
+                _longitude = draftLongitude;
+                _errorMessage = null;
+              });
+              Navigator.pop(sheetContext);
+            }
+
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 18,
+                  right: 18,
+                  top: 12,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 18,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 44,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.black12,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Ubah Lokasi',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(sheetContext),
+                            icon: const Icon(Icons.close_rounded),
+                            style: IconButton.styleFrom(
+                              backgroundColor: const Color(0xFFF3F4F6),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Cari berdasarkan kota, lingkungan, atau kode pos.',
+                        style: TextStyle(color: Colors.black45, fontSize: 12),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: draftController,
+                        textInputAction: TextInputAction.search,
+                        onChanged: (_) => setSheetState(() => draftError = ''),
+                        onSubmitted: (_) => searchLocation(),
+                        decoration: InputDecoration(
+                          labelText: 'Lokasi',
+                          hintText: 'Contoh: Bandung, Dago, 40288',
+                          prefixIcon: const Icon(
+                            Icons.location_on_outlined,
+                            color: Color(0xFFE83030),
+                          ),
+                          suffixIcon: IconButton(
+                            onPressed: isSearching ? null : searchLocation,
+                            icon: isSearching
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Color(0xFFE83030),
+                                    ),
+                                  )
+                                : const Icon(Icons.search_rounded),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: Colors.black.withValues(alpha: 0.08),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE83030),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<int>(
+                        initialValue: draftRadius,
+                        items: _locationRadiusOptions
+                            .map(
+                              (radius) => DropdownMenuItem<int>(
+                                value: radius,
+                                child: Text('$radius kilometer'),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setSheetState(() => draftRadius = value);
+                        },
+                        decoration: InputDecoration(
+                          labelText: 'Radius',
+                          prefixIcon: const Icon(
+                            Icons.radar_outlined,
+                            color: Color(0xFFE83030),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: Colors.black.withValues(alpha: 0.08),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      _buildMapPreview(
+                        label: draftController.text.trim(),
+                        radiusKm: draftRadius,
+                        latitude: draftLatitude,
+                        longitude: draftLongitude,
+                        height: 220,
+                      ),
+                      if (draftError.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          draftError,
+                          style: const TextStyle(
+                            color: Color(0xFFE83030),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: applyLocation,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE83030),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            textStyle:
+                                const TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                          child: const Text('Terapkan'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    draftController.dispose();
+  }
+
+  String? _buildStaticMapUrl({
+    required double? latitude,
+    required double? longitude,
+    required int radiusKm,
+  }) {
+    if (!_hasGoogleMapsKey || latitude == null || longitude == null) {
+      return null;
+    }
+
+    final circlePoints = _buildCirclePath(latitude, longitude, radiusKm);
+    return Uri.https('maps.googleapis.com', '/maps/api/staticmap', {
+      'center': '$latitude,$longitude',
+      'zoom': _zoomForRadius(radiusKm).toString(),
+      'size': '640x360',
+      'scale': '2',
+      'maptype': 'roadmap',
+      'markers': 'color:red|$latitude,$longitude',
+      'path':
+          'fillcolor:0xE8303033|color:0xE8303066|weight:2|${circlePoints.join('|')}',
+      'key': ApiConfig.googleMapsApiKey,
+    }).toString();
+  }
+
+  List<String> _buildCirclePath(double lat, double lng, int radiusKm) {
+    const earthRadiusKm = 6371.0;
+    final latRad = lat * math.pi / 180;
+    final lngRad = lng * math.pi / 180;
+    final angularDistance = radiusKm / earthRadiusKm;
+    final points = <String>[];
+
+    for (var i = 0; i <= 40; i++) {
+      final bearing = 2 * math.pi * i / 40;
+      final pointLat = math.asin(
+        math.sin(latRad) * math.cos(angularDistance) +
+            math.cos(latRad) * math.sin(angularDistance) * math.cos(bearing),
+      );
+      final pointLng = lngRad +
+          math.atan2(
+            math.sin(bearing) *
+                math.sin(angularDistance) *
+                math.cos(latRad),
+            math.cos(angularDistance) - math.sin(latRad) * math.sin(pointLat),
+          );
+      points.add(
+        '${(pointLat * 180 / math.pi).toStringAsFixed(6)},'
+        '${(pointLng * 180 / math.pi).toStringAsFixed(6)}',
+      );
+    }
+
+    return points;
+  }
+
+  int _zoomForRadius(int radiusKm) {
+    if (radiusKm <= 1) return 14;
+    if (radiusKm <= 3) return 13;
+    if (radiusKm <= 5) return 12;
+    if (radiusKm <= 10) return 11;
+    if (radiusKm <= 15) return 10;
+    return 9;
+  }
+
+  Widget _buildMapPreview({
+    required String label,
+    required int radiusKm,
+    required double? latitude,
+    required double? longitude,
+    double height = 154,
+  }) {
+    final mapUrl = _buildStaticMapUrl(
+      latitude: latitude,
+      longitude: longitude,
+      radiusKm: radiusKm,
+    );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        height: height,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF4F4),
+          border: Border.all(color: const Color(0xFFFFD4D4)),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (mapUrl != null)
+              Image.network(
+                mapUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildMapFallback(),
+              )
+            else
+              _buildMapFallback(),
+            Positioned(
+              left: 14,
+              right: 14,
+              bottom: 14,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.94),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFEFEF),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.location_on,
+                        color: Color(0xFFE83030),
+                        size: 19,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            label.isEmpty ? 'Lokasi belum dipilih' : label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              color: Colors.black87,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Radius $radiusKm km',
+                            style: const TextStyle(
+                              color: Colors.black45,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapFallback() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFEFF7FF), Color(0xFFFFF5F5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        Positioned(
+          left: -30,
+          top: 22,
+          child: _buildMapLine(150, const Color(0xFFB9DFFF)),
+        ),
+        Positioned(
+          right: -28,
+          bottom: 34,
+          child: _buildMapLine(180, const Color(0xFFFFCFCF)),
+        ),
+        Center(
+          child: Container(
+            width: 116,
+            height: 116,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFE83030).withValues(alpha: 0.12),
+              border: Border.all(
+                color: const Color(0xFFE83030).withValues(alpha: 0.24),
+              ),
+            ),
+            child: const Icon(
+              Icons.location_searching_rounded,
+              color: Color(0xFFE83030),
+              size: 34,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMapLine(double width, Color color) {
+    return Transform.rotate(
+      angle: -0.25,
+      child: Container(
+        width: width,
+        height: 22,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.62),
+          borderRadius: BorderRadius.circular(999),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FrostedScaffold(
@@ -315,6 +851,13 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
                     _buildDescriptionField(),
                   ],
                 ),
+              ),
+              const SizedBox(height: 16),
+              _buildFormSection(
+                icon: Icons.location_on_outlined,
+                title: 'Lokasi Tawaran',
+                subtitle: 'Tentukan area produk tanpa membagikan titik alamat persis.',
+                child: _buildLocationCard(),
               ),
               const SizedBox(height: 16),
               _buildFormSection(
@@ -758,6 +1301,107 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
     );
   }
 
+  Widget _buildLocationCard() {
+    return AnimatedBuilder(
+      animation: _locationController,
+      builder: (context, _) {
+        final label = _locationController.text.trim();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: _showLocationSheet,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFAFAFA),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: label.isEmpty
+                        ? Colors.black.withValues(alpha: 0.05)
+                        : const Color(0xFFFFCACA),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFEFEF),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.place_outlined,
+                        color: Color(0xFFE83030),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label.isEmpty ? 'Pilih lokasi tawaran' : label,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: label.isEmpty
+                                  ? Colors.grey[400]
+                                  : Colors.black87,
+                              fontWeight: label.isEmpty
+                                  ? FontWeight.w500
+                                  : FontWeight.w900,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Radius $_locationRadiusKm km',
+                            style: const TextStyle(
+                              color: Colors.black45,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: Colors.black38,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildMapPreview(
+              label: label,
+              radiusKm: _locationRadiusKm,
+              latitude: _latitude,
+              longitude: _longitude,
+            ),
+            const SizedBox(height: 10),
+            const Row(
+              children: [
+                Icon(Icons.privacy_tip_outlined,
+                    color: Colors.black38, size: 15),
+                SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    'Pembeli melihat area radius, bukan alamat lengkap.',
+                    style: TextStyle(color: Colors.black45, fontSize: 11),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildPriceField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -852,6 +1496,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
         _priceController,
         _stockController,
         _descriptionController,
+        _locationController,
       ]),
       builder: (context, _) {
         final name = _nameController.text.trim();
@@ -937,6 +1582,12 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
                         _buildPreviewBadge(
                           Icons.inventory_2_outlined,
                           '${stock.isEmpty ? '0' : stock} stok',
+                        ),
+                        _buildPreviewBadge(
+                          Icons.place_outlined,
+                          _locationController.text.trim().isEmpty
+                              ? 'Lokasi'
+                              : '$_locationRadiusKm km',
                         ),
                       ],
                     ),

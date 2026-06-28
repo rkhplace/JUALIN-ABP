@@ -22,10 +22,17 @@ class Product extends Model
         'category',
         'condition',
         'status',
+        'location_label',
+        'location_radius_km',
+        'latitude',
+        'longitude',
     ];
     protected $casts = [
         'price' => 'integer',
         'stock_quantity' => 'integer',
+        'location_radius_km' => 'integer',
+        'latitude' => 'float',
+        'longitude' => 'float',
     ];
 
     public function seller()
