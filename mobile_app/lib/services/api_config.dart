@@ -15,6 +15,7 @@ class ApiConfig {
   static const String refreshToken = '/refresh-token';
   static const String passwordEmail = '/password/email';
   static const String passwordReset = '/password/reset';
+  static const String becomeSeller = '/me/become-seller';
 
   // ── Products ────────────────────────────────────
   static const String products = '/products';

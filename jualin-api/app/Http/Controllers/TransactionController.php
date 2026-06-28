@@ -29,9 +29,9 @@ class TransactionController extends Controller
     {
         $user = Auth::user();
 
-        if (!in_array($user->role, ['customer', 'admin'])) {
+        if (!in_array($user->role, ['customer', 'seller', 'admin'])) {
             return ApiResponse::error(
-                'Only customers and admins can create transactions',
+                'Only customers, sellers, and admins can create transactions',
                 null,
                 403
             );
@@ -143,9 +143,9 @@ class TransactionController extends Controller
     {
         $user = Auth::user();
 
-        if (!in_array($user->role, ['customer', 'admin'])) {
+        if (!in_array($user->role, ['customer', 'seller', 'admin'])) {
             return ApiResponse::error(
-                'Only customers and admins can create transactions',
+                'Only customers, sellers, and admins can create transactions',
                 null,
                 403
             );

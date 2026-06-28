@@ -40,6 +40,32 @@ class ProfileController extends Controller
         );
     }
 
+    public function becomeSeller(Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->role === 'admin') {
+            return ApiResponse::error('Admin accounts cannot register as sellers.', null, 422);
+        }
+
+        if ($user->role === 'seller') {
+            return ApiResponse::success('Akun Anda sudah terdaftar sebagai penjual.', $user->fresh());
+        }
+
+        $user->forceFill([
+            'role' => 'seller',
+            'is_verified' => false,
+            'total_sales' => $user->total_sales ?? 0,
+        ])->save();
+
+        $this->verificationService->updateSellerVerification($user->id);
+
+        return ApiResponse::success(
+            'Akun berhasil didaftarkan sebagai penjual.',
+            $user->fresh()
+        );
+    }
+
     public function requestDeletion(Request $request)
     {
         $user = $request->user();

@@ -76,5 +76,10 @@ export const authService = {
   async me() {
     return await fetcher.get("/api/v1/me");
   },
+
+  async becomeSeller() {
+    const response = await fetcher.post("/api/v1/me/become-seller");
+    return response?.data || response;
+  },
 };
 export default authService;

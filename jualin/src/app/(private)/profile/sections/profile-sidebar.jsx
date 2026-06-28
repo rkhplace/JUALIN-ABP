@@ -11,6 +11,8 @@ export function ProfileSidebarSection({
   activeTab,
   onTabChange,
   onLogout,
+  onBecomeSeller,
+  isBecomingSeller = false,
   role,
   user,
   isSidebarOpen = false,
@@ -85,31 +87,53 @@ export function ProfileSidebarSection({
                   Ubah Profil
                 </button>
                 {role === "customer" && (
-                  <button
-                    onClick={() => onTabChange("purchases")}
-                    className={`w-full flex items-center px-4 py-2.5 md:py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] ${activeTab === "purchases"
-                      ? "bg-white text-[#E83030] font-bold ring-2 ring-white/20"
-                      : "bg-white text-gray-700 hover:bg-gray-50"
-                      }`}
-                  >
-                    <svg
-                      className={`mr-3 h-5 w-5 ${activeTab === "purchases"
-                        ? "text-[#E83030]"
-                        : "text-gray-500"
-                        }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  <>
+                    <button
+                      onClick={onBecomeSeller}
+                      disabled={isBecomingSeller}
+                      className="w-full flex items-center px-4 py-2.5 md:py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] bg-white text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-70"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-                      />
-                    </svg>
-                    Riwayat Pembelian
-                  </button>
+                      <svg
+                        className="mr-3 h-5 w-5 text-gray-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 9l1.5-4.5h15L21 9M5 9v10h14V9M9 19v-6h6v6"
+                        />
+                      </svg>
+                      {isBecomingSeller ? "Mendaftarkan..." : "Daftar Penjual"}
+                    </button>
+                    <button
+                      onClick={() => onTabChange("purchases")}
+                      className={`w-full flex items-center px-4 py-2.5 md:py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] ${activeTab === "purchases"
+                        ? "bg-white text-[#E83030] font-bold ring-2 ring-white/20"
+                        : "bg-white text-gray-700 hover:bg-gray-50"
+                        }`}
+                    >
+                      <svg
+                        className={`mr-3 h-5 w-5 ${activeTab === "purchases"
+                          ? "text-[#E83030]"
+                          : "text-gray-500"
+                          }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                        />
+                      </svg>
+                      Riwayat Pembelian
+                    </button>
+                  </>
                 )}
               </nav>
             </div>

@@ -74,4 +74,48 @@ class ProfileControllerTest extends TestCase
             'city' => 'Jakarta',
         ]);
     }
+
+    public function testCustomerCanRegisterSameAccountAsSeller(): void
+    {
+        $user = User::create([
+            'username' => 'future_seller',
+            'email' => 'future-seller@example.com',
+            'password' => 'password123',
+            'role' => 'customer',
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $this->postJson('/api/v1/me/become-seller')
+            ->assertOk()
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('data.email', 'future-seller@example.com')
+            ->assertJsonPath('data.role', 'seller');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'email' => 'future-seller@example.com',
+            'role' => 'seller',
+        ]);
+    }
+
+    public function testAdminCannotRegisterAsSellerFromProfile(): void
+    {
+        $admin = User::create([
+            'username' => 'admin_user',
+            'email' => 'admin-user@example.com',
+            'password' => 'password123',
+            'role' => 'admin',
+        ]);
+
+        $this->actingAs($admin, 'api');
+
+        $this->postJson('/api/v1/me/become-seller')
+            ->assertStatus(422);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $admin->id,
+            'role' => 'admin',
+        ]);
+    }
 }

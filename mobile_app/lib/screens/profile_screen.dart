@@ -445,6 +445,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   User? _user;
   bool _isLoading = true;
   bool _isSendingResetLink = false;
+  bool _isBecomingSeller = false;
   bool _isAccountInfoExpanded = false;
   String _userRole = 'customer';
   String? _errorMessage;
@@ -469,7 +470,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       setState(() {
         _user = user;
-        _userRole = idAndRole['role'] as String? ?? user?.role ?? 'customer';
+        _userRole = user?.role ?? (idAndRole['role'] as String?) ?? 'customer';
         _isLoading = false;
         _errorMessage = user == null
             ? 'Profil tidak ditemukan. Pastikan Anda sudah login.'
@@ -483,6 +484,150 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _isLoading = false;
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
       });
+    }
+  }
+
+  Future<bool?> _showBecomeSellerConfirmation() {
+    return showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      builder: (dialogContext) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 34,
+                  spreadRadius: -12,
+                  offset: const Offset(0, 18),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEEEE),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(
+                    Icons.storefront_outlined,
+                    color: Color(0xFFE83030),
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Daftar Sebagai Penjual',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Akun email yang sama akan bisa digunakan untuk belanja dan mengelola toko.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFE83030),
+                          side: const BorderSide(color: Color(0xFFFFC7C7)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        child: const Text(
+                          'Nanti',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE83030),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(dialogContext).pop(true),
+                        child: const Text(
+                          'Daftar',
+                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleBecomeSeller() async {
+    final confirmed = await _showBecomeSellerConfirmation();
+    if (confirmed != true) return;
+
+    setState(() => _isBecomingSeller = true);
+
+    try {
+      final user = await _authService.becomeSeller();
+      if (!mounted) return;
+
+      setState(() {
+        _user = User.fromJson(user);
+        _userRole = 'seller';
+        _isBecomingSeller = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Akun berhasil didaftarkan sebagai penjual.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pushNamed(context, '/seller_main');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isBecomingSeller = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -907,6 +1052,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ],
                                 _buildAccountInfo(_user!),
                                 const SizedBox(height: 12),
+                                if (_userRole != 'seller') ...[
+                                  _buildProfileMenuItem(
+                                    icon: Icons.storefront_outlined,
+                                    title: _isBecomingSeller
+                                        ? 'Mendaftarkan toko...'
+                                        : 'Daftar Sebagai Penjual',
+                                    subtitle:
+                                        'Gunakan email akun ini untuk mulai berjualan',
+                                    isLoading: _isBecomingSeller,
+                                    onTap: _isBecomingSeller
+                                        ? null
+                                        : _handleBecomeSeller,
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
                                 _buildProfileMenuItem(
                                   icon: Icons.edit_outlined,
                                   title: 'Edit Profil',

@@ -148,6 +148,23 @@ class AuthService {
     }
   }
 
+  Future<Map<String, dynamic>> becomeSeller() async {
+    try {
+      final response = await _client.post(ApiConfig.becomeSeller);
+      final user = _extractUser(response) ?? <String, dynamic>{};
+      if (user.isEmpty) {
+        throw ApiException('Data akun penjual tidak ditemukan dari server.', 422);
+      }
+
+      await _persistUser(user);
+      return user;
+    } on ApiException catch (e) {
+      throw Exception(e.message);
+    } catch (e) {
+      throw Exception('Tidak dapat mendaftarkan akun sebagai penjual: $e');
+    }
+  }
+
   Future<void> logout() async {
     try {
       await PushNotificationService.instance.unregisterDeviceToken();
