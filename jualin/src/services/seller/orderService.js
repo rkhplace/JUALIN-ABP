@@ -23,9 +23,15 @@ export const orderService = {
         },
       });
       const payload = resp?.data;
-      if (payload?.data && Array.isArray(payload.data)) return payload.data;
-      if (Array.isArray(payload)) return payload;
-      return [];
+      const list = payload?.data && Array.isArray(payload.data)
+        ? payload.data
+        : Array.isArray(payload)
+          ? payload
+          : [];
+      return list.filter((order) => {
+        if (!sellerId) return true;
+        return String(order?.seller_id ?? order?.seller?.id ?? "") === String(sellerId);
+      });
     } catch (error) {
       console.error("Error fetching seller orders:", error);
       return [];

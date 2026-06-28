@@ -34,7 +34,11 @@ export default function SellerDashboardPage() {
 
         <IncomeSection sellerId={sellerId || 1} />
         <RecentlyAddedSection products={products} isLoading={isLoading} />
-        <BuyerMonitoringSection orders={orders} isLoading={isLoading} />
+        <BuyerMonitoringSection
+          orders={orders}
+          isLoading={isLoading}
+          sellerId={sellerId}
+        />
       </div>
     </main>
   );

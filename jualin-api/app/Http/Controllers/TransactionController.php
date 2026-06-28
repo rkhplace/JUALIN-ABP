@@ -307,6 +307,18 @@ class TransactionController extends Controller
             });
         }
 
+        if ($request->filled('seller_id')) {
+            $query->where('seller_id', (int) $request->get('seller_id'));
+        }
+
+        if ($request->filled('customer_id')) {
+            $query->where('customer_id', (int) $request->get('customer_id'));
+        }
+
+        if ($request->filled('status') && $request->get('status') !== 'all') {
+            $query->where('status', $request->get('status'));
+        }
+
         $transactions = $query->latest()
             ->paginate((int) $request->get('per_page', 10));
 

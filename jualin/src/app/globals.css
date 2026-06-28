@@ -77,6 +77,13 @@ body {
   font-family: var(--font-poppins), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+.jualin-leaflet-map,
+.jualin-leaflet-map .leaflet-pane,
+.jualin-leaflet-map .leaflet-top,
+.jualin-leaflet-map .leaflet-bottom {
+  z-index: 0 !important;
+}
+
 /* Custom animations */
 @keyframes slide-in {
   from {

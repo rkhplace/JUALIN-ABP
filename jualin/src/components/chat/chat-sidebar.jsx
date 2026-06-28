@@ -1,11 +1,78 @@
 'use client';
-import { useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Clock3, History, MessageSquare, Search } from 'lucide-react';
 import { ChatList } from './ChatList';
+import { AuthContext } from '@/context/AuthProvider';
 
 export function ChatSidebar({ chats = [], selectedId, onSelect }) {
+  const { user } = useContext(AuthContext);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('latest');
+  const [chatPrefs, setChatPrefs] = useState({
+    hidden: {},
+    muted: {},
+    pinned: {},
+    read: {},
+  });
+
+  useEffect(() => {
+    if (!user?.id || typeof window === 'undefined') return;
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem(`chat_preferences:${user.id}`) || '{}'
+      );
+      setChatPrefs({
+        hidden: saved.hidden || {},
+        muted: saved.muted || {},
+        pinned: saved.pinned || {},
+        read: saved.read || {},
+      });
+    } catch {
+      setChatPrefs({ hidden: {}, muted: {}, pinned: {}, read: {} });
+    }
+  }, [user?.id]);
+
+  const updateChatPrefs = (updater) => {
+    setChatPrefs((current) => {
+      const next = typeof updater === 'function' ? updater(current) : updater;
+      if (user?.id && typeof window !== 'undefined') {
+        localStorage.setItem(`chat_preferences:${user.id}`, JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  const markRead = (chatId) => {
+    updateChatPrefs((current) => ({
+      ...current,
+      read: { ...current.read, [chatId]: true },
+    }));
+  };
+
+  const togglePin = (chatId) => {
+    updateChatPrefs((current) => {
+      const pinned = { ...current.pinned };
+      if (pinned[chatId]) delete pinned[chatId];
+      else pinned[chatId] = Date.now();
+      return { ...current, pinned };
+    });
+  };
+
+  const toggleMute = (chatId) => {
+    updateChatPrefs((current) => {
+      const muted = { ...current.muted };
+      if (muted[chatId]) delete muted[chatId];
+      else muted[chatId] = true;
+      return { ...current, muted };
+    });
+  };
+
+  const hideChat = (chatId) => {
+    updateChatPrefs((current) => ({
+      ...current,
+      hidden: { ...current.hidden, [chatId]: true },
+    }));
+  };
 
   const filters = [
     { value: 'latest', label: 'Terbaru', Icon: Clock3 },
@@ -62,6 +129,11 @@ export function ChatSidebar({ chats = [], selectedId, onSelect }) {
         onSelect={onSelect}
         searchQuery={searchQuery}
         filter={activeFilter}
+        chatPrefs={chatPrefs}
+        onMarkRead={markRead}
+        onTogglePin={togglePin}
+        onToggleMute={toggleMute}
+        onHideChat={hideChat}
       />
     </div>
   );

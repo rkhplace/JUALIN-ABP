@@ -243,6 +243,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
+  void _openSellerStore() {
+    final product = _product;
+    if (product == null || product.sellerId == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Informasi toko penjual tidak tersedia.')),
+      );
+      return;
+    }
+
+    Navigator.pushNamed(
+      context,
+      '/seller_store',
+      arguments: product,
+    );
+  }
+
   Future<void> _handleReportProduct() async {
     if (_product == null) return;
 
@@ -792,6 +808,34 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ),
           ),
+          if (product.offeredAgoLabel.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.schedule_rounded,
+                    size: 14,
+                    color: Colors.black45,
+                  ),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Text(
+                      product.offeredAgoLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.black45,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -1185,68 +1229,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               (index) => _buildImageDot(index == _activeImageIndex),
             ),
           ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFAFAFA),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFF0F0F0)),
-            ),
-            child: SizedBox(
-              height: 62,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: visibleImages.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  final active = index == _activeImageIndex;
-                  return GestureDetector(
-                    onTap: () {
-                      _imagePageController.animateToPage(
-                        index,
-                        duration: const Duration(milliseconds: 260),
-                        curve: Curves.easeOut,
-                      );
-                      setState(() => _activeImageIndex = index);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 58,
-                      height: 58,
-                      padding: EdgeInsets.all(active ? 2 : 0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(13),
-                        border: Border.all(
-                          color: active
-                              ? const Color(0xFFE83030)
-                              : const Color(0xFFE4E4E4),
-                          width: active ? 2 : 1,
-                        ),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.network(
-                          visibleImages[index],
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: const Color(0xFFF2F2F2),
-                            child: const Icon(
-                              Icons.image_outlined,
-                              color: Colors.black26,
-                              size: 22,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
         ],
       ],
     );
@@ -1267,60 +1249,97 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget _buildSellerRow(Product product) {
     final sellerImageUrl = ImageUrlHelper.resolve(product.sellerProfilePicture);
 
-    return Row(
-      children: [
-        UserAvatar(
-          name: product.sellerName,
-          imageUrl: sellerImageUrl,
-          radius: 24,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Material(
+      color: const Color(0xFFFAFAFA),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: _openSellerStore,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+          ),
+          child: Row(
             children: [
-              Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      product.sellerName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  if (product.sellerIsVerified) ...[
-                    const SizedBox(width: 2),
-                    Tooltip(
-                      message: 'Informasi penjual terverifikasi',
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: () => _showVerifiedSellerPopup(product),
-                        child: const Padding(
-                          padding: EdgeInsets.all(3),
-                          child: Icon(
-                            Icons.verified,
-                            size: 15,
-                            color: Color(0xFF1D8BFF),
+              UserAvatar(
+                name: product.sellerName,
+                imageUrl: sellerImageUrl,
+                radius: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            product.sellerName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                         ),
+                        if (product.sellerIsVerified) ...[
+                          const SizedBox(width: 2),
+                          Tooltip(
+                            message: 'Informasi penjual terverifikasi',
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: () => _showVerifiedSellerPopup(product),
+                              child: const Padding(
+                                padding: EdgeInsets.all(3),
+                                child: Icon(
+                                  Icons.verified,
+                                  size: 15,
+                                  color: Color(0xFF1D8BFF),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    const Text(
+                      'Lihat profil toko penjual',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.black45,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
-                ],
+                ),
               ),
-              const SizedBox(height: 2),
-              const Text(
-                'Penjual',
-                style: TextStyle(fontSize: 12, color: Colors.black54),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(
+                    color: Colors.black.withValues(alpha: 0.05),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Color(0xFFE83030),
+                  size: 22,
+                ),
               ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 
