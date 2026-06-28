@@ -319,7 +319,8 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
                     return CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       slivers: [
-                        SliverToBoxAdapter(child: _buildHeader(seed)),
+                        SliverToBoxAdapter(child: _buildPageHeader()),
+                        SliverToBoxAdapter(child: _buildStoreCard(seed)),
                         if (_isLoading)
                           const SliverFillRemaining(
                             child: Center(child: JualinLogoLoader(size: 58)),
@@ -360,11 +361,90 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
     );
   }
 
-  Widget _buildHeader(Product seed) {
+  Widget _buildPageHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFE83030), Color(0xFFFF474F)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(26),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFE83030).withValues(alpha: 0.22),
+              blurRadius: 28,
+              spreadRadius: -14,
+              offset: const Offset(0, 18),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            Positioned(
+              right: -34,
+              top: -46,
+              child: Container(
+                width: 132,
+                height: 132,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.16),
+                  ),
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                _headerIconButton(
+                  icon: Icons.arrow_back_rounded,
+                  onTap: () => Navigator.pop(context),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Profil Toko',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        'Lihat informasi dan produk penjual.',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStoreCard(Product seed) {
     final sellerImageUrl = ImageUrlHelper.resolve(seed.sellerProfilePicture);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.92),
@@ -429,26 +509,6 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          _headerIconButton(
-                            icon: Icons.arrow_back_rounded,
-                            onTap: () => Navigator.pop(context),
-                          ),
-                          const SizedBox(width: 10),
-                          const Expanded(
-                            child: Text(
-                              'Profil Toko',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
                       Row(
                         children: [
                           Container(

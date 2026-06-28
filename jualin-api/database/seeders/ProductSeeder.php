@@ -357,11 +357,129 @@ class ProductSeeder extends Seeder
             ],
         ];
 
-        // Convert all image URLs to JSON arrays for database storage
-        $products = array_map(function($product) {
-            if (isset($product['image']) && is_string($product['image']) && !str_starts_with($product['image'], '[')) {
-                $product['image'] = json_encode([$product['image']]);
+        $productImageVariants = [
+            'Jam Tangan Seiko 5 Automatic' => [
+                'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1508057198894-247b23fe5ade?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Jaket Bomber Zara Men' => [
+                'https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1520975916090-3105956dac38?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'iPhone 11 Pro 256GB' => [
+                'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Laptop ASUS ROG Zephyrus' => [
+                'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Sepatu Nike Air Jordan 1' => [
+                'https://images.unsplash.com/photo-1552346154-21d32810aba3?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1608231387042-66d1773070a5?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Tas Kulit Fossil Messenger' => [
+                'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1547949003-9792a18a2601?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Sony Alpha a6000 Mirrorless' => [
+                'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1510127034890-ba27508e9f1c?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'PlayStation 5 Disc Edition' => [
+                'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1617096200347-cb04ae810b1d?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Sepeda Balap Polygon Strattos' => [
+                'https://images.unsplash.com/photo-1485965120184-e220f721d03e?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Gitar Akustik Yamaha F310' => [
+                'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1525201548942-d8732f6617a0?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Kursi Gaming Secretlab' => [
+                'https://images.unsplash.com/photo-1580480055273-228ff5388ef8?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Kemeja Flannel Uniqlo L' => [
+                'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1523381294911-8d3cead13475?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Apple iPad Air 5 M1' => [
+                'https://images.unsplash.com/photo-1542751110-97427bbecf20?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1585790050230-5dd28404ccb9?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Action Figure Gundam MG Barbatos' => [
+                'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Smart TV Samsung 43 Inch 4K' => [
+                'https://images.unsplash.com/photo-1593784991095-a205069470b6?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1601944179066-29786cb9d32a?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Headphone Sony WH-1000XM4' => [
+                'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1546435770-a3e426bf472b?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Meja Kerja Minimalis Ikea' => [
+                'https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Drone DJI Mini 2 SE' => [
+                'https://images.unsplash.com/photo-1506947411487-a56738267384?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1521405924368-64c5b84bec60?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Novel Harry Potter' => [
+                'https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Skateboard Fullset Element' => [
+                'https://images.unsplash.com/photo-1536318431364-5cc762cfc8ec?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1520045892732-304bc3ac5d8e?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Kopi Arabika Gayo 1kg' => [
+                'https://images.unsplash.com/photo-1442512595331-e89e73853f31?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Powerbank Anker 20000mAh' => [
+                'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Vacuum Cleaner Robot Xiaomi' => [
+                'https://images.unsplash.com/photo-1585771724684-38269d6639fd?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Helm Kyt NFR Full Face' => [
+                'https://images.unsplash.com/photo-1558981359-219d6364c9c8?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1517846693594-1567da72af75?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Tanaman Hias Monstera King' => [
+                'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1545241047-6083a3684587?q=80&w=1000&auto=format&fit=crop',
+            ],
+            'Mesin Cuci Samsung Top Load' => [
+                'https://images.unsplash.com/photo-1626806819282-2c1dc01a5e0c?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?q=80&w=1000&auto=format&fit=crop',
+            ],
+        ];
+
+        // Convert all image URLs to JSON arrays for database storage.
+        $products = array_map(function ($product) use ($productImageVariants) {
+            $images = [];
+            if (isset($product['image']) && is_array($product['image'])) {
+                $images = $product['image'];
+            } elseif (isset($product['image']) && is_string($product['image'])) {
+                $decoded = json_decode($product['image'], true);
+                $images = is_array($decoded) ? $decoded : [$product['image']];
             }
+
+            $images = array_values(array_unique(array_filter([
+                ...$images,
+                ...($productImageVariants[$product['name']] ?? []),
+            ])));
+
+            $product['image'] = json_encode(array_slice($images, 0, 3));
             return $product;
         }, $products);
 
