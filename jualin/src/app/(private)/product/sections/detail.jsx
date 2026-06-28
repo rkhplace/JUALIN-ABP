@@ -2,7 +2,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { BadgeCheck } from "lucide-react";
+import { BadgeCheck, MapPin, Shirt, Tag } from "lucide-react";
 import Toast from "../../../../components/ui/Toast";
 import Spinner from "../../../../components/ui/Spinner";
 import useMidtransPayment from "../hooks/useMidtransPayment";
@@ -66,6 +66,19 @@ export default function ProductDetailSection({ product, seller }) {
     "Kategori Tidak Sesuai",
     "Lainnya",
   ];
+
+  const productImages = Array.isArray(product?.image)
+    ? product.image
+    : product?.image
+      ? [product.image]
+      : [];
+  const mainImage =
+    productImages.length > 0
+      ? getImageUrl(productImages[selectedImageIndex] || productImages[0])
+      : getProductImageUrl(product?.img || product?.image);
+  const conditionLabel = formatCondition(product?.condition);
+  const locationLabel =
+    product?.location_label || seller?.city || seller?.region || "Belum ditentukan";
 
   const handleConfirmPayment = async (method) => {
     setIsModalOpen(false);
@@ -336,42 +349,38 @@ export default function ProductDetailSection({ product, seller }) {
           </div>
         </div>
       )}
-      <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-start bg-white rounded-2xl shadow p-4 md:p-6">
+      <div className="flex flex-col md:flex-row gap-5 md:gap-8 items-start bg-white rounded-2xl shadow p-4 md:p-6">
         {/* Image Gallery Section */}
         <div className="w-full md:w-1/2 flex flex-col gap-4">
           {/* Main Image */}
-          <div className="relative bg-gray-100 rounded-2xl overflow-hidden shadow">
+          <div className="relative bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
             <img
-              src={
-                Array.isArray(product.image) && product.image.length > 0
-                  ? getImageUrl(product.image[selectedImageIndex])
-                  : getProductImageUrl(product.img || product.image)
-              }
+              src={mainImage}
               alt={product.name}
               loading="lazy"
-              className="w-full h-56 sm:h-72 md:h-80 object-cover"
+              className="w-full h-64 sm:h-80 md:h-[420px] object-contain"
               onError={(e) => {
                 e.target.src = "https://via.placeholder.com/400x400?text=No+Image";
               }}
             />
             {/* Image Counter Badge */}
-            {Array.isArray(product.image) && product.image.length > 1 && (
-              <div className="absolute top-3 right-3 bg-black/50 text-white px-3 py-1 rounded-full text-sm font-medium">
-                {selectedImageIndex + 1} / {product.image.length}
+            {productImages.length > 1 && (
+              <div className="absolute left-4 top-4 rounded-full bg-white px-3 py-1.5 text-sm font-black text-[#E83030] shadow-sm ring-1 ring-red-100">
+                {selectedImageIndex + 1} / {productImages.length}
               </div>
             )}
           </div>
 
           {/* Thumbnail Gallery */}
-          {Array.isArray(product.image) && product.image.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-1 md:pb-2">
-              {product.image.map((img, idx) => (
+          {productImages.length > 1 && (
+            <div className="flex gap-3 overflow-x-auto pb-1 md:pb-2">
+              {productImages.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedImageIndex(idx)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === idx
-                      ? "border-red-500 scale-105"
-                      : "border-gray-300 hover:border-gray-400"
+                  className={`flex-shrink-0 w-20 h-20 md:h-24 md:w-24 rounded-xl overflow-hidden border-2 bg-gray-50 transition-all ${selectedImageIndex === idx
+                      ? "border-red-500 shadow-sm"
+                      : "border-gray-200 hover:border-gray-300"
                     }`}
                 >
                   <img
@@ -386,15 +395,43 @@ export default function ProductDetailSection({ product, seller }) {
               ))}
             </div>
           )}
+
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+            <h3 className="text-lg font-black text-gray-950">Deskripsi Produk</h3>
+            <p className="mt-3 text-sm leading-7 text-gray-600">
+              {product.description || "Penjual belum menambahkan deskripsi produk."}
+            </p>
+
+            <div className="my-5 h-px bg-gray-100" />
+
+            <h3 className="text-lg font-black text-gray-950">Detail Produk</h3>
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <ProductDetailItem
+                icon={Tag}
+                label="Kondisi"
+                value={conditionLabel}
+              />
+              <ProductDetailItem
+                icon={Shirt}
+                label="Kategori"
+                value={product.category || product.brand || "-"}
+              />
+              <ProductDetailItem
+                icon={MapPin}
+                label="Lokasi"
+                value={locationLabel}
+              />
+            </div>
+          </div>
         </div>
-        <div className="flex-1">
+        <div className="flex-1 w-full">
           <h2 className="text-2xl md:text-3xl font-semibold mb-1 text-black">
             {product.name}
           </h2>
           <h1 className="text-lg md:text-2xl font-bold mb-4 md:mb-6 text-blue-700">
             {product.brand || product.category}
           </h1>
-          <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6 break-words w-full line-clamp-4">{product.description}</p>
+          <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6 break-words w-full line-clamp-2">{product.description}</p>
 
           {/* Seller Info */}
           <div className="flex items-center gap-3 mb-4 md:mb-6 p-3 md:p-4 bg-gray-50 rounded-xl border border-gray-100">
@@ -543,4 +580,28 @@ export default function ProductDetailSection({ product, seller }) {
       )}
     </>
   );
+}
+
+function ProductDetailItem({ icon: Icon, label, value }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-[#E83030]">
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="min-w-0">
+        <div className="text-sm font-bold text-gray-950">{label}</div>
+        <div className="mt-0.5 truncate text-sm font-medium text-gray-500">
+          {value || "-"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function formatCondition(condition) {
+  const normalized = String(condition || "").toLowerCase();
+  if (["new", "baru"].includes(normalized)) return "Baru";
+  if (["used", "bekas", "second"].includes(normalized)) return "Bekas";
+  if (!normalized) return "-";
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
