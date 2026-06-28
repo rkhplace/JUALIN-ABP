@@ -198,6 +198,108 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
     }
   }
 
+  void _showCategoryFilterSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SafeArea(
+        child: Container(
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(26),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.16),
+                blurRadius: 34,
+                spreadRadius: -12,
+                offset: const Offset(0, 18),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Filter Kategori',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildFilterSheetOption('all', 'Semua Produk'),
+              ..._categories.map(
+                (category) => _buildFilterSheetOption(
+                  category.toLowerCase(),
+                  category,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterSheetOption(String value, String label) {
+    final isActive = _activeCategory == value;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: isActive ? const Color(0xFFFFEFEF) : const Color(0xFFF8F8F8),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            setState(() => _activeCategory = value);
+            Navigator.pop(context);
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Row(
+              children: [
+                Icon(
+                  isActive
+                      ? Icons.radio_button_checked_rounded
+                      : Icons.radio_button_off_rounded,
+                  size: 18,
+                  color: isActive ? const Color(0xFFE83030) : Colors.black38,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color:
+                          isActive ? const Color(0xFFE83030) : Colors.black87,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final seed = _sellerSeed;
@@ -586,127 +688,99 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
   }
 
   Widget _buildSearchAndFilter() {
+    final hasActiveFilter = _activeCategory != 'all';
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-      child: Column(
+      child: Row(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.045),
-                  blurRadius: 18,
-                  spreadRadius: -10,
-                  offset: const Offset(0, 10),
+          Expanded(
+            child: Container(
+              height: 54,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.045),
+                    blurRadius: 18,
+                    spreadRadius: -10,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) => setState(() => _searchQuery = value),
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'Cari produk...',
+                  hintStyle: const TextStyle(
+                    color: Colors.black38,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: Colors.black45,
+                    size: 20,
+                  ),
+                  suffixIcon: _searchQuery.isEmpty
+                      ? null
+                      : IconButton(
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                        ),
+                  border: InputBorder.none,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
                 ),
-              ],
-            ),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (value) => setState(() => _searchQuery = value),
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: 'Cari produk di toko ini...',
-                hintStyle: const TextStyle(
-                  color: Colors.black38,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-                prefixIcon: const Icon(
-                  Icons.search_rounded,
-                  color: Color(0xFFE83030),
-                  size: 20,
-                ),
-                suffixIcon: _searchQuery.isEmpty
-                    ? null
-                    : IconButton(
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                        icon: const Icon(Icons.close_rounded, size: 18),
-                      ),
-                border: InputBorder.none,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(width: 10),
           SizedBox(
-            height: 38,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _buildCategoryChip('all', 'Semua'),
-                ..._categories.map(
-                  (category) => _buildCategoryChip(
-                    category.toLowerCase(),
-                    category,
-                  ),
+            width: 54,
+            height: 54,
+            child: ElevatedButton(
+              onPressed: _showCategoryFilterSheet,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE83030),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
                 ),
-              ],
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Center(
+                    child: Icon(Icons.tune_rounded, size: 22),
+                  ),
+                  if (hasActiveFilter)
+                    Positioned(
+                      right: 12,
+                      top: 12,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryChip(String value, String label) {
-    final isActive = _activeCategory == value;
-
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: () => setState(() => _activeCategory = value),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
-          decoration: BoxDecoration(
-            color: isActive ? const Color(0xFFE83030) : Colors.white,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: isActive
-                  ? const Color(0xFFE83030)
-                  : Colors.black.withValues(alpha: 0.07),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: (isActive ? const Color(0xFFE83030) : Colors.black)
-                    .withValues(alpha: isActive ? 0.16 : 0.035),
-                blurRadius: 14,
-                spreadRadius: -8,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                value == 'all'
-                    ? Icons.grid_view_rounded
-                    : Icons.category_outlined,
-                size: 14,
-                color: isActive ? Colors.white : const Color(0xFFE83030),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isActive ? Colors.white : Colors.black87,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
