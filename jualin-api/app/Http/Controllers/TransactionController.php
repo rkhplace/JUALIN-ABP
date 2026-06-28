@@ -548,6 +548,7 @@ class TransactionController extends Controller
     private function resolveChartRange(Request $request, string $period): array
     {
         $today = now();
+        $range = (string) $request->get('range', '');
         $hasCustomStart = $request->filled('start_date');
         $hasCustomEnd = $request->filled('end_date');
 
@@ -564,6 +565,18 @@ class TransactionController extends Controller
             }
 
             return [$startDate, $endDate];
+        }
+
+        if ($range === '7d') {
+            return [$today->copy()->subDays(6)->startOfDay(), $today->copy()->endOfDay()];
+        }
+
+        if ($range === '30d') {
+            return [$today->copy()->subDays(29)->startOfDay(), $today->copy()->endOfDay()];
+        }
+
+        if ($range === '12m') {
+            return [$today->copy()->subMonths(11)->startOfMonth(), $today->copy()->endOfMonth()];
         }
 
         return match ($period) {

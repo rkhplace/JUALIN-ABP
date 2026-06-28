@@ -152,7 +152,7 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
       const ChatScreen(fallbackRoute: '/seller_main'),
       const SellerProductsScreen(),
       const SellerOrdersScreen(),
-      const ProfileScreen(),
+      const ProfileScreen(inSellerMode: true),
     ];
 
     return Scaffold(

@@ -98,13 +98,19 @@ class SellerService {
   /// The API returns all transactions for the authenticated user as buyer or seller.
   Future<List<Map<String, dynamic>>> getSellerOrders() async {
     try {
+      final sellerId = await _currentUserId();
       final response = await _client.get(
         ApiConfig.transactions,
         queryParams: {'per_page': '50'},
       );
 
       final items = _extractList(response, ['transactions']);
-      return items.cast<Map<String, dynamic>>();
+      return items
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .where((order) =>
+              sellerId <= 0 || _parseInt(order['seller_id']) == sellerId)
+          .toList();
     } on ApiException catch (e) {
       throw Exception('Gagal memuat pesanan: ${e.message}');
     } catch (e) {
@@ -119,13 +125,19 @@ class SellerService {
   /// API: GET /v1/transactions/income/statistics?period=Month&type=sales
   /// Returns { balance, transferred, chart_data, period }
   Future<Map<String, dynamic>> getSellerStats({
-    String period = 'Month',
+    String period = '7d',
     String type = 'sales',
   }) async {
     try {
+      final apiPeriod = switch (period) {
+        '7d' => 'Day',
+        '30d' => 'Day',
+        '12m' => 'Month',
+        _ => period,
+      };
       final response = await _client.get(
         ApiConfig.sellerStats,
-        queryParams: {'period': period, 'type': type},
+        queryParams: {'period': apiPeriod, 'range': period, 'type': type},
       );
       final stats = Map<String, dynamic>.from(
         (response['data'] as Map<String, dynamic>?) ?? response,
@@ -172,6 +184,12 @@ class SellerService {
   double _parseDouble(dynamic value) {
     if (value is num) return value.toDouble();
     return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  int _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
   List<dynamic> _extractList(Map<String, dynamic> response, List<String> keys) {
