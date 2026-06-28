@@ -23,9 +23,9 @@ class PaymentController extends Controller
     {
         $user = Auth::user();
 
-        if (!in_array($user->role, ['customer', 'admin'])) {
+        if (!in_array($user->role, ['customer', 'seller', 'admin'])) {
             return ApiResponse::error(
-                'Only customers and admins can create payments',
+                'Only customers, sellers, and admins can create payments',
                 null,
                 403
             );
@@ -198,8 +198,8 @@ class PaymentController extends Controller
     public function reissuePaymentToken(Request $request, int $paymentId): JsonResponse
     {
         $user = Auth::user();
-        if (!in_array($user->role, ['customer','admin'])) {
-            return ApiResponse::error('Only customers and admins can reissue payments', null, 403);
+        if (!in_array($user->role, ['customer', 'seller', 'admin'])) {
+            return ApiResponse::error('Only customers, sellers, and admins can reissue payments', null, 403);
         }
 
         try {

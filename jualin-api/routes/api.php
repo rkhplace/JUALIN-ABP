@@ -36,6 +36,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/me/deletion-request', [\App\Http\Controllers\ProfileController::class, 'requestDeletion']);
         Route::delete('/me/deletion-request', [\App\Http\Controllers\ProfileController::class, 'cancelDeletion']);
+        Route::post('/me/become-seller', [\App\Http\Controllers\ProfileController::class, 'becomeSeller']);
         Route::get('/users/search', [UserController::class, 'search']);
         Route::post('/reports', [ReportController::class, 'store']);
         Route::patch('/profile/update', [\App\Http\Controllers\ProfileController::class, 'update']);
@@ -65,7 +66,7 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::post('/transactions/withdraw', [TransactionController::class, 'withdraw']);
     });
 
-    Route::middleware('role:customer,admin')->group(function () {
+    Route::middleware('role:customer,seller,admin')->group(function () {
         Route::post('/transactions', [TransactionController::class, 'store']);
         Route::post('/transactions/pay-wallet', [TransactionController::class, 'payWallet']);
         Route::get('/payments/history', [PaymentController::class, 'getPaymentsByUser']);
@@ -98,11 +99,11 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::get('/seller/verification-status', [SellerController::class, 'verificationStatus']);
     });
 
-    Route::middleware('role:customer')->group(function () {
+    Route::middleware('role:customer,seller')->group(function () {
         Route::post('/escrow/{id}/refund', [\App\Http\Controllers\EscrowController::class, 'refund']);
     });
 
-    Route::middleware('role:customer,admin')->group(function () {
+    Route::middleware('role:customer,seller,admin')->group(function () {
         Route::post('/payments/create', [PaymentController::class, 'createPayment']);
     });
 

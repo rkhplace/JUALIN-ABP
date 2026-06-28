@@ -1,8 +1,10 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 import { useAuth } from "@/context/AuthProvider";
 import Navbar from "@/components/ui/Navbar";
+import { authService } from "@/services/auth/authService";
 import { useProfileUpdate } from "@/hooks/profile/useProfileUpdate";
 import { usePasswordChange } from "@/hooks/profile/usePasswordChange";
 import usePaymentHistory from "@/hooks/payments/usePaymentHistory";
@@ -12,12 +14,13 @@ import { PurchaseHistorySection } from "../sections/purchase-history";
 import { ProfileSidebarSection } from "../sections/profile-sidebar";
 
 export default function EditProfilePage() {
-  const { logout, user } = useAuth();
+  const { logout, user, updateUser } = useAuth();
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState("edit");
   const [toast, setToast] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isBecomingSeller, setIsBecomingSeller] = useState(false);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -67,6 +70,35 @@ export default function EditProfilePage() {
       console.error("Logout failed:", error);
     } finally {
       router.push("/auth/login");
+    }
+  };
+
+  const handleBecomeSeller = async () => {
+    if (isBecomingSeller) return;
+
+    const confirmed = window.confirm(
+      "Daftarkan akun email ini sebagai penjual? Akun yang sama tetap bisa digunakan untuk belanja."
+    );
+    if (!confirmed) return;
+
+    setIsBecomingSeller(true);
+    try {
+      const updatedUser = await authService.becomeSeller();
+      updateUser(updatedUser);
+      Cookies.set("role", "seller", { sameSite: "lax" });
+      setToast({
+        type: "success",
+        message: "Akun berhasil didaftarkan sebagai penjual.",
+      });
+      router.push("/seller/dashboard");
+    } catch (error) {
+      setToast({
+        type: "error",
+        message:
+          error?.message || "Gagal mendaftarkan akun sebagai penjual.",
+      });
+    } finally {
+      setIsBecomingSeller(false);
     }
   };
 
@@ -129,6 +161,8 @@ export default function EditProfilePage() {
           activeTab={activeTab}
           onTabChange={handleTabChange}
           onLogout={handleLogout}
+          onBecomeSeller={handleBecomeSeller}
+          isBecomingSeller={isBecomingSeller}
           role={user?.role}
           user={user}
           isSidebarOpen={isSidebarOpen}
