@@ -116,6 +116,10 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("verified_popup_shown");
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem(
+      "active_role",
+      String(userData?.role || "customer").toLowerCase()
+    );
     setUser(userData);
     Cookies.set("role", String(userData?.role || "customer").toLowerCase(), {
       sameSite: "lax",
@@ -145,6 +149,7 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("user");
+      localStorage.removeItem("active_role");
       localStorage.removeItem("firebase_token");
       localStorage.removeItem("verified_popup_shown");
       setUser(null);

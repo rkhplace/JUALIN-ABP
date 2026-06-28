@@ -1,8 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/seller_product.dart';
@@ -295,12 +298,14 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
   }
 
   Future<void> _showLocationSheet() async {
+    final mapController = MapController();
+    Timer? citySearchDebounce;
     var draftRadius = _locationRadiusKm;
     var draftPoint = _latitude != null && _longitude != null
         ? LatLng(_latitude!, _longitude!)
         : _defaultOfferPoint;
     var draftLabel = _locationController.text.trim().isEmpty
-        ? 'Area sekitar titik peta'
+        ? ''
         : _locationController.text.trim();
     var draftError = '';
 
@@ -314,12 +319,44 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            Future<void> moveMapToCity(String value) async {
+              final city = value.trim();
+              if (city.length < 3) return;
+
+              try {
+                final point = await _resolveCityPoint(city);
+                if (!context.mounted || point == null) return;
+                setSheetState(() {
+                  draftPoint = point;
+                  draftError = '';
+                });
+                try {
+                  mapController.move(point, _zoomForRadius(draftRadius).toDouble());
+                } catch (_) {
+                  // The map may still be attaching during the first keystrokes.
+                }
+              } catch (_) {
+                if (!context.mounted) return;
+                setSheetState(() {
+                  draftError =
+                      'Kota/area belum ditemukan. Geser peta atau coba nama lain.';
+                });
+              }
+            }
+
             void applyLocation() {
+              if (draftLabel.trim().isEmpty) {
+                setSheetState(() {
+                  draftError = 'Kota atau area wajib diisi.';
+                });
+                return;
+              }
+
               if (!sheetContext.mounted) return;
               Navigator.pop(
                 sheetContext,
                 _OfferLocationDraft(
-                  label: draftLabel,
+                  label: draftLabel.trim(),
                   radiusKm: draftRadius,
                   latitude: draftPoint.latitude,
                   longitude: draftPoint.longitude,
@@ -379,6 +416,43 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
                         style: TextStyle(color: Colors.black45, fontSize: 12),
                       ),
                       const SizedBox(height: 12),
+                      TextFormField(
+                        initialValue: draftLabel,
+                        textInputAction: TextInputAction.next,
+                        onChanged: (value) {
+                          draftLabel = value;
+                          if (draftError.isNotEmpty) {
+                            setSheetState(() => draftError = '');
+                          }
+                          citySearchDebounce?.cancel();
+                          citySearchDebounce = Timer(
+                            const Duration(milliseconds: 750),
+                            () => moveMapToCity(value),
+                          );
+                        },
+                        onFieldSubmitted: moveMapToCity,
+                        decoration: InputDecoration(
+                          labelText: 'Kota/Area',
+                          hintText: 'Contoh: Bandung, Dago, Antapani',
+                          prefixIcon: const Icon(
+                            Icons.location_city_outlined,
+                            color: Color(0xFFE83030),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: Colors.black.withValues(alpha: 0.08),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE83030),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       DropdownButtonFormField<int>(
                         initialValue: draftRadius,
                         items: _locationRadiusOptions
@@ -392,6 +466,14 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
                         onChanged: (value) {
                           if (value == null) return;
                           setSheetState(() => draftRadius = value);
+                          try {
+                            mapController.move(
+                              draftPoint,
+                              _zoomForRadius(value).toDouble(),
+                            );
+                          } catch (_) {
+                            // Keep radius selection usable while the map attaches.
+                          }
                         },
                         decoration: InputDecoration(
                           labelText: 'Radius',
@@ -414,10 +496,10 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
                         latitude: draftPoint.latitude,
                         longitude: draftPoint.longitude,
                         height: 220,
+                        mapController: mapController,
                         onTap: (point) {
                           setSheetState(() {
                             draftPoint = point;
-                            draftLabel = 'Area sekitar titik peta';
                             draftError = '';
                           });
                         },
@@ -461,6 +543,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
       },
     );
 
+    citySearchDebounce?.cancel();
     if (picked == null || !mounted) return;
 
     setState(() {
@@ -470,6 +553,33 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
       _longitude = picked.longitude;
       _errorMessage = null;
     });
+  }
+
+  Future<LatLng?> _resolveCityPoint(String city) async {
+    final uri = Uri.https('nominatim.openstreetmap.org', '/search', {
+      'q': city,
+      'format': 'jsonv2',
+      'limit': '1',
+      'countrycodes': 'id',
+    });
+
+    final response = await http.get(
+      uri,
+      headers: const {
+        'User-Agent': 'JualinMobile/1.0 (student-demo)',
+      },
+    );
+    if (response.statusCode != 200) return null;
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List || decoded.isEmpty) return null;
+
+    final item = Map<String, dynamic>.from(decoded.first as Map);
+    final lat = double.tryParse(item['lat']?.toString() ?? '');
+    final lng = double.tryParse(item['lon']?.toString() ?? '');
+    if (lat == null || lng == null) return null;
+
+    return LatLng(lat, lng);
   }
 
   int _zoomForRadius(int radiusKm) {
@@ -487,6 +597,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
     required double? latitude,
     required double? longitude,
     double height = 154,
+    MapController? mapController,
     ValueChanged<LatLng>? onTap,
   }) {
     final point = latitude != null && longitude != null
@@ -506,6 +617,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
           fit: StackFit.expand,
           children: [
             FlutterMap(
+              mapController: mapController,
               options: MapOptions(
                 initialCenter: point,
                 initialZoom: _zoomForRadius(radiusKm).toDouble(),

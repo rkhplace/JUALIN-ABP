@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, ChevronLeft } from "lucide-react";
+import { ChevronRight, ChevronLeft, ShoppingBag, Store } from "lucide-react";
 
 /**
  * ProfileSidebarSection
@@ -12,8 +12,11 @@ export function ProfileSidebarSection({
   onTabChange,
   onLogout,
   onBecomeSeller,
+  onSwitchToBuyer,
+  onSwitchToSeller,
   isBecomingSeller = false,
   role,
+  activeRole,
   user,
   isSidebarOpen = false,
   onToggle,
@@ -134,6 +137,25 @@ export function ProfileSidebarSection({
                       Riwayat Pembelian
                     </button>
                   </>
+                )}
+                {role === "seller" && (
+                  activeRole === "seller" ? (
+                    <button
+                      onClick={onSwitchToBuyer}
+                      className="w-full flex items-center px-4 py-2.5 md:py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] bg-white text-gray-700 hover:bg-gray-50"
+                    >
+                      <ShoppingBag className="mr-3 h-5 w-5 text-gray-500" />
+                      Mode Pembeli
+                    </button>
+                  ) : (
+                    <button
+                      onClick={onSwitchToSeller}
+                      className="w-full flex items-center px-4 py-2.5 md:py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] bg-white text-gray-700 hover:bg-gray-50"
+                    >
+                      <Store className="mr-3 h-5 w-5 text-gray-500" />
+                      Mode Penjual
+                    </button>
+                  )
                 )}
               </nav>
             </div>

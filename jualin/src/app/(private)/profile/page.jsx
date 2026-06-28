@@ -1,12 +1,13 @@
 "use client"
 import { useAuth } from "@/context/AuthProvider"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Cookies from "js-cookie"
 import Header from "@/components/common/Header"
 import { ProfileHeaderSection } from "./sections/profile-header"
 import { profileService } from "@/services/profile/profileService"
-import { Check, Eye, EyeOff, KeyRound, ShieldAlert, Type } from "lucide-react"
+import { authService } from "@/services/auth/authService"
+import { Check, Eye, EyeOff, KeyRound, RefreshCw, ShieldAlert, ShoppingBag, Store, Type } from "lucide-react"
 
 export default function ProfilePage() {
   const { user, setUser } = useAuth()
@@ -19,6 +20,60 @@ export default function ProfilePage() {
   const [deleteError, setDeleteError] = useState("")
   const [showDeletePassword, setShowDeletePassword] = useState(false)
   const [scheduledAt, setScheduledAt] = useState(null)
+  const [activeRole, setActiveRole] = useState("")
+  const [isBecomingSeller, setIsBecomingSeller] = useState(false)
+  const [modeError, setModeError] = useState("")
+
+  const accountRole = String(user?.role || "customer").toLowerCase()
+  const isSellerAccount = accountRole === "seller"
+  const modeRole = activeRole || accountRole
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    setActiveRole(
+      String(localStorage.getItem("active_role") || accountRole).toLowerCase()
+    )
+  }, [accountRole])
+
+  const applyActiveRole = (role) => {
+    const normalizedRole = String(role || "customer").toLowerCase()
+    localStorage.setItem("active_role", normalizedRole)
+    Cookies.set("role", normalizedRole, { sameSite: "lax" })
+    setActiveRole(normalizedRole)
+  }
+
+  const switchToBuyerMode = () => {
+    applyActiveRole("customer")
+    router.push("/dashboard")
+  }
+
+  const switchToSellerMode = () => {
+    applyActiveRole("seller")
+    router.push("/seller/dashboard")
+  }
+
+  const handleBecomeSeller = async () => {
+    if (isBecomingSeller) return
+
+    const confirmed = window.confirm(
+      "Daftarkan akun email ini sebagai penjual? Akun yang sama tetap bisa digunakan untuk belanja."
+    )
+    if (!confirmed) return
+
+    setIsBecomingSeller(true)
+    setModeError("")
+    try {
+      const updatedUser = await authService.becomeSeller()
+      setUser(updatedUser)
+      localStorage.setItem("user", JSON.stringify(updatedUser))
+      applyActiveRole("seller")
+      router.push("/seller/dashboard")
+    } catch (error) {
+      setModeError(error?.message || "Gagal mendaftarkan akun sebagai penjual.")
+    } finally {
+      setIsBecomingSeller(false)
+    }
+  }
 
   const handleDeleteAccount = async () => {
     setDeleting(true)
@@ -72,6 +127,59 @@ export default function ProfilePage() {
           </div>
 
           <ProfileHeaderSection user={user} />
+
+          {accountRole !== "admin" && (
+            <div className="mt-6 rounded-2xl border border-red-100 bg-white p-5 shadow-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+                    <RefreshCw size={20} />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-gray-900">Mode Akun</h2>
+                    <p className="mt-1 text-sm text-gray-600">
+                      {isSellerAccount
+                        ? modeRole === "seller"
+                          ? "Saat ini Anda sedang mengelola toko sebagai penjual."
+                          : "Saat ini Anda sedang menjelajah marketplace sebagai pembeli."
+                        : "Gunakan email akun ini untuk mulai berjualan di Jualin."}
+                    </p>
+                  </div>
+                </div>
+                {!isSellerAccount ? (
+                  <button
+                    onClick={handleBecomeSeller}
+                    disabled={isBecomingSeller}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Store size={18} />
+                    {isBecomingSeller ? "Mendaftarkan..." : "Daftar Sebagai Penjual"}
+                  </button>
+                ) : modeRole === "seller" ? (
+                  <button
+                    onClick={switchToBuyerMode}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50"
+                  >
+                    <ShoppingBag size={18} />
+                    Masuk Mode Pembeli
+                  </button>
+                ) : (
+                  <button
+                    onClick={switchToSellerMode}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-red-700"
+                  >
+                    <Store size={18} />
+                    Masuk Mode Penjual
+                  </button>
+                )}
+              </div>
+              {modeError && (
+                <p className="mt-3 text-sm font-semibold text-red-600">
+                  {modeError}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="mt-6 rounded-lg border border-red-100 bg-red-50 p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

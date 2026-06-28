@@ -19,8 +19,11 @@ export default function SellerGuard({ children }) {
       return;
     }
 
-    const role = String(currentUser.role || "").toLowerCase();
-    if (role !== "seller") {
+    const accountRole = String(currentUser.role || "").toLowerCase();
+    const activeRole = String(
+      localStorage.getItem("active_role") || accountRole
+    ).toLowerCase();
+    if (activeRole !== "seller") {
       router.replace("/dashboard");
       return;
     }
