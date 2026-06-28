@@ -38,11 +38,17 @@ class _ChatScreenState extends State<ChatScreen> {
   int? _currentUserId;
   String _searchQuery = '';
   String _roomFilter = 'newest';
+  final Set<int> _hiddenRoomIds = <int>{};
+  final Set<int> _mutedRoomIds = <int>{};
+  final Set<int> _readRoomIds = <int>{};
+  final Map<int, int> _pinnedRoomIds = <int, int>{};
 
   List<ChatRoom> get _filteredRooms {
     final query = _searchQuery.trim().toLowerCase();
 
     final rooms = _rooms.where((room) {
+      if (_hiddenRoomIds.contains(room.id)) return false;
+
       final matchesFilter =
           _roomFilter == 'unread' ? _isUnreadRoom(room) : true;
       if (!matchesFilter) return false;
@@ -59,6 +65,15 @@ class _ChatScreenState extends State<ChatScreen> {
     }).toList();
 
     rooms.sort((a, b) {
+      final aPinned = _pinnedRoomIds.containsKey(a.id);
+      final bPinned = _pinnedRoomIds.containsKey(b.id);
+      if (aPinned != bPinned) return aPinned ? -1 : 1;
+      if (aPinned && bPinned) {
+        final pinnedCompare =
+            (_pinnedRoomIds[b.id] ?? 0).compareTo(_pinnedRoomIds[a.id] ?? 0);
+        if (pinnedCompare != 0) return pinnedCompare;
+      }
+
       final aTime = _roomSortTime(a);
       final bTime = _roomSortTime(b);
       if (_roomFilter == 'oldest') {
@@ -72,6 +87,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   bool _isUnreadRoom(ChatRoom room) {
     final latest = room.latestMessage;
+    if (_readRoomIds.contains(room.id)) return false;
     return latest != null &&
         !latest.isRead &&
         latest.senderId != _currentUserId;
@@ -124,6 +140,8 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     }
 
+    await _loadChatPreferences();
+
     setState(() => _isLoggedIn = true);
 
     try {
@@ -142,6 +160,331 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       }
     }
+  }
+
+  String get _chatPrefsKey => 'mobile_chat_preferences:${_currentUserId ?? 0}';
+
+  Set<int> _decodeIntSet(String? value) {
+    if (value == null || value.trim().isEmpty) return <int>{};
+    return value
+        .split(',')
+        .map((item) => int.tryParse(item.trim()))
+        .whereType<int>()
+        .toSet();
+  }
+
+  String _encodeIntSet(Set<int> values) {
+    final sorted = values.toList()..sort();
+    return sorted.join(',');
+  }
+
+  Map<int, int> _decodePinnedRooms(String? value) {
+    final result = <int, int>{};
+    if (value == null || value.trim().isEmpty) return result;
+
+    for (final item in value.split(',')) {
+      final parts = item.split(':');
+      if (parts.length != 2) continue;
+      final roomId = int.tryParse(parts[0]);
+      final pinnedAt = int.tryParse(parts[1]);
+      if (roomId != null && pinnedAt != null) {
+        result[roomId] = pinnedAt;
+      }
+    }
+
+    return result;
+  }
+
+  String _encodePinnedRooms(Map<int, int> values) {
+    final entries = values.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    return entries.map((entry) => '${entry.key}:${entry.value}').join(',');
+  }
+
+  Future<void> _loadChatPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = _chatPrefsKey;
+
+    _hiddenRoomIds
+      ..clear()
+      ..addAll(_decodeIntSet(prefs.getString('$key:hidden')));
+    _mutedRoomIds
+      ..clear()
+      ..addAll(_decodeIntSet(prefs.getString('$key:muted')));
+    _readRoomIds
+      ..clear()
+      ..addAll(_decodeIntSet(prefs.getString('$key:read')));
+    _pinnedRoomIds
+      ..clear()
+      ..addAll(_decodePinnedRooms(prefs.getString('$key:pinned')));
+  }
+
+  Future<void> _saveChatPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = _chatPrefsKey;
+
+    await Future.wait([
+      prefs.setString('$key:hidden', _encodeIntSet(_hiddenRoomIds)),
+      prefs.setString('$key:muted', _encodeIntSet(_mutedRoomIds)),
+      prefs.setString('$key:read', _encodeIntSet(_readRoomIds)),
+      prefs.setString('$key:pinned', _encodePinnedRooms(_pinnedRoomIds)),
+    ]);
+  }
+
+  Future<void> _markRoomRead(ChatRoom room) async {
+    setState(() => _readRoomIds.add(room.id));
+    await _saveChatPreferences();
+  }
+
+  Future<void> _togglePinRoom(ChatRoom room) async {
+    final isPinned = _pinnedRoomIds.containsKey(room.id);
+    setState(() {
+      if (isPinned) {
+        _pinnedRoomIds.remove(room.id);
+      } else {
+        _pinnedRoomIds[room.id] = DateTime.now().millisecondsSinceEpoch;
+      }
+    });
+    await _saveChatPreferences();
+  }
+
+  Future<void> _toggleMuteRoom(ChatRoom room) async {
+    setState(() {
+      if (_mutedRoomIds.contains(room.id)) {
+        _mutedRoomIds.remove(room.id);
+      } else {
+        _mutedRoomIds.add(room.id);
+      }
+    });
+    await _saveChatPreferences();
+  }
+
+  Future<void> _hideRoom(ChatRoom room) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: const Text('Hapus obrolan?'),
+        content: const Text(
+          'Obrolan akan disembunyikan dari daftar pesan di perangkat ini.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFE83030),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _hiddenRoomIds.add(room.id));
+    await _saveChatPreferences();
+  }
+
+  void _showRoomOptions(ChatRoom room) {
+    final other = room.otherUser;
+    final name = other?.username ?? 'Ruang Pesan #${room.id}';
+    final avatarUrl = ImageUrlHelper.resolve(other?.profilePicture);
+    final isPinned = _pinnedRoomIds.containsKey(room.id);
+    final isMuted = _mutedRoomIds.contains(room.id);
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SafeArea(
+        child: Container(
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(26),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.16),
+                blurRadius: 34,
+                spreadRadius: -12,
+                offset: const Offset(0, 18),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  UserAvatar(name: name, imageUrl: avatarUrl, radius: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          room.product?.name ?? 'Obrolan produk',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.black45,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildRoomActionTile(
+                icon: Icons.done_all_rounded,
+                title: 'Tandai dibaca',
+                subtitle: 'Hilangkan status belum dibaca pada obrolan ini.',
+                onTap: () {
+                  Navigator.pop(context);
+                  _markRoomRead(room);
+                },
+              ),
+              _buildRoomActionTile(
+                icon: isPinned
+                    ? Icons.push_pin_rounded
+                    : Icons.push_pin_outlined,
+                title: isPinned ? 'Lepas pin obrolan' : 'Pin obrolan',
+                subtitle: isPinned
+                    ? 'Kembalikan urutan obrolan seperti biasa.'
+                    : 'Tampilkan obrolan ini di bagian paling atas.',
+                onTap: () {
+                  Navigator.pop(context);
+                  _togglePinRoom(room);
+                },
+              ),
+              _buildRoomActionTile(
+                icon: isMuted
+                    ? Icons.notifications_active_outlined
+                    : Icons.notifications_off_outlined,
+                title: isMuted ? 'Nyalakan notifikasi' : 'Matikan notifikasi',
+                subtitle: isMuted
+                    ? 'Tampilkan kembali indikator notifikasi.'
+                    : 'Simpan obrolan tanpa menarik perhatian.',
+                onTap: () {
+                  Navigator.pop(context);
+                  _toggleMuteRoom(room);
+                },
+              ),
+              _buildRoomActionTile(
+                icon: Icons.delete_outline_rounded,
+                title: 'Hapus obrolan',
+                subtitle: 'Sembunyikan dari daftar pesan di perangkat ini.',
+                danger: true,
+                onTap: () {
+                  Navigator.pop(context);
+                  _hideRoom(room);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoomActionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool danger = false,
+  }) {
+    final color = danger ? const Color(0xFFE83030) : Colors.black87;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: danger
+            ? const Color(0xFFFFF1F1)
+            : const Color(0xFFF8F8F8),
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: danger
+                        ? const Color(0xFFE83030).withValues(alpha: 0.1)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: danger
+                              ? const Color(0xFFE83030)
+                                  .withValues(alpha: 0.68)
+                              : Colors.black45,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _handleBack() {
@@ -536,11 +879,14 @@ class _ChatScreenState extends State<ChatScreen> {
     final time = room.updatedAt != null
         ? '${room.updatedAt!.day}/${room.updatedAt!.month}'
         : '';
-    final unread =
-        latest != null && !latest.isRead && latest.senderId != _currentUserId;
+    final unread = _isUnreadRoom(room);
+    final isPinned = _pinnedRoomIds.containsKey(room.id);
+    final isMuted = _mutedRoomIds.contains(room.id);
 
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
+        await _markRoomRead(room);
+        if (!mounted) return;
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -593,12 +939,44 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
+                      if (isPinned) ...[
+                        const Icon(
+                          Icons.push_pin_rounded,
+                          size: 13,
+                          color: Color(0xFFE83030),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      if (isMuted) ...[
+                        Icon(
+                          Icons.notifications_off_outlined,
+                          size: 14,
+                          color: Colors.grey[500],
+                        ),
+                        const SizedBox(width: 6),
+                      ],
                       Text(
                         time,
                         style: TextStyle(
                             color: Colors.grey[500],
                             fontSize: 11,
                             fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(width: 2),
+                      SizedBox(
+                        width: 34,
+                        height: 34,
+                        child: IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          tooltip: 'Opsi obrolan',
+                          onPressed: () => _showRoomOptions(room),
+                          icon: Icon(
+                            Icons.more_vert_rounded,
+                            color: Colors.grey[500],
+                            size: 20,
+                          ),
+                        ),
                       ),
                     ],
                   ),

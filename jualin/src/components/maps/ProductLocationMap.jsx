@@ -48,7 +48,7 @@ export default function ProductLocationMap({
   const radiusNumber = Number(radiusKm) || 0;
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-red-100 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+    <div className="relative z-0 overflow-hidden rounded-3xl border border-red-100 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
       <div className="flex items-start justify-between gap-4 border-b border-red-50 px-5 py-4">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-[#E83030]">
@@ -67,14 +67,14 @@ export default function ProductLocationMap({
         </div>
       </div>
 
-      <div className="relative">
+      <div className="relative z-0">
         <MapContainer
           center={point}
           zoom={12}
           scrollWheelZoom={false}
           zoomControl={false}
           dragging
-          className="h-64 w-full"
+          className="jualin-leaflet-map h-64 w-full"
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

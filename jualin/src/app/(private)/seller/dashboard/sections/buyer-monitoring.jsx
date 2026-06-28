@@ -30,10 +30,10 @@ const PERIOD_FILTERS = [
   { value: "all", label: "Semua Waktu", days: null },
 ];
 
-const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
+const BuyerMonitoringSection = ({ orders = [], isLoading = false, sellerId }) => {
   const router = useRouter();
   const { openChatWithUser } = useContext(ChatContext);
-  const { updateUser } = useAuth();
+  const { updateUser, user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(8);
@@ -52,8 +52,15 @@ const BuyerMonitoringSection = ({ orders = [], isLoading = false }) => {
   const [claimToast, setClaimToast] = useState(null);
 
   useEffect(() => {
-    setOrderList(orders);
-  }, [orders]);
+    const activeSellerId = sellerId || user?.id || user?.user_id || user?.userId;
+    const sellerOrders = activeSellerId
+      ? orders.filter((order) => {
+          const orderSellerId = order?.seller_id ?? order?.seller?.id;
+          return String(orderSellerId || "") === String(activeSellerId);
+        })
+      : orders;
+    setOrderList(sellerOrders);
+  }, [orders, sellerId, user?.id, user?.userId, user?.user_id]);
 
   const handleClaimSubmit = async (e) => {
     e.preventDefault();

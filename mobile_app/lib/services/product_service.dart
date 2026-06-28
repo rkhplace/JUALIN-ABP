@@ -18,6 +18,7 @@ class ProductService {
     int perPage = 200,
     String? category,
     String? search,
+    int? sellerId,
   }) async {
     try {
       final queryParams = <String, String>{
@@ -29,6 +30,9 @@ class ProductService {
       }
       if (search != null && search.isNotEmpty) {
         queryParams['name'] = search; // backend param is 'name', not 'search'
+      }
+      if (sellerId != null && sellerId > 0) {
+        queryParams['seller_id'] = sellerId.toString();
       }
 
       final response = await _client.get(

@@ -10,6 +10,11 @@ export function ChatList({
   onSelect,
   searchQuery = "",
   filter = "latest",
+  chatPrefs = { hidden: {}, muted: {}, pinned: {}, read: {} },
+  onMarkRead,
+  onTogglePin,
+  onToggleMute,
+  onHideChat,
 }) {
   const { user } = useContext(AuthContext);
 
@@ -74,10 +79,14 @@ export function ChatList({
         : "@user",
       message: lastType === "image" ? "Mengirim foto" : lastText,
       time: timeStr,
-      unread: chat.unreadCount?.[user?.id?.toString()] || 0,
+      unread: chatPrefs.read?.[chat.id]
+        ? 0
+        : chat.unreadCount?.[user?.id?.toString()] || 0,
       sortTimestamp,
       avatar: getProfilePictureUrl(otherParticipant?.profile_picture || otherParticipant?.avatar),
       role: otherParticipant?.role,
+      isPinned: Boolean(chatPrefs.pinned?.[chat.id]),
+      isMuted: Boolean(chatPrefs.muted?.[chat.id]),
       originalChat: chat,
     };
   });
@@ -85,6 +94,8 @@ export function ChatList({
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const filteredChats = transformedChats
     .filter((chat) => {
+      if (chatPrefs.hidden?.[chat.id]) return false;
+
       const matchesSearch =
         chat.name?.toLowerCase().includes(normalizedSearch) ||
         chat.handle?.toLowerCase().includes(normalizedSearch) ||
@@ -94,11 +105,12 @@ export function ChatList({
 
       return matchesSearch && matchesFilter;
     })
-    .sort((a, b) =>
-      filter === "oldest"
+    .sort((a, b) => {
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+      return filter === "oldest"
         ? a.sortTimestamp - b.sortTimestamp
-        : b.sortTimestamp - a.sortTimestamp
-    );
+        : b.sortTimestamp - a.sortTimestamp;
+    });
 
   if (chats.length === 0) {
     return (
@@ -151,6 +163,10 @@ export function ChatList({
           chat={chat}
           isSelected={selectedId === chat.id}
           onClick={() => onSelect?.(chat.id)}
+          onMarkRead={() => onMarkRead?.(chat.id)}
+          onTogglePin={() => onTogglePin?.(chat.id)}
+          onToggleMute={() => onToggleMute?.(chat.id)}
+          onHideChat={() => onHideChat?.(chat.id)}
         />
       ))}
     </div>

@@ -55,7 +55,6 @@ export function ChatProvider({ children }) {
     const { unsubscribe, refresh } = getChatMessages(currentChat.id, (messagesData) => {
       setMessages(messagesData);
     });
-    const poller = window.setInterval(refresh, 3000);
 
     // Simpan ref ke refresh() agar bisa dipanggil dari sendMessage
     refreshMessagesRef.current = refresh;
@@ -67,7 +66,6 @@ export function ChatProvider({ children }) {
     }
 
     return () => {
-      window.clearInterval(poller);
       unsubscribe();
       refreshMessagesRef.current = null;
     };
@@ -86,13 +84,22 @@ export function ChatProvider({ children }) {
           avatar: user.avatar || user.profile_picture || null,
           role: String(user.role || "customer").toLowerCase(),
         };
+        const activeRole =
+          typeof window !== "undefined"
+            ? String(
+                localStorage.getItem("active_role") ||
+                  currentUserInfo.role ||
+                  "customer"
+              ).toLowerCase()
+            : currentUserInfo.role;
 
         const otherUserInfoWithRole = {
           ...otherUserInfo,
           role: otherUserInfo.role || "seller",
         };
 
-        const isCurrentUserCustomer = currentUserInfo.role === "customer";
+        const isCurrentUserCustomer = activeRole !== "seller";
+        currentUserInfo.role = activeRole;
 
         const customerId = isCurrentUserCustomer ? user.id : otherUserId;
         const sellerId = isCurrentUserCustomer ? otherUserId : user.id;

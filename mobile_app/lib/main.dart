@@ -12,6 +12,7 @@ import 'screens/register_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/reset_password_screen.dart';
 import 'screens/product_detail_screen.dart';
+import 'screens/seller_store_screen.dart';
 import 'screens/profile_edit_screen.dart';
 import 'screens/seller_dashboard_screen.dart';
 import 'screens/seller_products_screen.dart';
@@ -111,6 +112,7 @@ class _MyAppState extends State<MyApp> {
               child: AdminHomeScreen(),
             ),
         '/product_detail': (context) => const ProductDetailScreen(),
+        '/seller_store': (context) => const SellerStoreScreen(),
         '/profile_edit': (context) => const AuthRequiredScreen(
               message: 'Silakan login terlebih dahulu untuk mengubah profil.',
               child: ProfileEditScreen(),

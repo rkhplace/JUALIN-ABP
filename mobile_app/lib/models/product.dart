@@ -19,6 +19,7 @@ class Product {
   final int? locationRadiusKm;
   final double? latitude;
   final double? longitude;
+  final DateTime? createdAt;
 
   Product({
     required this.id,
@@ -39,7 +40,33 @@ class Product {
     this.locationRadiusKm,
     this.latitude,
     this.longitude,
+    this.createdAt,
   });
+
+  String get offeredAgoLabel {
+    if (createdAt == null) return '';
+
+    final now = DateTime.now();
+    final createdLocal = createdAt!.toLocal();
+    final difference = now.difference(createdLocal);
+
+    if (difference.inMinutes < 1) return 'Ditawarkan baru saja';
+    if (difference.inHours < 1) {
+      return 'Ditawarkan ${difference.inMinutes} menit yang lalu';
+    }
+    if (difference.inDays < 1) {
+      return 'Ditawarkan ${difference.inHours} jam yang lalu';
+    }
+    if (difference.inDays < 30) {
+      return 'Ditawarkan ${difference.inDays} hari yang lalu';
+    }
+
+    final months = difference.inDays ~/ 30;
+    if (months < 12) return 'Ditawarkan $months bulan yang lalu';
+
+    final years = difference.inDays ~/ 365;
+    return 'Ditawarkan $years tahun yang lalu';
+  }
 
   /// Maps the ProductResponse shape returned by the Laravel API:
   /// {
@@ -99,6 +126,7 @@ class Product {
           _parseNullableInt(json['location_radius_km'] ?? json['radius_km']),
       latitude: _parseNullableDouble(json['latitude']),
       longitude: _parseNullableDouble(json['longitude']),
+      createdAt: _parseNullableDate(json['created_at']),
     );
   }
 
@@ -120,6 +148,12 @@ class Product {
     if (value is double) return value;
     if (value is num) return value.toDouble();
     return double.tryParse(value.toString());
+  }
+
+  static DateTime? _parseNullableDate(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    return DateTime.tryParse(value.toString());
   }
 
   static bool _parseBool(dynamic value) {
@@ -145,5 +179,6 @@ class Product {
         'location_radius_km': locationRadiusKm,
         'latitude': latitude,
         'longitude': longitude,
+        'created_at': createdAt?.toIso8601String(),
       };
 }

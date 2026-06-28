@@ -182,6 +182,18 @@ export default function ProductDetailSection({ product, seller }) {
     }
   };
 
+  const handleOpenSellerProfile = () => {
+    if (!seller?.id) {
+      setToast({
+        message: "Seller information is not available",
+        type: "error",
+      });
+      return;
+    }
+
+    router.push(`/store/${seller.id}`);
+  };
+
   const handleReportClick = () => {
     if (!user) {
       setToast({
@@ -433,7 +445,11 @@ export default function ProductDetailSection({ product, seller }) {
           </h1>
 
           {/* Seller Info */}
-          <div className="mb-4 md:mb-6 rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-4 shadow-sm">
+          <button
+            type="button"
+            onClick={handleOpenSellerProfile}
+            className="mb-4 md:mb-6 w-full rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-4 text-left shadow-sm transition hover:border-red-200 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-red-100"
+          >
             <div className="flex items-center gap-3">
               <UserAvatar
                 name={seller?.username || "Seller"}
@@ -446,19 +462,17 @@ export default function ProductDetailSection({ product, seller }) {
                   {seller?.is_verified && <VerifiedBadge size="sm" />}
                 </p>
                 <p className="mt-0.5 text-sm font-medium text-gray-500">
-                  {seller?.city || "Penjual Jualin"}
+                  {seller?.city || "Penjual Jualin"} · Lihat profil toko
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={handleChatSeller}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:border-red-200 hover:text-[#E83030]"
-                aria-label="Hubungi penjual"
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500"
+                aria-hidden="true"
               >
                 <ChevronRight className="h-5 w-5" />
-              </button>
+              </span>
             </div>
-          </div>
+          </button>
 
           <div className="mb-4 md:mb-6">
             <span className="block font-bold text-xl text-black mb-1">

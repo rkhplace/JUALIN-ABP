@@ -12,6 +12,10 @@ import { fetchChatPartnerProfile } from '@/services/chat/chatService';
 export function ChatWindow({ chat, messages = [], onSend, onSendImages }) {
   const { user } = useContext(AuthContext);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const shouldStickToBottomRef = useRef(true);
+  const previousChatIdRef = useRef(null);
+  const previousLastMessageIdRef = useRef(null);
   const [fetchedUser, setFetchedUser] = useState(null);
 
   const scrollToBottom = () => {
@@ -19,8 +23,19 @@ export function ChatWindow({ chat, messages = [], onSend, onSendImages }) {
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const lastMessage = messages[messages.length - 1];
+    const lastMessageId = lastMessage?.id || null;
+    const chatChanged = previousChatIdRef.current !== chat?.id;
+    const lastMessageChanged = previousLastMessageIdRef.current !== lastMessageId;
+    const sentByMe = lastMessage?.senderId === user?.id?.toString();
+
+    if (chatChanged || sentByMe || shouldStickToBottomRef.current) {
+      requestAnimationFrame(scrollToBottom);
+    }
+
+    previousChatIdRef.current = chat?.id || null;
+    previousLastMessageIdRef.current = lastMessageId;
+  }, [chat?.id, messages, user?.id]);
 
   const otherParticipantId = chat?.participants?.find(
     (id) => id !== user?.id?.toString()
@@ -99,7 +114,17 @@ export function ChatWindow({ chat, messages = [], onSend, onSendImages }) {
       <ChatHeader chat={chatHeaderData} />
 
       {/* Messages */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-gray-100 py-4 md:py-6 px-2 md:px-4 flex flex-col">
+      <div
+        ref={messagesContainerRef}
+        onScroll={() => {
+          const el = messagesContainerRef.current;
+          if (!el) return;
+          const distanceFromBottom =
+            el.scrollHeight - el.scrollTop - el.clientHeight;
+          shouldStickToBottomRef.current = distanceFromBottom < 96;
+        }}
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-gray-100 py-4 md:py-6 px-2 md:px-4 flex flex-col"
+      >
         {transformedMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center p-6">
