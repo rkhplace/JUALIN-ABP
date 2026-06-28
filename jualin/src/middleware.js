@@ -14,7 +14,7 @@ const validRoutes = [
   '/404_not_found',
 ]
 
-const allowedRoutesWithParams = ['/profile/edit', '/product', '/seller', '/backoffice']
+const allowedRoutesWithParams = ['/profile/edit', '/product', '/store', '/seller', '/backoffice']
 
 function isValidRoute(pathname) {
   const pathWithoutQuery = pathname.split('?')[0]
