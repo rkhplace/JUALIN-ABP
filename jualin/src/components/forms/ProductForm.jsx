@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { getProductImageUrl } from "@/utils/imageHelper";
+
+const ProductLocationPicker = dynamic(
+  () => import("@/components/maps/ProductLocationPicker"),
+  { ssr: false }
+);
 
 export default function ProductForm({
   initialData,
@@ -26,6 +32,8 @@ export default function ProductForm({
     status: "active",
     location_label: "",
     location_radius_km: "10",
+    latitude: "",
+    longitude: "",
   });
   const [imagePreviews, setImagePreviews] = useState([]);
   const [localError, setLocalError] = useState("");
@@ -62,7 +70,9 @@ export default function ProductForm({
         condition: initialData.condition || "new",
         status: initialData.status || "active",
         location_label: initialData.location_label || "",
-        location_radius_km: String(initialData.location_radius_km || 10),
+        location_radius_km: String(initialData.location_radius_km || initialData.radius_km || 10),
+        latitude: initialData.latitude || "",
+        longitude: initialData.longitude || "",
       });
 
       // Convert image paths to preview URLs
@@ -175,14 +185,14 @@ export default function ProductForm({
       setLocalError("Lokasi tawaran wajib diisi");
       return;
     }
+    if (!formData.latitude || !formData.longitude) {
+      setLocalError("Pilih titik lokasi produk pada peta");
+      return;
+    }
 
     // Sertakan nilai mentah agar titik pemisah ribuan tidak ikut diparse.
     onSubmit({ ...formData, priceRaw, stockRaw });
   };
-
-  const locationPreviewUrl = formData.location_label.trim()
-    ? `https://www.google.com/maps?q=${encodeURIComponent(formData.location_label.trim())}&output=embed`
-    : "";
 
   if (loading) {
     return (
@@ -467,10 +477,10 @@ export default function ProductForm({
                 Lokasi Tawaran <span className="text-red-500">*</span>
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                Isi kota, area, atau kode pos. Pembeli melihat area radius, bukan alamat persis.
+                Beri label area, lalu klik peta untuk memilih titik umum produk. Pembeli melihat radius, bukan alamat persis.
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_180px] gap-4">
+            <div className="mb-4 grid grid-cols-1 md:grid-cols-[1fr_180px] gap-4">
               <div>
                 <label
                   htmlFor="location_label"
@@ -484,7 +494,7 @@ export default function ProductForm({
                   name="location_label"
                   value={formData.location_label}
                   onChange={handleInputChange}
-                  placeholder="Contoh: Bandung, Dago, 40288"
+                  placeholder="Contoh: Area Bandung"
                   className="w-full px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
                   required
                 />
@@ -511,22 +521,25 @@ export default function ProductForm({
                 </select>
               </div>
             </div>
-            <div className="mt-4 overflow-hidden rounded-2xl border border-red-100 bg-white">
-              {locationPreviewUrl ? (
-                <iframe
-                  src={locationPreviewUrl}
-                  className="h-64 w-full"
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Preview lokasi tawaran"
-                />
-              ) : (
-                <div className="flex h-64 items-center justify-center text-sm text-gray-400">
-                  Preview maps muncul setelah lokasi diisi.
-                </div>
-              )}
-            </div>
+            <ProductLocationPicker
+              latitude={formData.latitude}
+              longitude={formData.longitude}
+              radiusKm={formData.location_radius_km}
+              onChange={(location) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                  location_label:
+                    prev.location_label || location.location_label,
+                }))
+              }
+            />
+            {formData.latitude && formData.longitude && (
+              <p className="mt-3 text-xs text-gray-500">
+                Titik tersimpan: {Number(formData.latitude).toFixed(5)}, {Number(formData.longitude).toFixed(5)}
+              </p>
+            )}
           </div>
 
           {/* Save Button */}

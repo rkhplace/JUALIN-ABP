@@ -7,11 +7,6 @@ class ApiConfig {
     defaultValue: defaultBaseUrl,
   );
 
-  static const String googleMapsApiKey = String.fromEnvironment(
-    'GOOGLE_MAPS_API_KEY',
-    defaultValue: '',
-  );
-
   // ── Auth ────────────────────────────────────────
   static const String login = '/login';
   static const String register = '/register';

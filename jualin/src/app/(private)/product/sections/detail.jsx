@@ -1,6 +1,7 @@
 "use client";
 import React, { useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { BadgeCheck } from "lucide-react";
 import Toast from "../../../../components/ui/Toast";
 import Spinner from "../../../../components/ui/Spinner";
@@ -14,6 +15,11 @@ import PaymentMethodModal from "@/components/payment/PaymentMethodModal";
 import { transactionService } from "@/services";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import UserAvatar from "@/components/ui/UserAvatar";
+
+const ProductLocationMap = dynamic(
+  () => import("@/components/maps/ProductLocationMap"),
+  { ssr: false }
+);
 
 export default function ProductDetailSection({ product, seller }) {
   const router = useRouter();
@@ -413,6 +419,14 @@ export default function ProductDetailSection({ product, seller }) {
             <span className="text-sm text-gray-600 font-medium">
               Stok tersedia: {product.stock} unit
             </span>
+          </div>
+          <div className="mb-4 md:mb-6">
+            <ProductLocationMap
+              latitude={product.latitude}
+              longitude={product.longitude}
+              radiusKm={product.location_radius_km || product.radius_km || 0}
+              label={product.location_label || "Lokasi tawaran"}
+            />
           </div>
           <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-3">
             <button

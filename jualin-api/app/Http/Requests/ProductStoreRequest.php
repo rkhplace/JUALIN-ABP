@@ -11,6 +11,13 @@ class ProductStoreRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('radius_km') && !$this->filled('location_radius_km')) {
+            $this->merge(['location_radius_km' => $this->input('radius_km')]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -24,8 +31,8 @@ class ProductStoreRequest extends FormRequest
             'category' => ['nullable','string','max:100'],
             'condition' => ['nullable','in:new,used,refurbished'],
             'status' => ['nullable','in:active,inactive,archived'],
-            'location_label' => ['required','string','max:255'],
-            'location_radius_km' => ['required','integer','in:1,3,5,10,15,25'],
+            'location_label' => ['nullable','string','max:255'],
+            'location_radius_km' => ['nullable','numeric','min:0','max:100'],
             'latitude' => ['nullable','numeric','between:-90,90'],
             'longitude' => ['nullable','numeric','between:-180,180'],
         ];

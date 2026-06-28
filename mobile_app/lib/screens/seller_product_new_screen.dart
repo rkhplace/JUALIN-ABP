@@ -1,13 +1,11 @@
-import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
 
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
 import '../models/seller_product.dart';
-import '../services/api_config.dart';
 import '../services/seller_service.dart';
 import '../widgets/ui/frosted_app_bar.dart';
 
@@ -27,14 +25,17 @@ const Map<String, String> _productConditions = {
 };
 
 const List<int> _locationRadiusOptions = [1, 3, 5, 10, 15, 25];
+const LatLng _defaultOfferPoint = LatLng(-6.9175, 107.6191);
 
-class _ResolvedLocation {
+class _OfferLocationDraft {
   final String label;
-  final double latitude;
-  final double longitude;
+  final int radiusKm;
+  final double? latitude;
+  final double? longitude;
 
-  const _ResolvedLocation({
+  const _OfferLocationDraft({
     required this.label,
+    required this.radiusKm,
     required this.latitude,
     required this.longitude,
   });
@@ -164,6 +165,7 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
         'status': 'active',
         'location_label': locationLabel,
         'location_radius_km': _locationRadiusKm.toString(),
+        'radius_km': _locationRadiusKm.toString(),
       };
       if (_latitude != null) payload['latitude'] = _latitude!.toString();
       if (_longitude != null) payload['longitude'] = _longitude!.toString();
@@ -292,46 +294,17 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
     }
   }
 
-  bool get _hasGoogleMapsKey => ApiConfig.googleMapsApiKey.trim().isNotEmpty;
-
-  Future<_ResolvedLocation?> _resolveLocation(String query) async {
-    final trimmed = query.trim();
-    if (trimmed.isEmpty || !_hasGoogleMapsKey) return null;
-
-    final uri = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
-      'address': trimmed,
-      'region': 'id',
-      'key': ApiConfig.googleMapsApiKey,
-    });
-
-    final response = await http.get(uri);
-    if (response.statusCode != 200) return null;
-
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final results = body['results'];
-    if (results is! List || results.isEmpty) return null;
-
-    final first = Map<String, dynamic>.from(results.first as Map);
-    final geometry = Map<String, dynamic>.from(first['geometry'] as Map);
-    final location = Map<String, dynamic>.from(geometry['location'] as Map);
-
-    return _ResolvedLocation(
-      label: first['formatted_address']?.toString() ?? trimmed,
-      latitude: (location['lat'] as num).toDouble(),
-      longitude: (location['lng'] as num).toDouble(),
-    );
-  }
-
   Future<void> _showLocationSheet() async {
-    final draftController =
-        TextEditingController(text: _locationController.text.trim());
     var draftRadius = _locationRadiusKm;
-    var draftLatitude = _latitude;
-    var draftLongitude = _longitude;
+    var draftPoint = _latitude != null && _longitude != null
+        ? LatLng(_latitude!, _longitude!)
+        : _defaultOfferPoint;
+    var draftLabel = _locationController.text.trim().isEmpty
+        ? 'Area sekitar titik peta'
+        : _locationController.text.trim();
     var draftError = '';
-    var isSearching = false;
 
-    await showModalBottomSheet<void>(
+    final picked = await showModalBottomSheet<_OfferLocationDraft>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
@@ -341,62 +314,17 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            Future<void> searchLocation() async {
-              final query = draftController.text.trim();
-              if (query.isEmpty) {
-                setSheetState(() => draftError = 'Masukkan kota, area, atau kode pos.');
-                return;
-              }
-              if (!_hasGoogleMapsKey) {
-                setSheetState(() {
-                  draftError =
-                      'API key Google Maps belum aktif. Lokasi tetap bisa disimpan sebagai teks.';
-                });
-                return;
-              }
-
-              setSheetState(() {
-                isSearching = true;
-                draftError = '';
-              });
-
-              try {
-                final resolved = await _resolveLocation(query);
-                if (!context.mounted) return;
-                setSheetState(() {
-                  if (resolved == null) {
-                    draftError = 'Lokasi tidak ditemukan. Coba kata kunci lain.';
-                  } else {
-                    draftController.text = resolved.label;
-                    draftLatitude = resolved.latitude;
-                    draftLongitude = resolved.longitude;
-                  }
-                  isSearching = false;
-                });
-              } catch (_) {
-                if (!context.mounted) return;
-                setSheetState(() {
-                  isSearching = false;
-                  draftError = 'Gagal mencari lokasi. Periksa koneksi atau API key.';
-                });
-              }
-            }
-
             void applyLocation() {
-              final label = draftController.text.trim();
-              if (label.isEmpty) {
-                setSheetState(() => draftError = 'Lokasi tawaran wajib diisi.');
-                return;
-              }
-
-              setState(() {
-                _locationController.text = label;
-                _locationRadiusKm = draftRadius;
-                _latitude = draftLatitude;
-                _longitude = draftLongitude;
-                _errorMessage = null;
-              });
-              Navigator.pop(sheetContext);
+              if (!sheetContext.mounted) return;
+              Navigator.pop(
+                sheetContext,
+                _OfferLocationDraft(
+                  label: draftLabel,
+                  radiusKm: draftRadius,
+                  latitude: draftPoint.latitude,
+                  longitude: draftPoint.longitude,
+                ),
+              );
             }
 
             return SafeArea(
@@ -447,48 +375,8 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
                       ),
                       const SizedBox(height: 6),
                       const Text(
-                        'Cari berdasarkan kota, lingkungan, atau kode pos.',
+                        'Tap peta untuk memilih area produk. Pembeli hanya melihat radius, bukan alamat lengkap.',
                         style: TextStyle(color: Colors.black45, fontSize: 12),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: draftController,
-                        textInputAction: TextInputAction.search,
-                        onChanged: (_) => setSheetState(() => draftError = ''),
-                        onSubmitted: (_) => searchLocation(),
-                        decoration: InputDecoration(
-                          labelText: 'Lokasi',
-                          hintText: 'Contoh: Bandung, Dago, 40288',
-                          prefixIcon: const Icon(
-                            Icons.location_on_outlined,
-                            color: Color(0xFFE83030),
-                          ),
-                          suffixIcon: IconButton(
-                            onPressed: isSearching ? null : searchLocation,
-                            icon: isSearching
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Color(0xFFE83030),
-                                    ),
-                                  )
-                                : const Icon(Icons.search_rounded),
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(
-                              color: Colors.black.withValues(alpha: 0.08),
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFE83030),
-                            ),
-                          ),
-                        ),
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<int>(
@@ -521,11 +409,18 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
                       ),
                       const SizedBox(height: 14),
                       _buildMapPreview(
-                        label: draftController.text.trim(),
+                        label: draftLabel,
                         radiusKm: draftRadius,
-                        latitude: draftLatitude,
-                        longitude: draftLongitude,
+                        latitude: draftPoint.latitude,
+                        longitude: draftPoint.longitude,
                         height: 220,
+                        onTap: (point) {
+                          setSheetState(() {
+                            draftPoint = point;
+                            draftLabel = 'Area sekitar titik peta';
+                            draftError = '';
+                          });
+                        },
                       ),
                       if (draftError.isNotEmpty) ...[
                         const SizedBox(height: 10),
@@ -566,59 +461,15 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
       },
     );
 
-    draftController.dispose();
-  }
+    if (picked == null || !mounted) return;
 
-  String? _buildStaticMapUrl({
-    required double? latitude,
-    required double? longitude,
-    required int radiusKm,
-  }) {
-    if (!_hasGoogleMapsKey || latitude == null || longitude == null) {
-      return null;
-    }
-
-    final circlePoints = _buildCirclePath(latitude, longitude, radiusKm);
-    return Uri.https('maps.googleapis.com', '/maps/api/staticmap', {
-      'center': '$latitude,$longitude',
-      'zoom': _zoomForRadius(radiusKm).toString(),
-      'size': '640x360',
-      'scale': '2',
-      'maptype': 'roadmap',
-      'markers': 'color:red|$latitude,$longitude',
-      'path':
-          'fillcolor:0xE8303033|color:0xE8303066|weight:2|${circlePoints.join('|')}',
-      'key': ApiConfig.googleMapsApiKey,
-    }).toString();
-  }
-
-  List<String> _buildCirclePath(double lat, double lng, int radiusKm) {
-    const earthRadiusKm = 6371.0;
-    final latRad = lat * math.pi / 180;
-    final lngRad = lng * math.pi / 180;
-    final angularDistance = radiusKm / earthRadiusKm;
-    final points = <String>[];
-
-    for (var i = 0; i <= 40; i++) {
-      final bearing = 2 * math.pi * i / 40;
-      final pointLat = math.asin(
-        math.sin(latRad) * math.cos(angularDistance) +
-            math.cos(latRad) * math.sin(angularDistance) * math.cos(bearing),
-      );
-      final pointLng = lngRad +
-          math.atan2(
-            math.sin(bearing) *
-                math.sin(angularDistance) *
-                math.cos(latRad),
-            math.cos(angularDistance) - math.sin(latRad) * math.sin(pointLat),
-          );
-      points.add(
-        '${(pointLat * 180 / math.pi).toStringAsFixed(6)},'
-        '${(pointLng * 180 / math.pi).toStringAsFixed(6)}',
-      );
-    }
-
-    return points;
+    setState(() {
+      _locationController.text = picked.label;
+      _locationRadiusKm = picked.radiusKm;
+      _latitude = picked.latitude;
+      _longitude = picked.longitude;
+      _errorMessage = null;
+    });
   }
 
   int _zoomForRadius(int radiusKm) {
@@ -636,12 +487,11 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
     required double? latitude,
     required double? longitude,
     double height = 154,
+    ValueChanged<LatLng>? onTap,
   }) {
-    final mapUrl = _buildStaticMapUrl(
-      latitude: latitude,
-      longitude: longitude,
-      radiusKm: radiusKm,
-    );
+    final point = latitude != null && longitude != null
+        ? LatLng(latitude, longitude)
+        : _defaultOfferPoint;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -655,14 +505,53 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (mapUrl != null)
-              Image.network(
-                mapUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildMapFallback(),
-              )
-            else
-              _buildMapFallback(),
+            FlutterMap(
+              options: MapOptions(
+                initialCenter: point,
+                initialZoom: _zoomForRadius(radiusKm).toDouble(),
+                interactionOptions: InteractionOptions(
+                  flags: onTap == null
+                      ? InteractiveFlag.none
+                      : InteractiveFlag.drag |
+                          InteractiveFlag.pinchZoom |
+                          InteractiveFlag.doubleTapZoom,
+                ),
+                onTap: onTap == null ? null : (_, tappedPoint) => onTap(tappedPoint),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.jualin.mobile_app',
+                ),
+                CircleLayer(
+                  circles: [
+                    CircleMarker(
+                      point: point,
+                      radius: radiusKm * 1000,
+                      useRadiusInMeter: true,
+                      color: const Color(0xFFE83030).withValues(alpha: 0.16),
+                      borderColor:
+                          const Color(0xFFE83030).withValues(alpha: 0.46),
+                      borderStrokeWidth: 2,
+                    ),
+                  ],
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: point,
+                      width: 42,
+                      height: 42,
+                      child: const Icon(
+                        Icons.location_on,
+                        color: Color(0xFFE83030),
+                        size: 38,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
             Positioned(
               left: 14,
               right: 14,
@@ -728,65 +617,6 @@ class _SellerProductFormScreenState extends State<SellerProductFormScreen> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMapFallback() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFFEFF7FF), Color(0xFFFFF5F5)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-        Positioned(
-          left: -30,
-          top: 22,
-          child: _buildMapLine(150, const Color(0xFFB9DFFF)),
-        ),
-        Positioned(
-          right: -28,
-          bottom: 34,
-          child: _buildMapLine(180, const Color(0xFFFFCFCF)),
-        ),
-        Center(
-          child: Container(
-            width: 116,
-            height: 116,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFFE83030).withValues(alpha: 0.12),
-              border: Border.all(
-                color: const Color(0xFFE83030).withValues(alpha: 0.24),
-              ),
-            ),
-            child: const Icon(
-              Icons.location_searching_rounded,
-              color: Color(0xFFE83030),
-              size: 34,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMapLine(double width, Color color) {
-    return Transform.rotate(
-      angle: -0.25,
-      child: Container(
-        width: width,
-        height: 22,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.62),
-          borderRadius: BorderRadius.circular(999),
         ),
       ),
     );

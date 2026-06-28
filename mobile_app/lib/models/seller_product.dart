@@ -46,7 +46,8 @@ class SellerProduct {
       views: _parseInt(json['views']),
       status: json['status']?.toString() ?? 'active',
       locationLabel: json['location_label']?.toString() ?? '',
-      locationRadiusKm: _parseNullableInt(json['location_radius_km']),
+      locationRadiusKm:
+          _parseNullableInt(json['location_radius_km'] ?? json['radius_km']),
       latitude: _parseNullableDouble(json['latitude']),
       longitude: _parseNullableDouble(json['longitude']),
     );
