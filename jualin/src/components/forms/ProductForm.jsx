@@ -24,6 +24,8 @@ export default function ProductForm({
     category: "",
     condition: "new",
     status: "active",
+    location_label: "",
+    location_radius_km: "10",
   });
   const [imagePreviews, setImagePreviews] = useState([]);
   const [localError, setLocalError] = useState("");
@@ -59,6 +61,8 @@ export default function ProductForm({
         category: initialData.category || "",
         condition: initialData.condition || "new",
         status: initialData.status || "active",
+        location_label: initialData.location_label || "",
+        location_radius_km: String(initialData.location_radius_km || 10),
       });
 
       // Convert image paths to preview URLs
@@ -167,10 +171,18 @@ export default function ProductForm({
       setLocalError("Stok produk wajib diisi dan tidak boleh negatif");
       return;
     }
+    if (!formData.location_label.trim()) {
+      setLocalError("Lokasi tawaran wajib diisi");
+      return;
+    }
 
     // Sertakan nilai mentah agar titik pemisah ribuan tidak ikut diparse.
     onSubmit({ ...formData, priceRaw, stockRaw });
   };
+
+  const locationPreviewUrl = formData.location_label.trim()
+    ? `https://www.google.com/maps?q=${encodeURIComponent(formData.location_label.trim())}&output=embed`
+    : "";
 
   if (loading) {
     return (
@@ -446,6 +458,75 @@ export default function ProductForm({
               className="w-full px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out resize-none"
               required
             />
+          </div>
+
+          {/* Lokasi Tawaran */}
+          <div className="rounded-2xl border border-red-100 bg-red-50/40 p-4 md:p-5">
+            <div className="mb-4">
+              <h3 className="text-base font-semibold text-gray-900">
+                Lokasi Tawaran <span className="text-red-500">*</span>
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Isi kota, area, atau kode pos. Pembeli melihat area radius, bukan alamat persis.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_180px] gap-4">
+              <div>
+                <label
+                  htmlFor="location_label"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Lokasi
+                </label>
+                <input
+                  type="text"
+                  id="location_label"
+                  name="location_label"
+                  value={formData.location_label}
+                  onChange={handleInputChange}
+                  placeholder="Contoh: Bandung, Dago, 40288"
+                  className="w-full px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
+                  required
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="location_radius_km"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Radius
+                </label>
+                <select
+                  id="location_radius_km"
+                  name="location_radius_km"
+                  value={formData.location_radius_km}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent hover:border-brand-red hover:shadow-md outline-none shadow-sm transition-all duration-300 ease-in-out"
+                >
+                  {[1, 3, 5, 10, 15, 25].map((radius) => (
+                    <option key={radius} value={radius}>
+                      {radius} kilometer
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="mt-4 overflow-hidden rounded-2xl border border-red-100 bg-white">
+              {locationPreviewUrl ? (
+                <iframe
+                  src={locationPreviewUrl}
+                  className="h-64 w-full"
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Preview lokasi tawaran"
+                />
+              ) : (
+                <div className="flex h-64 items-center justify-center text-sm text-gray-400">
+                  Preview maps muncul setelah lokasi diisi.
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Save Button */}

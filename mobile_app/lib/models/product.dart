@@ -15,6 +15,10 @@ class Product {
   final String condition;
   final bool isNegotiable;
   final bool sellerIsVerified;
+  final String locationLabel;
+  final int? locationRadiusKm;
+  final double? latitude;
+  final double? longitude;
 
   Product({
     required this.id,
@@ -31,6 +35,10 @@ class Product {
     this.condition = 'Bekas',
     this.isNegotiable = false,
     this.sellerIsVerified = false,
+    this.locationLabel = '',
+    this.locationRadiusKm,
+    this.latitude,
+    this.longitude,
   });
 
   /// Maps the ProductResponse shape returned by the Laravel API:
@@ -86,6 +94,10 @@ class Product {
       condition: json['condition']?.toString() ?? 'Bekas',
       isNegotiable: _parseBool(json['is_negotiable']),
       sellerIsVerified: sellerIsVerified,
+      locationLabel: json['location_label']?.toString() ?? '',
+      locationRadiusKm: _parseNullableInt(json['location_radius_km']),
+      latitude: _parseNullableDouble(json['latitude']),
+      longitude: _parseNullableDouble(json['longitude']),
     );
   }
 
@@ -93,6 +105,20 @@ class Product {
     if (value is int) return value;
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static int? _parseNullableInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString());
+  }
+
+  static double? _parseNullableDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
   }
 
   static bool _parseBool(dynamic value) {
@@ -114,5 +140,9 @@ class Product {
         'condition': condition,
         'is_negotiable': isNegotiable,
         'seller_verified': sellerIsVerified,
+        'location_label': locationLabel,
+        'location_radius_km': locationRadiusKm,
+        'latitude': latitude,
+        'longitude': longitude,
       };
 }

@@ -11,6 +11,10 @@ class SellerProduct {
   final String condition;
   final int views;
   final String status;
+  final String locationLabel;
+  final int? locationRadiusKm;
+  final double? latitude;
+  final double? longitude;
 
   SellerProduct({
     required this.id,
@@ -23,6 +27,10 @@ class SellerProduct {
     this.condition = 'used',
     this.views = 0,
     this.status = 'active',
+    this.locationLabel = '',
+    this.locationRadiusKm,
+    this.latitude,
+    this.longitude,
   });
 
   factory SellerProduct.fromJson(Map<String, dynamic> json) {
@@ -37,6 +45,10 @@ class SellerProduct {
       condition: json['condition']?.toString() ?? 'used',
       views: _parseInt(json['views']),
       status: json['status']?.toString() ?? 'active',
+      locationLabel: json['location_label']?.toString() ?? '',
+      locationRadiusKm: _parseNullableInt(json['location_radius_km']),
+      latitude: _parseNullableDouble(json['latitude']),
+      longitude: _parseNullableDouble(json['longitude']),
     );
   }
 
@@ -44,5 +56,19 @@ class SellerProduct {
     if (value is int) return value;
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static int? _parseNullableInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString());
+  }
+
+  static double? _parseNullableDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
   }
 }

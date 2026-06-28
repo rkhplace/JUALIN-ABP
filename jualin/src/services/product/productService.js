@@ -78,6 +78,10 @@ export const productService = {
         category: productData.category || "",
         condition: productData.condition || "new",
         status: productData.status || "active",
+        location_label: productData.location_label || "",
+        location_radius_km: productData.location_radius_km || 10,
+        latitude: productData.latitude || "",
+        longitude: productData.longitude || "",
       }).forEach(([k, v]) => formData.append(k, v));
       
       // Append multiple files with field name 'images[]'
@@ -100,6 +104,10 @@ export const productService = {
       category: productData.category || "",
       condition: productData.condition || "new",
       status: productData.status || "active",
+      location_label: productData.location_label || "",
+      location_radius_km: productData.location_radius_km || 10,
+      latitude: productData.latitude || null,
+      longitude: productData.longitude || null,
     });
     return normalizeProduct(res?.data || res);
   },
@@ -118,6 +126,10 @@ export const productService = {
         category: productData.category || "",
         condition: productData.condition || "new",
         status: productData.status || "active",
+        location_label: productData.location_label || "",
+        location_radius_km: productData.location_radius_km || 10,
+        latitude: productData.latitude || "",
+        longitude: productData.longitude || "",
       }).forEach(([k, v]) => formData.append(k, v));
       
       // Append multiple files with field name 'images[]'
@@ -142,6 +154,10 @@ export const productService = {
       category: productData.category || "",
       condition: productData.condition || "new",
       status: productData.status || "active",
+      location_label: productData.location_label || "",
+      location_radius_km: productData.location_radius_km || 10,
+      latitude: productData.latitude || null,
+      longitude: productData.longitude || null,
     });
     return normalizeProduct(res?.data || res);
   },

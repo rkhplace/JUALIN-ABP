@@ -19,6 +19,10 @@ class ProductResponse extends JsonResource
             'category' => $this->category,
             'condition' => $this->condition,
             'status' => $this->status,
+            'location_label' => $this->location_label,
+            'location_radius_km' => $this->location_radius_km,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'seller' => [

@@ -730,6 +730,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         children: [
           _buildProductHeroCard(product),
           const SizedBox(height: 16),
+          if (product.locationLabel.isNotEmpty) ...[
+            _buildOfferLocationCard(product),
+            const SizedBox(height: 16),
+          ],
           _buildSellerDescriptionCard(product),
         ],
       ),
@@ -874,6 +878,80 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOfferLocationCard(Product product) {
+    final radius = product.locationRadiusKm ?? 10;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFD7D7)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE83030).withValues(alpha: 0.06),
+            blurRadius: 20,
+            spreadRadius: -10,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFEFEF),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: const Icon(
+              Icons.location_on_outlined,
+              color: Color(0xFFE83030),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Lokasi Tawaran',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  product.locationLabel,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 12,
+                    height: 1.3,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Area sekitar $radius km dari lokasi penjual',
+                  style: const TextStyle(
+                    color: Color(0xFFE83030),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
