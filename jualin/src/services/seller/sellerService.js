@@ -1,5 +1,10 @@
 import { fetcher } from "@/lib/fetcher";
 
+const hasAvailableStock = (product) => {
+  const stock = Number(product?.stock ?? product?.stock_quantity ?? 0);
+  return stock > 0;
+};
+
 export const sellerService = {
   /**
    * Fetch products for a specific seller with pagination
@@ -11,15 +16,19 @@ export const sellerService = {
         seller_id: sellerId,
         per_page: limit,
         page,
+        min_stock: 1,
         sort_by: "created_at",
         sort_dir: "desc",
       },
     });
 
     if (res?.products) {
+      const products = Array.isArray(res.products)
+        ? res.products.filter(hasAvailableStock)
+        : [];
       return {
-        products: Array.isArray(res.products) ? res.products : [],
-        totalProducts: Number(res.totalProducts ?? 0),
+        products,
+        totalProducts: Number(res.totalProducts ?? products.length),
         totalPages: Number(res.totalPages ?? 1),
         currentPage: Number(res.currentPage ?? page),
       };
@@ -27,9 +36,10 @@ export const sellerService = {
 
     const payload = res?.data;
     if (payload?.data && Array.isArray(payload.data)) {
+      const products = payload.data.filter(hasAvailableStock);
       return {
-        products: payload.data,
-        totalProducts: Number(payload.total ?? payload.data.length ?? 0),
+        products,
+        totalProducts: Number(payload.total ?? products.length ?? 0),
         totalPages: Number(payload.last_page ?? 1),
         currentPage: Number(payload.current_page ?? page),
       };
@@ -40,9 +50,10 @@ export const sellerService = {
       : Array.isArray(res)
       ? res
       : [];
+    const products = list.filter(hasAvailableStock);
     return {
-      products: list,
-      totalProducts: list.length,
+      products,
+      totalProducts: products.length,
       totalPages: 1,
       currentPage: page,
     };

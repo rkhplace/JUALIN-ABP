@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import '../models/chat_room.dart';
@@ -24,11 +25,39 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
   final ProductService _productService = ProductService();
   final ChatService _chatService = ChatService();
   final AuthService _authService = AuthService();
+  final TextEditingController _searchController = TextEditingController();
   Product? _sellerSeed;
   List<Product> _products = [];
   bool _isLoading = true;
   bool _isChatLoading = false;
   String? _errorMessage;
+  String _searchQuery = '';
+  String _activeCategory = 'all';
+
+  List<Product> get _filteredProducts {
+    final query = _searchQuery.trim().toLowerCase();
+
+    return _products.where((product) {
+      final matchesCategory = _activeCategory == 'all' ||
+          product.categoryName.toLowerCase() == _activeCategory;
+      if (!matchesCategory) return false;
+      if (query.isEmpty) return true;
+
+      return product.title.toLowerCase().contains(query) ||
+          product.description.toLowerCase().contains(query) ||
+          product.categoryName.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  List<String> get _categories {
+    final items = _products
+        .map((product) => product.categoryName.trim())
+        .where((category) => category.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    return items;
+  }
 
   @override
   void didChangeDependencies() {
@@ -71,6 +100,11 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
       if (!mounted) return;
       setState(() {
         _products = products;
+        if (_activeCategory != 'all' &&
+            !products.any((product) =>
+                product.categoryName.toLowerCase() == _activeCategory)) {
+          _activeCategory = 'all';
+        }
         _isLoading = false;
       });
     } catch (e) {
@@ -80,6 +114,12 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<bool> _requireLogin() async {
@@ -110,7 +150,9 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
     try {
       final roomId = await _chatService.startRoom(seed.sellerId, seed.id);
       if (!mounted) return;
-      if (roomId == null) throw Exception('Room ID tidak diterima dari server.');
+      if (roomId == null) {
+        throw Exception('Room ID tidak diterima dari server.');
+      }
 
       final chatProduct = ChatProduct(
         id: seed.id,
@@ -168,40 +210,48 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
             : RefreshIndicator(
                 onRefresh: _loadSellerProducts,
                 color: const Color(0xFFE83030),
-                child: CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    SliverToBoxAdapter(child: _buildHeader(seed)),
-                    if (_isLoading)
-                      const SliverFillRemaining(
-                        child: Center(child: JualinLogoLoader(size: 58)),
-                      )
-                    else if (_errorMessage != null)
-                      SliverFillRemaining(child: _buildError())
-                    else ...[
-                      SliverToBoxAdapter(child: _buildSectionTitle(seed)),
-                      if (_products.isEmpty)
-                        SliverFillRemaining(child: _buildEmptyState())
-                      else
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                          sliver: SliverGrid(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) =>
-                                  _buildProductCard(_products[index]),
-                              childCount: _products.length,
+                child: Builder(
+                  builder: (context) {
+                    final filteredProducts = _filteredProducts;
+
+                    return CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverToBoxAdapter(child: _buildHeader(seed)),
+                        if (_isLoading)
+                          const SliverFillRemaining(
+                            child: Center(child: JualinLogoLoader(size: 58)),
+                          )
+                        else if (_errorMessage != null)
+                          SliverFillRemaining(child: _buildError())
+                        else ...[
+                          SliverToBoxAdapter(child: _buildSearchAndFilter()),
+                          if (_products.isEmpty)
+                            SliverFillRemaining(child: _buildEmptyState())
+                          else if (filteredProducts.isEmpty)
+                            SliverFillRemaining(child: _buildNoFilterResult())
+                          else
+                            SliverPadding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                              sliver: SliverGrid(
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) => _buildProductCard(
+                                      filteredProducts[index]),
+                                  childCount: filteredProducts.length,
+                                ),
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  childAspectRatio: 0.62,
+                                ),
+                              ),
                             ),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 0.62,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ],
+                        ],
+                      ],
+                    );
+                  },
                 ),
               ),
       ),
@@ -215,14 +265,21 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(26),
+          color: Colors.white.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(34),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.75)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 28,
-              spreadRadius: -10,
-              offset: const Offset(0, 16),
+              color: const Color(0xFFE83030).withValues(alpha: 0.10),
+              blurRadius: 34,
+              spreadRadius: -16,
+              offset: const Offset(0, 20),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.07),
+              blurRadius: 26,
+              spreadRadius: -14,
+              offset: const Offset(0, 14),
             ),
           ],
         ),
@@ -234,7 +291,7 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFFE83030), Color(0xFFFF4B4B)],
+                  colors: [Color(0xFFE83030), Color(0xFFFF474F)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -242,16 +299,28 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
               child: Stack(
                 children: [
                   Positioned(
-                    right: -32,
-                    top: -34,
+                    right: -28,
+                    top: -38,
+                    child: Container(
+                      width: 126,
+                      height: 126,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.16),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 30,
+                    bottom: -64,
                     child: Container(
                       width: 118,
                       height: 118,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.14),
-                        ),
+                        color: Colors.white.withValues(alpha: 0.08),
                       ),
                     ),
                   ),
@@ -349,66 +418,89 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
             ),
             Padding(
               padding: const EdgeInsets.all(14),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _metricTile(
-                          icon: Icons.inventory_2_outlined,
-                          label: 'Produk Aktif',
-                          value: '${_products.length} produk',
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _metricTile(
-                          icon: seed.sellerIsVerified
-                              ? Icons.verified_user_outlined
-                              : Icons.shield_outlined,
-                          label: 'Status',
-                          value: seed.sellerIsVerified
-                              ? 'Terverifikasi'
-                              : 'Belum verifikasi',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton.icon(
-                      onPressed: _isChatLoading ? null : _handleChatSeller,
-                      icon: _isChatLoading
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Icon(Icons.chat_bubble_outline, size: 18),
-                      label: Text(
-                        _isChatLoading ? 'Membuka chat...' : 'Chat Penjual',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE83030),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        textStyle: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.72),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.82),
                       ),
                     ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _metricTile(
+                                icon: Icons.inventory_2_outlined,
+                                label: 'Produk Aktif',
+                                value: '${_products.length} produk',
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _metricTile(
+                                icon: seed.sellerIsVerified
+                                    ? Icons.verified_user_outlined
+                                    : Icons.shield_outlined,
+                                label: 'Status',
+                                value: seed.sellerIsVerified
+                                    ? 'Terverifikasi'
+                                    : 'Belum verifikasi',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed:
+                                _isChatLoading ? null : _handleChatSeller,
+                            icon: _isChatLoading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.chat_bubble_outline,
+                                    size: 18,
+                                  ),
+                            label: Text(
+                              _isChatLoading
+                                  ? 'Membuka chat...'
+                                  : 'Chat Penjual',
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE83030),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              textStyle: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ),
             ),
           ],
@@ -493,51 +585,128 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
     );
   }
 
-  Widget _buildSectionTitle(Product seed) {
+  Widget _buildSearchAndFilter() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      child: Column(
         children: [
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Barang yang Dijual',
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
-                  ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.045),
+                  blurRadius: 18,
+                  spreadRadius: -10,
+                  offset: const Offset(0, 10),
                 ),
-                SizedBox(height: 3),
-                Text(
-                  'Produk aktif dari toko ini.',
-                  style: TextStyle(
-                    color: Colors.black45,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+              ],
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) => setState(() => _searchQuery = value),
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'Cari produk di toko ini...',
+                hintStyle: const TextStyle(
+                  color: Colors.black38,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: Color(0xFFE83030),
+                  size: 20,
+                ),
+                suffixIcon: _searchQuery.isEmpty
+                    ? null
+                    : IconButton(
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                      ),
+                border: InputBorder.none,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 38,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _buildCategoryChip('all', 'Semua'),
+                ..._categories.map(
+                  (category) => _buildCategoryChip(
+                    category.toLowerCase(),
+                    category,
                   ),
                 ),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFEFEF),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              '${_products.length} produk',
-              style: const TextStyle(
-                color: Color(0xFFE83030),
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip(String value, String label) {
+    final isActive = _activeCategory == value;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: () => setState(() => _activeCategory = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0xFFE83030) : Colors.white,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: isActive
+                  ? const Color(0xFFE83030)
+                  : Colors.black.withValues(alpha: 0.07),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (isActive ? const Color(0xFFE83030) : Colors.black)
+                    .withValues(alpha: isActive ? 0.16 : 0.035),
+                blurRadius: 14,
+                spreadRadius: -8,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                value == 'all'
+                    ? Icons.grid_view_rounded
+                    : Icons.category_outlined,
+                size: 14,
+                color: isActive ? Colors.white : const Color(0xFFE83030),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isActive ? Colors.white : Colors.black87,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -732,6 +901,62 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
               'Produk dari seller ini akan tampil di sini.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.black45, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoFilterResult() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 70,
+              height: 70,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFEFEF),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.search_off_rounded,
+                color: Color(0xFFE83030),
+                size: 34,
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Produk tidak ditemukan',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Coba ubah kata kunci atau filter kategori.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black45, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () {
+                _searchController.clear();
+                setState(() {
+                  _searchQuery = '';
+                  _activeCategory = 'all';
+                });
+              },
+              icon: const Icon(Icons.restart_alt_rounded, size: 18),
+              label: const Text('Reset Filter'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFE83030),
+                side: const BorderSide(color: Color(0xFFE83030)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
             ),
           ],
         ),
