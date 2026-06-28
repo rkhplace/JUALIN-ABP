@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { useAuth } from "@/context/AuthProvider";
@@ -21,6 +21,16 @@ export default function EditProfilePage() {
   const [toast, setToast] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isBecomingSeller, setIsBecomingSeller] = useState(false);
+  const [activeRole, setActiveRole] = useState("");
+
+  const accountRole = String(user?.role || "customer").toLowerCase();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setActiveRole(
+      String(localStorage.getItem("active_role") || accountRole).toLowerCase()
+    );
+  }, [accountRole]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -85,7 +95,9 @@ export default function EditProfilePage() {
     try {
       const updatedUser = await authService.becomeSeller();
       updateUser(updatedUser);
+      localStorage.setItem("active_role", "seller");
       Cookies.set("role", "seller", { sameSite: "lax" });
+      setActiveRole("seller");
       setToast({
         type: "success",
         message: "Akun berhasil didaftarkan sebagai penjual.",
@@ -100,6 +112,20 @@ export default function EditProfilePage() {
     } finally {
       setIsBecomingSeller(false);
     }
+  };
+
+  const switchToBuyerMode = () => {
+    localStorage.setItem("active_role", "customer");
+    Cookies.set("role", "customer", { sameSite: "lax" });
+    setActiveRole("customer");
+    router.push("/dashboard");
+  };
+
+  const switchToSellerMode = () => {
+    localStorage.setItem("active_role", "seller");
+    Cookies.set("role", "seller", { sameSite: "lax" });
+    setActiveRole("seller");
+    router.push("/seller/dashboard");
   };
 
   const handleExportCSV = () => {
@@ -162,8 +188,11 @@ export default function EditProfilePage() {
           onTabChange={handleTabChange}
           onLogout={handleLogout}
           onBecomeSeller={handleBecomeSeller}
+          onSwitchToBuyer={switchToBuyerMode}
+          onSwitchToSeller={switchToSellerMode}
           isBecomingSeller={isBecomingSeller}
           role={user?.role}
+          activeRole={activeRole || accountRole}
           user={user}
           isSidebarOpen={isSidebarOpen}
           onToggle={() => setIsSidebarOpen((prev) => !prev)}

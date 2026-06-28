@@ -18,6 +18,9 @@ import { sellerService } from "@/services/seller/sellerService";
 const Navbar = () => {
   const { user, loading } = useContext(AuthContext);
   const pathname = usePathname() || "";
+  const [activeRole, setActiveRole] = useState("");
+  const accountRole = String(user?.role || "").toLowerCase();
+  const modeRole = activeRole || accountRole;
   const showSearch =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/product") ||
@@ -61,6 +64,25 @@ const Navbar = () => {
       });
   }, [user?.id, user?.role]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const readActiveRole = () => {
+      setActiveRole(
+        String(localStorage.getItem("active_role") || accountRole).toLowerCase()
+      );
+    };
+
+    readActiveRole();
+    window.addEventListener("storage", readActiveRole);
+    window.addEventListener("focus", readActiveRole);
+
+    return () => {
+      window.removeEventListener("storage", readActiveRole);
+      window.removeEventListener("focus", readActiveRole);
+    };
+  }, [accountRole]);
+
   // Close drawer when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -99,12 +121,12 @@ const Navbar = () => {
         <div className="flex items-center gap-4 sm:gap-6 min-w-0">
           <Logo
             className="-mt-1.5"
-            href={user?.role === "admin" ? "/backoffice" : "/dashboard"}
+            href={modeRole === "admin" ? "/backoffice" : modeRole === "seller" ? "/seller/dashboard" : "/dashboard"}
           />
         </div>
 
         {/* Navigation Items — Desktop only */}
-        {user?.role !== "admin" && (
+        {modeRole !== "admin" && (
           <div className="hidden md:flex items-center gap-8 mx-4">
             <a
               href="/dashboard"
@@ -113,7 +135,7 @@ const Navbar = () => {
               Beranda
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#E83030] transition-all duration-300 group-hover:w-full"></span>
             </a>
-            {user?.role !== "seller" && (
+            {modeRole !== "seller" && (
               <a
                 href="/products"
                 className="relative group text-gray-600 font-medium hover:text-[#E83030] transition-colors duration-300"
@@ -177,7 +199,7 @@ const Navbar = () => {
                   )}
                 </span>
               </a>
-              {user?.role === "seller" && (
+              {modeRole === "seller" && (
                 <a
                   href="/seller/products/new"
                   className="px-4 py-2.5 rounded-2xl bg-[#E83030] text-white font-semibold text-center shadow transition-all duration-200 hover:shadow-lg active:scale-95"
@@ -240,7 +262,7 @@ const Navbar = () => {
       >
         <nav className="flex flex-col px-4 py-3 gap-1">
           {/* Nav links */}
-          {user?.role === "admin" ? (
+          {modeRole === "admin" ? (
             <div className="flex flex-col gap-1">
               {adminMobileNavItems.map(({ href, label, Icon }) => {
                 const active = pathname === href;
@@ -269,7 +291,7 @@ const Navbar = () => {
               >
                 Beranda
               </a>
-              {user?.role !== "seller" && (
+              {modeRole !== "seller" && (
                 <a
                   href="/products"
                   className="px-3 py-2.5 rounded-lg text-gray-700 font-medium hover:bg-red-50 hover:text-[#E83030] transition-colors duration-200"
@@ -318,7 +340,7 @@ const Navbar = () => {
                   )}
                 </span>
               </a>
-              {user?.role === "seller" && (
+              {modeRole === "seller" && (
                 <a
                   href="/seller/products/new"
                   className="mx-3 mt-1 px-4 py-2.5 rounded-2xl bg-[#E83030] text-white font-semibold text-center shadow transition-all duration-200 hover:shadow-lg active:scale-95"
