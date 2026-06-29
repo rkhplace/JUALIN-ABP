@@ -37,6 +37,8 @@ export default function ProductForm({
   });
   const [imagePreviews, setImagePreviews] = useState([]);
   const [localError, setLocalError] = useState("");
+  const [resolvingLocation, setResolvingLocation] = useState(false);
+  const geocodedLabelRef = useRef("");
 
   // Format angka menjadi string dengan titik ribuan, misal 5000000 → "5.000.000"
   const formatPriceDisplay = (value) => {
@@ -80,6 +82,50 @@ export default function ProductForm({
       setImagePreviews(previews);
     }
   }, [initialData]);
+
+  useEffect(() => {
+    const label = formData.location_label.trim();
+    if (label.length < 3 || geocodedLabelRef.current === label) return;
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        setResolvingLocation(true);
+        const response = await fetch(
+          `/api/geocode?q=${encodeURIComponent(label)}`,
+          { signal: controller.signal }
+        );
+
+        if (!response.ok) return;
+
+        const location = await response.json();
+        if (
+          Number.isFinite(Number(location.latitude)) &&
+          Number.isFinite(Number(location.longitude))
+        ) {
+          geocodedLabelRef.current = label;
+          setFormData((prev) => ({
+            ...prev,
+            latitude: location.latitude,
+            longitude: location.longitude,
+          }));
+        }
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.warn("Failed to resolve offer location:", error);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setResolvingLocation(false);
+        }
+      }
+    }, 750);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [formData.location_label]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -535,6 +581,11 @@ export default function ProductForm({
                 }))
               }
             />
+            {resolvingLocation && (
+              <p className="mt-3 text-xs font-medium text-gray-500">
+                Mencari titik area...
+              </p>
+            )}
             {formData.latitude && formData.longitude && (
               <p className="mt-3 text-xs text-gray-500">
                 Titik tersimpan: {Number(formData.latitude).toFixed(5)}, {Number(formData.longitude).toFixed(5)}
