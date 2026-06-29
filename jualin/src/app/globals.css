@@ -84,6 +84,17 @@ body {
   z-index: 0 !important;
 }
 
+.jualin-leaflet-map .leaflet-tile,
+.jualin-leaflet-map .leaflet-marker-icon,
+.jualin-leaflet-map .leaflet-marker-shadow {
+  max-width: none !important;
+}
+
+.jualin-leaflet-map .leaflet-tile {
+  height: 256px !important;
+  width: 256px !important;
+}
+
 /* Custom animations */
 @keyframes slide-in {
   from {
