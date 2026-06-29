@@ -3,6 +3,7 @@ import '../services/seller_service.dart';
 import '../models/seller_product.dart';
 import '../widgets/ui/frosted_app_bar.dart';
 import '../widgets/ui/logo_loader.dart';
+import '../widgets/ui/confirmation_modal.dart';
 import '../utils/formatters.dart';
 
 class SellerProductsScreen extends StatefulWidget {
@@ -96,26 +97,18 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
   }
 
   Future<void> _confirmDelete(int productId, String productName) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showJualinConfirmationDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Hapus Produk'),
-        content: Text('Yakin ingin menghapus "$productName"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Hapus'),
-          ),
-        ],
-      ),
+      title: 'Hapus produk?',
+      message:
+          'Produk "$productName" akan dihapus dari daftar jualan dan tidak bisa dipulihkan.',
+      confirmText: 'Hapus',
+      cancelText: 'Batal',
+      icon: Icons.inventory_2_outlined,
+      isDanger: true,
     );
 
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     try {
       await _sellerService.deleteProduct(productId);

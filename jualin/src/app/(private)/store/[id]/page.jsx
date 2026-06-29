@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   BadgeCheck,
   Boxes,
+  Clock,
   Filter,
   MapPin,
   MessageCircle,
@@ -26,6 +27,7 @@ import { ChatContext } from "@/context/ChatProvider";
 import { sellerService } from "@/services/seller/sellerService";
 import { userService } from "@/services/user/userService";
 import { formatCurrency } from "@/utils/formatters/currency";
+import { formatOfferedAgo } from "@/utils/formatters/date";
 import { getProductImageUrl, getProfilePictureUrl } from "@/utils/imageHelper";
 
 export default function StoreProfilePage() {
@@ -412,6 +414,14 @@ export default function StoreProfilePage() {
                     <p className="mb-2 hidden h-12 overflow-hidden text-ellipsis break-all text-base leading-6 text-gray-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] sm:block">
                       {product.description || "Tidak ada deskripsi."}
                     </p>
+                    {formatOfferedAgo(product.created_at) && (
+                      <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-gray-400">
+                        <Clock className="h-3 w-3" />
+                        <span className="truncate">
+                          {formatOfferedAgo(product.created_at)}
+                        </span>
+                      </div>
+                    )}
                     <div className="mb-2 flex items-center gap-1.5 self-start rounded-full border border-red-100 bg-red-50 px-3 py-1.5 sm:mb-3">
                       <User className="h-3 w-3 text-red-600" />
                       <span className="text-xs font-medium text-red-800">

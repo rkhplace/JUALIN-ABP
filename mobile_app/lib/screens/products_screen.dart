@@ -309,6 +309,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 price: product.price,
                                 stock: product.stock,
                                 imagePath: product.imagePath,
+                                offeredAgoLabel: product.offeredAgoLabel,
                               );
                             },
                           ),
