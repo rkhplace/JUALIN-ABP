@@ -6,21 +6,21 @@ import Skeleton from './Skeleton';
  */
 export default function ProductCardSkeleton() {
   return (
-    <div className="bg-white rounded-2xl shadow p-6 flex flex-col items-start">
+    <div className="flex flex-col items-start rounded-2xl bg-white p-3 shadow sm:p-5 md:p-6">
       {/* Image skeleton */}
-      <Skeleton className="w-full h-60 mb-4" variant="rectangular" />
+      <Skeleton className="mb-3 h-32 w-full sm:mb-4 sm:h-52 md:h-60" variant="rectangular" />
 
       {/* Brand/Category skeleton */}
-      <Skeleton className="h-4 w-24 mb-2" variant="text" />
+      <Skeleton className="mb-2 h-3 w-20 sm:h-4 sm:w-24" variant="text" />
 
       {/* Title skeleton */}
-      <Skeleton className="h-6 w-full mb-1" variant="text" />
+      <Skeleton className="mb-1 h-5 w-full sm:h-6" variant="text" />
 
       {/* Description skeleton */}
-      <Skeleton className="h-4 w-3/4 mb-2" variant="text" />
+      <Skeleton className="mb-2 h-3 w-3/4 sm:h-4" variant="text" />
 
       {/* Price skeleton */}
-      <Skeleton className="h-6 w-32" variant="text" />
+      <Skeleton className="h-5 w-24 sm:h-6 sm:w-32" variant="text" />
     </div>
   );
 }
