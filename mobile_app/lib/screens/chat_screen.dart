@@ -8,6 +8,7 @@ import '../widgets/ui/app_chrome.dart';
 import '../widgets/ui/login_required_dialog.dart';
 import '../widgets/ui/frosted_app_bar.dart';
 import '../widgets/ui/logo_loader.dart';
+import '../widgets/ui/confirmation_modal.dart';
 import '../widgets/ui/user_avatar.dart';
 import '../services/chat_service.dart';
 import '../models/chat_room.dart';
@@ -260,32 +261,17 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _hideRoom(ChatRoom room) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showJualinConfirmationDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: const Text('Hapus obrolan?'),
-        content: const Text(
-          'Obrolan akan disembunyikan dari daftar pesan di perangkat ini.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFE83030),
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Hapus'),
-          ),
-        ],
-      ),
+      title: 'Hapus obrolan?',
+      message: 'Obrolan akan disembunyikan dari daftar pesan di perangkat ini.',
+      confirmText: 'Hapus',
+      cancelText: 'Batal',
+      icon: Icons.delete_outline_rounded,
+      isDanger: true,
     );
 
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     setState(() => _hiddenRoomIds.add(room.id));
     await _saveChatPreferences();
@@ -373,9 +359,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 },
               ),
               _buildRoomActionTile(
-                icon: isPinned
-                    ? Icons.push_pin_rounded
-                    : Icons.push_pin_outlined,
+                icon:
+                    isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
                 title: isPinned ? 'Lepas pin obrolan' : 'Pin obrolan',
                 subtitle: isPinned
                     ? 'Kembalikan urutan obrolan seperti biasa.'
@@ -427,9 +412,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: danger
-            ? const Color(0xFFFFF1F1)
-            : const Color(0xFFF8F8F8),
+        color: danger ? const Color(0xFFFFF1F1) : const Color(0xFFF8F8F8),
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
@@ -469,8 +452,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: danger
-                              ? const Color(0xFFE83030)
-                                  .withValues(alpha: 0.68)
+                              ? const Color(0xFFE83030).withValues(alpha: 0.68)
                               : Colors.black45,
                           fontSize: 11,
                           fontWeight: FontWeight.w500,

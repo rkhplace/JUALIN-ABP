@@ -10,6 +10,7 @@ class ProductCard extends StatelessWidget {
   final String sellerName;
   final int stock;
   final String imagePath;
+  final String offeredAgoLabel;
 
   const ProductCard({
     super.key,
@@ -21,6 +22,7 @@ class ProductCard extends StatelessWidget {
     required this.sellerName,
     required this.stock,
     this.imagePath = '',
+    this.offeredAgoLabel = '',
   });
 
   @override
@@ -111,6 +113,31 @@ class ProductCard extends StatelessWidget {
                         height: 1.3,
                       ),
                     ),
+                    if (offeredAgoLabel.isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.schedule_rounded,
+                            size: 12,
+                            color: Colors.black38,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              offeredAgoLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.black38,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 6),
                     // Seller Badge
                     Container(
