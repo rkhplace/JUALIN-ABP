@@ -69,7 +69,7 @@ export default function ProductLocationPicker({
         <MapSync center={point} zoom={zoom} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          url="/map-tiles/{z}/{x}/{y}.png"
         />
         <TapHandler
           onPick={(lat, lng) =>
