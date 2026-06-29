@@ -21,6 +21,28 @@ import {
 
 export const ChatContext = createContext();
 
+function restoreHiddenChatForUser(userId, chatId) {
+  if (!userId || !chatId || typeof window === "undefined") return;
+
+  const storageKey = `chat_preferences:${userId}`;
+  try {
+    const current = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    if (!current.hidden?.[chatId]) return;
+
+    const hidden = { ...current.hidden };
+    delete hidden[chatId];
+    const next = { ...current, hidden };
+    localStorage.setItem(storageKey, JSON.stringify(next));
+    window.dispatchEvent(
+      new CustomEvent("jualin:chat-preferences-updated", {
+        detail: { userId, preferences: next },
+      })
+    );
+  } catch (error) {
+    console.error("[startChat] Failed to restore hidden chat:", error);
+  }
+}
+
 export function ChatProvider({ children }) {
   const { user } = useContext(AuthContext);
   const [chats, setChats] = useState([]);
@@ -115,6 +137,7 @@ export function ChatProvider({ children }) {
         const chatInfoFromList = chats.find(
           (chat) => String(chat.id) === String(chatId)
         );
+        restoreHiddenChatForUser(user.id, chatId);
         const currentUserId = String(user.id);
         const otherUserIdStr = String(otherUserId);
         const fallbackChatInfo = {
@@ -187,6 +210,7 @@ export function ChatProvider({ children }) {
         });
 
         if (existingChat) {
+          restoreHiddenChatForUser(user.id, existingChat.id);
           setCurrentChat(existingChat);
           return existingChat.id;
         }

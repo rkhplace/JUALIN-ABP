@@ -295,7 +295,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                       : 2,
                               mainAxisSpacing: 16,
                               crossAxisSpacing: 16,
-                              mainAxisExtent: 300,
+                              mainAxisExtent: 314,
                             ),
                             itemCount: _products.length,
                             itemBuilder: (context, index) {

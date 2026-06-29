@@ -102,42 +102,42 @@ function ProductsPageContent() {
                     key={p.id}
                     type="button"
                     onClick={() => handleCardClick(p.id)}
-                    className="flex h-full flex-col bg-white rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-2xl transition-all duration-200 text-left group"
+                    className="flex h-full flex-col bg-white rounded-2xl p-5 sm:p-6 shadow-lg hover:shadow-2xl transition-all duration-200 text-left group"
                   >
                     <img
                       src={getProductImageUrl(p.image)}
                       alt={p.name}
                       loading="lazy"
-                      className="w-full h-36 sm:h-60 object-cover rounded-xl mb-4 transition-transform duration-200 group-hover:scale-[1.02]"
+                      className="w-full h-36 sm:h-60 object-cover rounded-xl mb-5 transition-transform duration-200 group-hover:scale-[1.02]"
                       onError={(e) => {
                         e.target.src =
                           "https://via.placeholder.com/400x400?text=No+Image";
                       }}
                     />
-                    <span className="font-bold text-blue-700 uppercase text-sm mb-2 tracking-wide">
+                    <span className="font-bold text-blue-700 uppercase text-sm mb-2.5 tracking-wide">
                       {p.brand || p.category}
                     </span>
-                    <h3 className="font-semibold text-base sm:text-xl mb-1 text-black">
+                    <h3 className="font-semibold text-base sm:text-xl mb-2 text-black">
                       {p.name}
                     </h3>
-                    <p className="hidden sm:block h-12 text-gray-500 text-base leading-6 mb-2 overflow-hidden text-ellipsis break-all [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
+                    <p className="hidden sm:block h-12 text-gray-500 text-base leading-6 mb-3 overflow-hidden text-ellipsis break-all [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
                       {p.description || "Tidak ada informasi"}
                     </p>
                     {formatOfferedAgo(p.created_at) && (
-                      <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-gray-400">
+                      <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-gray-400">
                         <Clock size={12} />
                         <span className="truncate">
                           {formatOfferedAgo(p.created_at)}
                         </span>
                       </div>
                     )}
-                    <div className="flex items-center gap-1.5 mb-2 sm:mb-3 bg-red-50 px-3 py-1.5 rounded-full border border-red-100 self-start w-fit">
+                    <div className="flex items-center gap-1.5 mb-4 bg-red-50 px-3 py-1.5 rounded-full border border-red-100 self-start w-fit">
                       <User size={12} className="text-red-600" />
                       <span className="text-xs text-red-800 font-medium">
                         {p.seller?.username || "Unknown"}
                       </span>
                     </div>
-                    <div className="mt-auto flex justify-between items-center w-full">
+                    <div className="mt-auto flex justify-between items-center w-full pt-2">
                       <span className="font-bold text-lg text-black">
                         {formatCurrency(p.price)}
                       </span>
