@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { useAuth } from "@/context/AuthProvider";
 import Navbar from "@/components/ui/Navbar";
+import DashboardBackground from "@/components/ui/DashboardBackground.jsx";
 import { authService } from "@/services/auth/authService";
 import { useProfileUpdate } from "@/hooks/profile/useProfileUpdate";
 import { usePasswordChange } from "@/hooks/profile/usePasswordChange";
@@ -169,7 +170,9 @@ export default function EditProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="jualin-dashboard-bg min-h-screen">
+      <DashboardBackground />
+      <div className="jualin-content-layer">
       <Navbar />
 
       <div className="flex overflow-hidden h-[calc(100vh-80px)]">
@@ -199,7 +202,7 @@ export default function EditProfilePage() {
         />
 
         {/* Main Content */}
-        <div className="flex-1 bg-white overflow-y-auto">
+        <div className="flex-1 bg-white/70 backdrop-blur-sm overflow-y-auto">
           <div className="max-w-5xl mx-auto px-4 py-6 pb-24 md:p-8">
             {activeTab === "edit" ? (
               <>
@@ -267,6 +270,7 @@ export default function EditProfilePage() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

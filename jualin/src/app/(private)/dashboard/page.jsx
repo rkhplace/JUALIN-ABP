@@ -7,7 +7,7 @@ import { ProductCardSkeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
   return (
-    <main className="bg-white">
+    <main className="jualin-content-layer">
       <BannerSection banners={banners} />
       <div className="max-w-7xl mx-auto px-2 sm:px-4">
         <Suspense

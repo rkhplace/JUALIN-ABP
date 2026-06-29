@@ -67,8 +67,8 @@ function ProductsPageContent() {
   };
 
   return (
-    <main className="bg-white min-h-screen">
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+    <main className="jualin-page-bg min-h-screen">
+      <div className="jualin-content-layer max-w-6xl mx-auto px-4 py-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Semua Produk</h1>
@@ -166,8 +166,8 @@ export default function ProductsPage() {
   return (
     <Suspense
       fallback={
-        <main className="bg-white min-h-screen">
-          <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        <main className="jualin-page-bg min-h-screen">
+          <div className="jualin-content-layer max-w-6xl mx-auto px-4 py-6 space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
               {[...Array(6)].map((_, idx) => (
                 <ProductCardSkeleton key={idx} />

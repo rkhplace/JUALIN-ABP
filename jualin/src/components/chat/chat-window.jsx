@@ -64,7 +64,7 @@ export function ChatWindow({ chat, messages = [], onSend, onSendImages }) {
 
   if (!chat) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-50/50">
+      <div className="h-full flex items-center justify-center bg-white/35 backdrop-blur-sm">
         <div className="text-center p-8 bg-white/50 backdrop-blur-sm rounded-3xl border border-gray-100 shadow-sm">
           <div className="h-24 w-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center shadow-inner">
             <svg className="h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -109,7 +109,7 @@ export function ChatWindow({ chat, messages = [], onSend, onSendImages }) {
   };
 
   return (
-    <div className="h-full min-w-0 flex flex-col overflow-hidden bg-gray-100">
+    <div className="h-full min-w-0 flex flex-col overflow-hidden bg-white/45 backdrop-blur-sm">
       {/* Header */}
       <ChatHeader chat={chatHeaderData} />
 
@@ -123,7 +123,7 @@ export function ChatWindow({ chat, messages = [], onSend, onSendImages }) {
             el.scrollHeight - el.scrollTop - el.clientHeight;
           shouldStickToBottomRef.current = distanceFromBottom < 96;
         }}
-        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-gray-100 py-4 md:py-6 px-2 md:px-4 flex flex-col"
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-transparent py-4 md:py-6 px-2 md:px-4 flex flex-col"
       >
         {transformedMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">

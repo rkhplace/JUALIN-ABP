@@ -45,7 +45,7 @@ export default function ProductDetailPage() {
     recData?.products?.filter((p) => p.id !== productId) || [];
 
   return (
-    <main className="bg-[#fafafa]">
+    <main className="jualin-content-layer">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 pt-8">
         {loading ? (
           <ProductDetailSkeleton />

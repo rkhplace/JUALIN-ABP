@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import Cookies from "js-cookie"
 import Header from "@/components/common/Header"
+import DashboardBackground from "@/components/ui/DashboardBackground.jsx"
 import { ProfileHeaderSection } from "./sections/profile-header"
 import { profileService } from "@/services/profile/profileService"
 import { authService } from "@/services/auth/authService"
@@ -112,7 +113,9 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="jualin-dashboard-bg min-h-screen">
+      <DashboardBackground />
+      <div className="jualin-content-layer">
       <Header />
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
@@ -282,6 +285,7 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
