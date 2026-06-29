@@ -69,7 +69,7 @@ class _ConfirmationDialogCard extends StatelessWidget {
     final accent = isDanger ? const Color(0xFFE83030) : const Color(0xFF2563EB);
     final softAccent =
         isDanger ? const Color(0xFFFFE8E8) : const Color(0xFFEAF1FF);
-    final surface = isDanger ? const Color(0xFFFFF3F3) : Colors.white;
+    const surface = Colors.white;
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),

@@ -72,7 +72,7 @@ class ProductCard extends StatelessWidget {
             // Content Area
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -92,7 +92,7 @@ class ProductCard extends StatelessWidget {
                     // Title
                     Text(
                       title,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 14,
@@ -113,8 +113,8 @@ class ProductCard extends StatelessWidget {
                         height: 1.3,
                       ),
                     ),
+                    const Spacer(),
                     if (offeredAgoLabel.isNotEmpty) ...[
-                      const SizedBox(height: 5),
                       Row(
                         children: [
                           const Icon(
@@ -137,8 +137,8 @@ class ProductCard extends StatelessWidget {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 6),
                     ],
-                    const SizedBox(height: 6),
                     // Seller Badge
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -168,14 +168,14 @@ class ProductCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const Spacer(),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 10),
 
                     // Price Area
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Expanded(
+                          flex: 6,
                           child: Text(
                             formatCurrency(price),
                             maxLines: 1,
@@ -187,15 +187,21 @@ class ProductCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Stok: $stock',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
+                        const SizedBox(width: 4),
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            'Stok: $stock',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ],

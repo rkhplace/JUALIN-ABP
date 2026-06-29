@@ -2,7 +2,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { BadgeCheck, ChevronRight, MapPin, Shirt, Tag } from "lucide-react";
+import { BadgeCheck, ChevronRight, Clock, MapPin, Shirt, Tag } from "lucide-react";
 import Toast from "../../../../components/ui/Toast";
 import Spinner from "../../../../components/ui/Spinner";
 import useMidtransPayment from "../hooks/useMidtransPayment";
@@ -11,6 +11,7 @@ import { AuthContext } from "@/context/AuthProvider";
 import { reportService } from "@/services/backoffice/reportService";
 import { getProductImageUrl, getProfilePictureUrl, getImageUrl } from "@/utils/imageHelper";
 import { formatCurrency } from "@/utils/formatters/currency";
+import { formatOfferedAgo } from "@/utils/formatters/date";
 import PaymentMethodModal from "@/components/payment/PaymentMethodModal";
 import { transactionService } from "@/services";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
@@ -79,6 +80,7 @@ export default function ProductDetailSection({ product, seller }) {
   const conditionLabel = formatCondition(product?.condition);
   const locationLabel =
     product?.location_label || seller?.city || seller?.region || "Belum ditentukan";
+  const offeredAgoLabel = formatOfferedAgo(product?.created_at);
 
   const handleConfirmPayment = async (method) => {
     setIsModalOpen(false);
@@ -478,9 +480,15 @@ export default function ProductDetailSection({ product, seller }) {
             <span className="block font-bold text-xl text-black mb-1">
               {formatCurrency(product.price)}
             </span>
-            <span className="text-sm text-gray-600 font-medium">
-              Stok tersedia: {product.stock} unit
-            </span>
+            <div className="flex flex-col gap-2 text-sm font-medium text-gray-600 sm:flex-row sm:items-center sm:gap-4">
+              <span>Stok tersedia: {product.stock} unit</span>
+              {offeredAgoLabel && (
+                <span className="inline-flex items-center gap-1.5 text-gray-500">
+                  <Clock className="h-4 w-4 text-gray-400" />
+                  {offeredAgoLabel}
+                </span>
+              )}
+            </div>
           </div>
           <div className="mb-4 md:mb-6">
             <ProductLocationMap

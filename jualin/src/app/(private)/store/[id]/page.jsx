@@ -399,36 +399,36 @@ export default function StoreProfilePage() {
                       src={getProductImageUrl(product.img || product.image)}
                       alt={product.name || "Produk"}
                       loading="lazy"
-                      className="mb-4 h-36 w-full rounded-xl bg-gray-50 object-cover transition-transform duration-200 group-hover:scale-[1.02] sm:h-60"
+                      className="mb-5 h-36 w-full rounded-xl bg-gray-50 object-cover transition-transform duration-200 group-hover:scale-[1.02] sm:h-60"
                       onError={(event) => {
                         event.currentTarget.src =
                           "https://via.placeholder.com/400x400?text=No+Image";
                       }}
                     />
-                    <span className="mb-2 text-sm font-bold uppercase tracking-wide text-blue-700">
+                    <span className="mb-2.5 text-sm font-bold uppercase tracking-wide text-blue-700">
                       {product.brand || product.category || "Produk"}
                     </span>
-                    <h3 className="mb-1 text-base font-semibold text-black sm:text-xl">
+                    <h3 className="mb-2 text-base font-semibold text-black sm:text-xl">
                       {product.name || "Produk Jualin"}
                     </h3>
-                    <p className="mb-2 hidden h-12 overflow-hidden text-ellipsis break-all text-base leading-6 text-gray-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] sm:block">
+                    <p className="mb-3 hidden h-12 overflow-hidden text-ellipsis break-all text-base leading-6 text-gray-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] sm:block">
                       {product.description || "Tidak ada deskripsi."}
                     </p>
                     {formatOfferedAgo(product.created_at) && (
-                      <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-gray-400">
+                      <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-gray-400">
                         <Clock className="h-3 w-3" />
                         <span className="truncate">
                           {formatOfferedAgo(product.created_at)}
                         </span>
                       </div>
                     )}
-                    <div className="mb-2 flex items-center gap-1.5 self-start rounded-full border border-red-100 bg-red-50 px-3 py-1.5 sm:mb-3">
+                    <div className="mb-4 flex items-center gap-1.5 self-start rounded-full border border-red-100 bg-red-50 px-3 py-1.5">
                       <User className="h-3 w-3 text-red-600" />
                       <span className="text-xs font-medium text-red-800">
                         {seller.username || "Seller"}
                       </span>
                     </div>
-                    <div className="mt-auto flex w-full items-center justify-between gap-3">
+                    <div className="mt-auto flex w-full items-center justify-between gap-3 pt-2">
                       <span className="text-lg font-bold text-black">
                         {formatCurrency(product.price || 0)}
                       </span>

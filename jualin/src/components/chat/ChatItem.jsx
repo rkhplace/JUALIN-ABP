@@ -24,6 +24,7 @@ export function ChatItem({
 }) {
   const [fetchedUser, setFetchedUser] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
   const menuButtonRef = useRef(null);
   const menuRef = useRef(null);
@@ -166,9 +167,8 @@ export function ChatItem({
                 onToggleMute={(event) => handleMenuAction(event, onToggleMute)}
                 onHideChat={(event) => {
                   event.stopPropagation();
-                  if (window.confirm('Sembunyikan obrolan ini dari daftar chat?')) {
-                    handleMenuAction(event, onHideChat);
-                  }
+                  setMenuOpen(false);
+                  setConfirmOpen(true);
                 }}
               />
             </div>
@@ -187,7 +187,76 @@ export function ChatItem({
           </div>
         </div>
       </div>
+      <HideChatConfirmModal
+        isOpen={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          onHideChat?.();
+        }}
+      />
     </div>
+  );
+}
+
+function HideChatConfirmModal({ isOpen, onCancel, onConfirm }) {
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined') return;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onCancel?.();
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onCancel]);
+
+  if (!isOpen || typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/45 px-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="hide-chat-title"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-md rounded-[28px] border border-white/70 bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.28)]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start gap-4">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-red-50 text-red-600">
+            <Trash2 className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <h2 id="hide-chat-title" className="text-xl font-bold text-gray-950">
+              Hapus obrolan?
+            </h2>
+            <p className="mt-2 text-sm font-medium leading-relaxed text-gray-500">
+              Obrolan akan disembunyikan dari daftar pesan di perangkat ini.
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-bold text-gray-500 transition hover:bg-gray-50 hover:text-gray-800"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="inline-flex h-11 items-center justify-center rounded-2xl bg-[#E83030] px-7 text-sm font-bold text-white shadow-[0_16px_34px_rgba(232,48,48,0.28)] transition hover:bg-red-600"
+          >
+            Hapus
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 

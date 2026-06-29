@@ -17,19 +17,46 @@ export function ChatSidebar({ chats = [], selectedId, onSelect }) {
 
   useEffect(() => {
     if (!user?.id || typeof window === 'undefined') return;
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem(`chat_preferences:${user.id}`) || '{}'
-      );
+    const loadPreferences = () => {
+      try {
+        const saved = JSON.parse(
+          localStorage.getItem(`chat_preferences:${user.id}`) || '{}'
+        );
+        setChatPrefs({
+          hidden: saved.hidden || {},
+          muted: saved.muted || {},
+          pinned: saved.pinned || {},
+          read: saved.read || {},
+        });
+      } catch {
+        setChatPrefs({ hidden: {}, muted: {}, pinned: {}, read: {} });
+      }
+    };
+
+    loadPreferences();
+
+    const handlePreferencesUpdated = (event) => {
+      if (String(event.detail?.userId) !== String(user.id)) return;
+      const saved = event.detail?.preferences || {};
       setChatPrefs({
         hidden: saved.hidden || {},
         muted: saved.muted || {},
         pinned: saved.pinned || {},
         read: saved.read || {},
       });
-    } catch {
-      setChatPrefs({ hidden: {}, muted: {}, pinned: {}, read: {} });
-    }
+    };
+
+    window.addEventListener(
+      'jualin:chat-preferences-updated',
+      handlePreferencesUpdated
+    );
+
+    return () => {
+      window.removeEventListener(
+        'jualin:chat-preferences-updated',
+        handlePreferencesUpdated
+      );
+    };
   }, [user?.id]);
 
   const updateChatPrefs = (updater) => {
@@ -37,6 +64,11 @@ export function ChatSidebar({ chats = [], selectedId, onSelect }) {
       const next = typeof updater === 'function' ? updater(current) : updater;
       if (user?.id && typeof window !== 'undefined') {
         localStorage.setItem(`chat_preferences:${user.id}`, JSON.stringify(next));
+        window.dispatchEvent(
+          new CustomEvent('jualin:chat-preferences-updated', {
+            detail: { userId: user.id, preferences: next },
+          })
+        );
       }
       return next;
     });

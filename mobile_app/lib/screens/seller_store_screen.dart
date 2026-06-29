@@ -7,6 +7,7 @@ import '../models/product.dart';
 import '../services/auth_service.dart';
 import '../services/chat_service.dart';
 import '../services/product_service.dart';
+import '../utils/chat_preferences.dart';
 import '../utils/image_url_helper.dart';
 import '../widgets/ui/login_required_dialog.dart';
 import '../widgets/ui/logo_loader.dart';
@@ -153,6 +154,8 @@ class _SellerStoreScreenState extends State<SellerStoreScreen> {
       if (roomId == null) {
         throw Exception('Room ID tidak diterima dari server.');
       }
+      await restoreHiddenChatRoom(roomId);
+      if (!mounted) return;
 
       final chatProduct = ChatProduct(
         id: seed.id,
