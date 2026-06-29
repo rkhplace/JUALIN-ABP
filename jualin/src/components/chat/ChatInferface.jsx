@@ -88,11 +88,11 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="relative flex h-[calc(100vh-4rem)] bg-gray-100 overflow-hidden">
+    <div className="relative flex h-[calc(100vh-4rem)] bg-transparent overflow-hidden">
       <div
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 fixed md:absolute md:relative top-0 left-0 bottom-0 md:inset-auto z-30 md:z-auto w-[78vw] max-w-[320px] md:w-[30%] md:max-w-none rounded-r-3xl transition-transform duration-300 ease-in-out md:ml-4 md:my-4 md:h-[calc(100%-2rem)] md:rounded-3xl md:shadow-xl md:bg-white md:overflow-hidden hash-sidebar-floating`}
+        } md:translate-x-0 fixed md:absolute md:relative top-0 left-0 bottom-0 md:inset-auto z-30 md:z-auto w-[78vw] max-w-[320px] md:w-[30%] md:max-w-none rounded-r-3xl transition-transform duration-300 ease-in-out md:ml-4 md:my-4 md:h-[calc(100%-2rem)] md:rounded-3xl md:shadow-xl md:bg-white/85 md:backdrop-blur-md md:overflow-hidden hash-sidebar-floating`}
       >
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
