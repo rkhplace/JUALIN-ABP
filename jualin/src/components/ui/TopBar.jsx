@@ -27,7 +27,7 @@ function TopBar() {
   }, []);
 
   return (
-    <div className="w-full bg-black text-white text-xs py-2 px-4 text-center overflow-hidden relative h-8">
+    <div className="relative z-50 w-full bg-black text-white text-xs py-2 px-4 text-center overflow-hidden h-8">
       <div
         className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ease-in-out ${
           isSlidingOut

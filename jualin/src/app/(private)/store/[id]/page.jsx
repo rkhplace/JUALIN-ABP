@@ -22,6 +22,7 @@ import UserAvatar from "@/components/ui/UserAvatar";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import { ProductCardSkeleton } from "@/components/ui/skeleton";
 import Pagination from "@/components/ui/Pagination";
+import DashboardBackground from "@/components/ui/DashboardBackground.jsx";
 import { AuthContext } from "@/context/AuthProvider";
 import { ChatContext } from "@/context/ChatProvider";
 import { sellerService } from "@/services/seller/sellerService";
@@ -169,8 +170,9 @@ export default function StoreProfilePage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-[#F7F7F8] px-4 py-8">
-        <div className="mx-auto max-w-6xl space-y-6">
+      <main className="jualin-dashboard-bg min-h-screen px-4 py-8">
+        <DashboardBackground />
+        <div className="jualin-content-layer mx-auto max-w-6xl space-y-6">
           <div className="h-52 animate-pulse rounded-[28px] bg-white" />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 sm:gap-8">
             {[...Array(9)].map((_, index) => (
@@ -184,8 +186,9 @@ export default function StoreProfilePage() {
 
   if (!seller) {
     return (
-      <main className="min-h-screen bg-[#F7F7F8] px-4 py-8">
-        <div className="mx-auto flex min-h-[55vh] max-w-xl flex-col items-center justify-center text-center">
+      <main className="jualin-dashboard-bg min-h-screen px-4 py-8">
+        <DashboardBackground />
+        <div className="jualin-content-layer mx-auto flex min-h-[55vh] max-w-xl flex-col items-center justify-center text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-[#E83030]">
             <Store className="h-8 w-8" />
           </div>
@@ -208,7 +211,8 @@ export default function StoreProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F7F7F8] px-4 py-6 sm:py-8">
+    <main className="jualin-dashboard-bg min-h-screen px-4 py-6 sm:py-8">
+      <DashboardBackground />
       {toast && (
         <Toast
           message={toast.message}
@@ -217,7 +221,7 @@ export default function StoreProfilePage() {
         />
       )}
 
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="jualin-content-layer mx-auto max-w-6xl space-y-6">
         <button
           type="button"
           onClick={() => router.back()}
