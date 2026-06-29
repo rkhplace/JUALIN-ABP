@@ -70,7 +70,7 @@ export default function ProductLocationMap({
       <div className="relative z-0">
         <MapContainer
           center={point}
-          zoom={12}
+          zoom={zoomForRadius(radiusNumber)}
           scrollWheelZoom={false}
           zoomControl={false}
           dragging
@@ -78,7 +78,7 @@ export default function ProductLocationMap({
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <Circle
             center={point}
@@ -175,4 +175,13 @@ function haversineKm(lat1, lon1, lat2, lon2) {
       Math.cos(toRadians(lat2)) *
       Math.sin(dLon / 2) ** 2;
   return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function zoomForRadius(radiusKm) {
+  if (radiusKm <= 1) return 14;
+  if (radiusKm <= 3) return 13;
+  if (radiusKm <= 5) return 12;
+  if (radiusKm <= 10) return 11;
+  if (radiusKm <= 15) return 10;
+  return 9;
 }

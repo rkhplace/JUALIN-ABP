@@ -1,10 +1,28 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { Circle, MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
+import React, { useEffect, useMemo } from "react";
+import {
+  Circle,
+  MapContainer,
+  Marker,
+  TileLayer,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import L from "leaflet";
 
 const DEFAULT_CENTER = [-6.9175, 107.6191];
+
+function MapSync({ center, zoom }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.invalidateSize();
+    map.setView(center, zoom, { animate: false });
+  }, [center, map, zoom]);
+
+  return null;
+}
 
 function TapHandler({ onPick }) {
   useMapEvents({
@@ -23,8 +41,12 @@ export default function ProductLocationPicker({
 }) {
   const hasPoint =
     Number.isFinite(Number(latitude)) && Number.isFinite(Number(longitude));
-  const point = hasPoint ? [Number(latitude), Number(longitude)] : DEFAULT_CENTER;
+  const point = useMemo(
+    () => (hasPoint ? [Number(latitude), Number(longitude)] : DEFAULT_CENTER),
+    [hasPoint, latitude, longitude]
+  );
   const radiusMeters = Math.max(Number(radiusKm) || 0, 0) * 1000;
+  const zoom = hasPoint ? zoomForRadius(Number(radiusKm) || 10) : 11;
   const markerIcon = useMemo(
     () =>
       L.divIcon({
@@ -40,13 +62,14 @@ export default function ProductLocationPicker({
     <div className="overflow-hidden rounded-2xl border border-red-100 bg-white">
       <MapContainer
         center={point}
-        zoom={hasPoint ? 12 : 11}
+        zoom={zoom}
         scrollWheelZoom
-        className="h-72 w-full"
+        className="jualin-leaflet-map h-72 w-full"
       >
+        <MapSync center={point} zoom={zoom} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <TapHandler
           onPick={(lat, lng) =>
@@ -85,4 +108,13 @@ export default function ProductLocationPicker({
       </div>
     </div>
   );
+}
+
+function zoomForRadius(radiusKm) {
+  if (radiusKm <= 1) return 14;
+  if (radiusKm <= 3) return 13;
+  if (radiusKm <= 5) return 12;
+  if (radiusKm <= 10) return 11;
+  if (radiusKm <= 15) return 10;
+  return 9;
 }
