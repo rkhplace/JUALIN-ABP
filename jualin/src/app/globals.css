@@ -130,7 +130,7 @@ body {
 .jualin-dashboard-bg {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
+  overflow-x: clip;
   background:
     radial-gradient(circle at 12% 10%, rgba(232, 48, 48, 0.055), transparent 30%),
     radial-gradient(circle at 92% 92%, rgba(232, 48, 48, 0.07), transparent 26%),
@@ -144,9 +144,11 @@ body {
 }
 
 .dashboard-background {
+  position: fixed;
   inset: 0;
   z-index: 0;
   overflow: hidden;
+  min-height: 100dvh;
 }
 
 .dashboard-bg-red {

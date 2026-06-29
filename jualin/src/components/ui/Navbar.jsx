@@ -115,7 +115,7 @@ const Navbar = () => {
   }, []);
 
   return (
-    <header className="bg-white relative">
+    <header className="bg-white relative z-50">
       {/* === Row 1: Main bar === */}
       <div className="w-full px-2 sm:px-4 py-3 flex items-center gap-4 transition-shadow duration-200">
         <div className="flex items-center gap-4 sm:gap-6 min-w-0">
