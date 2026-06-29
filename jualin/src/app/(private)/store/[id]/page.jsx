@@ -174,7 +174,7 @@ export default function StoreProfilePage() {
         <DashboardBackground />
         <div className="jualin-content-layer mx-auto max-w-6xl space-y-6">
           <div className="h-52 animate-pulse rounded-[28px] bg-white" />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 sm:gap-8">
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 md:gap-8">
             {[...Array(9)].map((_, index) => (
               <ProductCardSkeleton key={index} />
             ))}
@@ -391,52 +391,52 @@ export default function StoreProfilePage() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 sm:gap-8">
+              <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 md:gap-8">
                 {filteredProducts.map((product) => (
                   <button
                     key={product.id}
                     type="button"
                     onClick={() => router.push(`/product/${product.id}`)}
-                    className="group flex h-full flex-col items-start rounded-2xl bg-white p-4 text-left shadow transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-xl active:scale-95 focus:outline-none sm:p-6"
+                    className="group flex h-full flex-col items-start rounded-2xl bg-white p-3 text-left shadow transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-xl active:scale-95 focus:outline-none sm:p-5 md:p-6"
                   >
                     <img
                       src={getProductImageUrl(product.img || product.image)}
                       alt={product.name || "Produk"}
                       loading="lazy"
-                      className="mb-5 h-36 w-full rounded-xl bg-gray-50 object-cover transition-transform duration-200 group-hover:scale-[1.02] sm:h-60"
+                      className="mb-3 h-32 w-full rounded-xl bg-gray-50 object-cover transition-transform duration-200 group-hover:scale-[1.02] sm:mb-5 sm:h-52 md:h-60"
                       onError={(event) => {
                         event.currentTarget.src =
                           "https://via.placeholder.com/400x400?text=No+Image";
                       }}
                     />
-                    <span className="mb-2.5 text-sm font-bold uppercase tracking-wide text-blue-700">
+                    <span className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-blue-700 sm:mb-2.5 sm:text-sm">
                       {product.brand || product.category || "Produk"}
                     </span>
-                    <h3 className="mb-2 text-base font-semibold text-black sm:text-xl">
+                    <h3 className="mb-2 line-clamp-2 text-sm font-semibold leading-snug text-black sm:text-lg md:text-xl">
                       {product.name || "Produk Jualin"}
                     </h3>
                     <p className="mb-3 hidden h-12 overflow-hidden text-ellipsis break-all text-base leading-6 text-gray-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] sm:block">
                       {product.description || "Tidak ada deskripsi."}
                     </p>
                     {formatOfferedAgo(product.created_at) && (
-                      <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-gray-400">
+                      <div className="mb-2 flex min-w-0 items-center gap-1.5 text-[11px] font-semibold text-gray-400 sm:mb-3 sm:text-xs">
                         <Clock className="h-3 w-3" />
                         <span className="truncate">
                           {formatOfferedAgo(product.created_at)}
                         </span>
                       </div>
                     )}
-                    <div className="mb-4 flex items-center gap-1.5 self-start rounded-full border border-red-100 bg-red-50 px-3 py-1.5">
+                    <div className="mb-3 flex max-w-full items-center gap-1.5 self-start rounded-full border border-red-100 bg-red-50 px-2.5 py-1 sm:mb-4 sm:px-3 sm:py-1.5">
                       <User className="h-3 w-3 text-red-600" />
-                      <span className="text-xs font-medium text-red-800">
+                      <span className="truncate text-[11px] font-medium text-red-800 sm:text-xs">
                         {seller.username || "Seller"}
                       </span>
                     </div>
-                    <div className="mt-auto flex w-full items-center justify-between gap-3 pt-2">
-                      <span className="text-lg font-bold text-black">
+                    <div className="mt-auto flex w-full flex-col items-start gap-0.5 pt-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:pt-2">
+                      <span className="text-sm font-bold text-black sm:text-lg">
                         {formatCurrency(product.price || 0)}
                       </span>
-                      <span className="text-sm font-medium text-gray-600">
+                      <span className="text-[11px] font-medium text-gray-600 sm:text-sm">
                         Stok: {product.stock ?? product.stock_quantity ?? 0}
                       </span>
                     </div>

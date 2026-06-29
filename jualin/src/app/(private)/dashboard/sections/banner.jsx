@@ -63,8 +63,8 @@ function BannerSection({ banners, isLoading = false }) {
 
   if (isLoading) {
     return (
-      <section className="w-full mt-4 sm:mt-8 mb-6 px-2 sm:px-4">
-        <div className="w-full max-w-7xl mx-auto overflow-hidden relative h-[300px] sm:h-[420px] bg-gray-200 rounded-2xl animate-pulse flex items-center justify-start">
+      <section className="w-full mt-3 sm:mt-8 mb-5 sm:mb-6 px-2 sm:px-4">
+        <div className="w-full max-w-7xl mx-auto overflow-hidden relative h-[210px] sm:h-[300px] lg:h-[420px] bg-gray-200 rounded-xl sm:rounded-2xl animate-pulse flex items-center justify-start">
           <div className="relative z-20 text-white px-4 sm:px-10 py-8 max-w-xl text-left">
             <div className="h-10 sm:h-14 bg-gray-300 rounded-lg w-64 mb-4 animate-pulse"></div>
             <div className="h-6 bg-gray-300 rounded w-80 mb-2 animate-pulse"></div>
@@ -84,9 +84,9 @@ function BannerSection({ banners, isLoading = false }) {
   }
 
   return (
-    <section className="w-full mt-4 sm:mt-8 mb-6 px-2 sm:px-4">
+    <section className="w-full mt-3 sm:mt-8 mb-5 sm:mb-6 px-2 sm:px-4">
       <div
-        className="w-full max-w-7xl mx-auto overflow-hidden relative h-[300px] sm:h-[420px] flex items-center justify-start bg-gray-100 rounded-2xl cursor-grab active:cursor-grabbing select-none touch-pan-y"
+        className="w-full max-w-7xl mx-auto overflow-hidden relative h-[210px] sm:h-[300px] lg:h-[420px] flex items-center justify-start bg-gray-100 rounded-xl sm:rounded-2xl cursor-grab active:cursor-grabbing select-none touch-pan-y"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onPointerDown={handleDragStart}
@@ -106,18 +106,18 @@ function BannerSection({ banners, isLoading = false }) {
               <img
                 src={banner.src}
                 alt={banner.alt}
-                className={`absolute inset-0 w-full h-full object-cover object-left sm:object-center rounded-2xl ${idx === active ? "" : ""}`}
+                className={`absolute inset-0 w-full h-full object-cover object-left sm:object-center rounded-xl sm:rounded-2xl ${idx === active ? "" : ""}`}
                 style={idx === active ? undefined : { transform: "scale(0.995)" }}
               />
             </div>
           ))}
         </div>
         {/* Carousel indicator */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-30">
+        <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-30">
           {banners.map((_, idx) => (
             <span
               key={idx}
-              className={`w-3 h-3 rounded-full bg-white transition-opacity ${active === idx ? "opacity-80" : "opacity-40"
+              className={`h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-white transition-opacity ${active === idx ? "opacity-80" : "opacity-40"
                 }`}
               onClick={() => !animating && setActive(idx)}
               style={{ cursor: "pointer" }}
