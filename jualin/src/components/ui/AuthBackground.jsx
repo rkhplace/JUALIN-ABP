@@ -2,9 +2,9 @@
 
 import React from "react";
 
-export default function AuthBackground() {
+export default function AuthBackground({ className = "auth-background" }) {
   return (
-    <div className="auth-background" aria-hidden="true">
+    <div className={className} aria-hidden="true">
       <span className="auth-bg-red auth-bg-red-top" />
       <span className="auth-bg-red auth-bg-red-bottom" />
 
